@@ -1,11 +1,11 @@
-import { telegramService } from '../services/telegramService';
+import { isLocalDevHost } from '../utils/env';
 import './DevBanner.css';
 
 /**
- * Баннер режима разработки. Скрыт в продакшене и внутри Telegram Mini App.
+ * Баннер режима разработки. Рендерится только на localhost в режиме разработки.
  */
 export function DevBanner() {
-  if (import.meta.env.PROD || telegramService.isTelegramEnv()) return null;
+  if (!isLocalDevHost()) return null;
 
   return (
     <div className="dev-banner">

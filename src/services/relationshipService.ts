@@ -4,6 +4,7 @@ import type {
   UpdateMemorableDateInput,
 } from '../types/relationship';
 import { coupleService } from './coupleService';
+import { isLocalDevHost } from '../utils/env';
 
 const STORAGE_START_DATE_KEY = 'lovia_relationship_start_date_v1';
 const STORAGE_MEMORABLE_DATES_KEY = 'lovia_memorable_dates_v1';
@@ -64,7 +65,7 @@ class RelationshipService {
     try {
       const stored = localStorage.getItem(STORAGE_START_DATE_KEY);
       if (stored) return stored;
-      if (coupleService.isDemoCouple()) {
+      if (isLocalDevHost() && coupleService.isDemoCouple()) {
         localStorage.setItem(STORAGE_START_DATE_KEY, initialStartDate);
         return initialStartDate;
       }
@@ -72,7 +73,7 @@ class RelationshipService {
       localStorage.setItem(STORAGE_START_DATE_KEY, todayStr);
       return todayStr;
     } catch {
-      return coupleService.isDemoCouple() ? initialStartDate : new Date().toISOString().split('T')[0];
+      return isLocalDevHost() && coupleService.isDemoCouple() ? initialStartDate : new Date().toISOString().split('T')[0];
     }
   }
 
@@ -90,7 +91,7 @@ class RelationshipService {
     try {
       const stored = localStorage.getItem(STORAGE_MEMORABLE_DATES_KEY);
       if (!stored) {
-        if (coupleService.isDemoCouple()) {
+        if (isLocalDevHost() && coupleService.isDemoCouple()) {
           localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(initialMemorableDates));
           return [...initialMemorableDates];
         }
@@ -99,7 +100,7 @@ class RelationshipService {
       }
       return JSON.parse(stored);
     } catch {
-      return coupleService.isDemoCouple() ? [...initialMemorableDates] : [];
+      return isLocalDevHost() && coupleService.isDemoCouple() ? [...initialMemorableDates] : [];
     }
   }
 

@@ -14,6 +14,7 @@ import {
 import { profileService, UserProfileData, PartnerProfileData } from '../services/profileService';
 import { relationshipService } from '../services/relationshipService';
 import { telegramService } from '../services/telegramService';
+import { isLocalDevHost } from '../utils/env';
 import './ProfilePage.css';
 
 export function ProfilePage() {
@@ -119,21 +120,23 @@ export function ProfilePage() {
       />
 
       {/* 7. Developer Tools Card: Link to design system */}
-      <Card variant="solid" className="profile-dev-card">
-        <div className="profile-dev-card__header">
-          <Icon name="sparkles" size={17} className="profile-dev-card__icon" />
-          <h3 className="profile-dev-card__title">Инструменты разработчика</h3>
-        </div>
-        <Button
-          variant="secondary"
-          fullWidth
-          size="md"
-          leftIcon={<Icon name="sparkles" size={16} />}
-          onClick={() => navigate('/design')}
-        >
-          Дизайн-система Lovia
-        </Button>
-      </Card>
+      {isLocalDevHost() && (
+        <Card variant="solid" className="profile-dev-card">
+          <div className="profile-dev-card__header">
+            <Icon name="sparkles" size={17} className="profile-dev-card__icon" />
+            <h3 className="profile-dev-card__title">Инструменты разработчика</h3>
+          </div>
+          <Button
+            variant="secondary"
+            fullWidth
+            size="md"
+            leftIcon={<Icon name="sparkles" size={16} />}
+            onClick={() => navigate('/design')}
+          >
+            Дизайн-система Lovia
+          </Button>
+        </Card>
+      )}
 
       {/* 8. Danger Zone: Bottom account deletion with clear policies */}
       <DangerZone />

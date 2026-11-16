@@ -11,6 +11,7 @@ import { coupleService, CoupleSpace, RegisteredUser } from '../services/coupleSe
 import { telegramService } from '../services/telegramService';
 import { getTodayDateString } from '../utils/dateCalculations';
 import { copyTextToClipboard } from '../utils/clipboard';
+import { isLocalDevHost } from '../utils/env';
 import './OnboardingPage.css';
 
 export function OnboardingPage() {
@@ -24,8 +25,17 @@ export function OnboardingPage() {
     coupleService.getCurrentCouple()
   );
 
-  // Form states
-  const [name, setName] = useState(currentUser.name || '');
+  // Form states: prefill from Telegram if available, or keep empty in non-local-dev host
+  const tgUser = telegramService.getTelegramUser();
+  const [name, setName] = useState(() => {
+    if (telegramService.isTelegramEnv() && tgUser?.first_name) {
+      return tgUser.first_name;
+    }
+    if (currentUser.name && (isLocalDevHost() || telegramService.isTelegramEnv())) {
+      return currentUser.name;
+    }
+    return '';
+  });
   const [nameError, setNameError] = useState<string | null>(null);
   const [gender, setGender] = useState<'male' | 'female' | undefined>(currentUser.gender);
   const [startDate, setStartDate] = useState<string>(() => getTodayDateString());
@@ -462,7 +472,7 @@ export function OnboardingPage() {
         </section>
 
         {/* Development test switcher for instant persona validation */}
-        {!import.meta.env.PROD && !telegramService.isTelegramEnv() && (
+        {isLocalDevHost() && (
           <aside className="onboarding-dev-panel" aria-label="Панель переключения тестовых аккаунтов">
             <span className="onboarding-dev-title">Тестовые аккаунты:</span>
             <div className="onboarding-dev-buttons">

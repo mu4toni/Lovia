@@ -5,6 +5,7 @@ import { relationshipService } from './relationshipService';
 import { dateMemoryService } from './dateMemoryService';
 import { telegramService } from './telegramService';
 import { clearCelebrationHistory } from './celebrationService';
+import { isLocalDevHost } from '../utils/env';
 
 export interface RegisteredUser {
   id: string;
@@ -123,20 +124,33 @@ class CoupleService {
 
   private loadFromStorage() {
     try {
+      const isDevHost = isLocalDevHost();
       const storedUsers = localStorage.getItem(STORAGE_USERS_KEY);
       if (storedUsers) {
         this.users = JSON.parse(storedUsers);
-      } else {
+        if (!isDevHost) {
+          // In non-local-dev host, purge default demo users if present
+          delete this.users['user-marsel'];
+          delete this.users['user-alisa'];
+        }
+      } else if (isDevHost) {
         this.users = { ...defaultUsers };
         localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(this.users));
+      } else {
+        this.users = {};
       }
 
       const storedCouples = localStorage.getItem(STORAGE_COUPLES_KEY);
       if (storedCouples) {
         this.couples = JSON.parse(storedCouples);
-      } else {
+        if (!isDevHost && this.couples['couple-1']) {
+          delete this.couples['couple-1'];
+        }
+      } else if (isDevHost) {
         this.couples = { 'couple-1': { ...defaultCouple } };
         localStorage.setItem(STORAGE_COUPLES_KEY, JSON.stringify(this.couples));
+      } else {
+        this.couples = {};
       }
 
       // Check if running in a real Telegram environment with an authenticated Telegram user
@@ -149,7 +163,7 @@ class CoupleService {
           const fullName = [tgUser.first_name, tgUser.last_name]
             .filter(Boolean)
             .join(' ')
-            .trim() || 'Пользователь';
+            .trim() || tgUser.first_name || '';
           this.users[tgId] = {
             id: tgId,
             name: fullName,
@@ -169,16 +183,34 @@ class CoupleService {
         const storedActiveId = localStorage.getItem(STORAGE_ACTIVE_USER_ID_KEY);
         if (storedActiveId && this.users[storedActiveId]) {
           this.activeUserId = storedActiveId;
-        } else {
+        } else if (isDevHost) {
           this.activeUserId = 'user-marsel';
+          localStorage.setItem(STORAGE_ACTIVE_USER_ID_KEY, this.activeUserId);
+        } else {
+          // Clean production/mobile state: new guest user with empty name and coupleId: null
+          const guestId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          this.activeUserId = guestId;
+          this.users[guestId] = {
+            id: guestId,
+            name: '',
+            joinedDate: new Date().toISOString().split('T')[0],
+            coupleId: null,
+          };
+          localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(this.users));
           localStorage.setItem(STORAGE_ACTIVE_USER_ID_KEY, this.activeUserId);
         }
       }
     } catch (e) {
       console.warn('Failed to load couple service from localStorage:', e);
-      this.users = { ...defaultUsers };
-      this.couples = { 'couple-1': { ...defaultCouple } };
-      this.activeUserId = 'user-marsel';
+      if (isLocalDevHost()) {
+        this.users = { ...defaultUsers };
+        this.couples = { 'couple-1': { ...defaultCouple } };
+        this.activeUserId = 'user-marsel';
+      } else {
+        this.users = {};
+        this.couples = {};
+        this.activeUserId = 'guest';
+      }
     }
   }
 
@@ -219,14 +251,17 @@ class CoupleService {
       const tgUser = telegramService.getTelegramUser();
       const defaultName =
         isTg && tgUser
-          ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ').trim() || 'Пользователь'
-          : 'Марсель';
+          ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ').trim() || tgUser.first_name || ''
+          : isLocalDevHost()
+          ? 'Марсель'
+          : '';
 
       u = {
         id: this.activeUserId,
         name: defaultName,
         avatarUrl: isTg && tgUser ? tgUser.photo_url : undefined,
         joinedDate: new Date().toISOString().split('T')[0],
+        coupleId: isLocalDevHost() ? 'couple-1' : null,
       };
       this.users[this.activeUserId] = u;
       this.saveToStorage();
@@ -292,6 +327,7 @@ class CoupleService {
   }
 
   isDemoCouple(): boolean {
+    if (!isLocalDevHost()) return false;
     this.init();
     const couple = this.getCurrentCouple();
     return Boolean(couple && couple.id === 'couple-1');

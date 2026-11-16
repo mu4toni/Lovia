@@ -1,6 +1,7 @@
 import { WishItem, CreateWishInput, UpdateWishInput, WISHLIST_CATEGORIES } from '../types/wishlist';
 import { initialWishlistItems } from './mockWishlistData';
 import { coupleService } from './coupleService';
+import { isLocalDevHost } from '../utils/env';
 
 const STORAGE_KEY = 'lovia_wishlist_items_v1';
 
@@ -17,7 +18,7 @@ class WishlistService {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        if (coupleService.isDemoCouple()) {
+        if (isLocalDevHost() && coupleService.isDemoCouple()) {
           this.saveToStorage(initialWishlistItems);
           return [...initialWishlistItems];
         }
@@ -26,7 +27,7 @@ class WishlistService {
       }
       return JSON.parse(raw);
     } catch {
-      return coupleService.isDemoCouple() ? [...initialWishlistItems] : [];
+      return isLocalDevHost() && coupleService.isDemoCouple() ? [...initialWishlistItems] : [];
     }
   }
 

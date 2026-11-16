@@ -11,6 +11,7 @@ import {
 } from './mockData';
 import { profileService } from './profileService';
 import { coupleService } from './coupleService';
+import { isLocalDevHost } from '../utils/env';
 
 const STORAGE_REMINDERS_KEY = 'lovia_reminders';
 const STORAGE_EVENTS_KEY = 'lovia_events';
@@ -42,7 +43,7 @@ class RemindersService {
       const stored = localStorage.getItem(STORAGE_REMINDERS_KEY);
       if (stored !== null) {
         this.reminders = JSON.parse(stored);
-      } else if (coupleService.isDemoCouple()) {
+      } else if (isLocalDevHost() && coupleService.isDemoCouple()) {
         this.reminders = [...initialRequests];
         this.save();
       } else {
@@ -53,7 +54,7 @@ class RemindersService {
       const storedEvents = localStorage.getItem(STORAGE_EVENTS_KEY);
       if (storedEvents !== null) {
         this.events = JSON.parse(storedEvents);
-      } else if (coupleService.isDemoCouple()) {
+      } else if (isLocalDevHost() && coupleService.isDemoCouple()) {
         this.events = [...initialEvents];
         this.saveEvents();
       } else {
@@ -61,8 +62,8 @@ class RemindersService {
         this.saveEvents();
       }
     } catch {
-      this.reminders = coupleService.isDemoCouple() ? [...initialRequests] : [];
-      this.events = coupleService.isDemoCouple() ? [...initialEvents] : [];
+      this.reminders = isLocalDevHost() && coupleService.isDemoCouple() ? [...initialRequests] : [];
+      this.events = isLocalDevHost() && coupleService.isDemoCouple() ? [...initialEvents] : [];
     }
     this.initialized = true;
   }

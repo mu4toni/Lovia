@@ -5,6 +5,7 @@ import type {
 } from '../types/dates';
 import { isFutureDate } from '../utils/dateCalculations';
 import { coupleService } from './coupleService';
+import { isLocalDevHost } from '../utils/env';
 
 const STORAGE_DATE_MEMORIES_KEY = 'lovia_date_memories_v1';
 
@@ -119,7 +120,7 @@ class DateMemoryService {
     try {
       const stored = localStorage.getItem(STORAGE_DATE_MEMORIES_KEY);
       if (!stored) {
-        if (coupleService.isDemoCouple()) {
+        if (isLocalDevHost() && coupleService.isDemoCouple()) {
           localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(initialDateMemories));
           return [...initialDateMemories];
         }
@@ -128,7 +129,7 @@ class DateMemoryService {
       }
       return JSON.parse(stored);
     } catch {
-      return coupleService.isDemoCouple() ? [...initialDateMemories] : [];
+      return isLocalDevHost() && coupleService.isDemoCouple() ? [...initialDateMemories] : [];
     }
   }
 

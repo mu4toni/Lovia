@@ -5,6 +5,7 @@ import { CreateCategoryModal, ManageCategoriesModal } from '../features/manage-c
 import { DemoStateSwitcher } from '../features/demo-switcher';
 import { Card, Button, Skeleton, Icon, useToast, BottomActionButton } from '../shared';
 import { telegramService } from '../services/telegramService';
+import { isLocalDevHost } from '../utils/env';
 import './HomePage.css';
 
 export function HomePage() {
@@ -88,7 +89,7 @@ export function HomePage() {
   return (
     <div className="home-page">
       {/* 1. Demo States Switcher for easy testing of required states */}
-      {!import.meta.env.PROD && !telegramService.isTelegramEnv() && (
+      {isLocalDevHost() && (
         <DemoStateSwitcher currentMode={demoMode} onSelectMode={setDemoMode} />
       )}
 
