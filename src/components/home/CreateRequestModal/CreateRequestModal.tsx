@@ -150,7 +150,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   const targetPartnerDisplay = getGenitivePartnerName(partnerName);
 
   const handleSelectSavedCategory = (cat: UserCategory) => {
-    if (selectedCategoryId === cat.id) {
+    if (selectedCategoryId === cat.id || selectedColor === cat.color) {
       handleResetCategory();
     } else {
       setSelectedCategoryId(cat.id);
@@ -299,44 +299,35 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           />
         </div>
 
-        {/* 3. Категория (готовые базовые категории + «Без категории») */}
+        {/* 3. Цвет карточки (только чистые цветные кружки без текстовых названий) */}
         <div className="create-form-field">
-          <div className="create-form-label-row">
-            <label className="create-form-label">Категория</label>
-            {selectedCategoryId && (
-              <button
-                type="button"
-                className="create-category-reset-link"
-                onClick={handleResetCategory}
-              >
-                Снять категорию
-              </button>
-            )}
-          </div>
+          <label className="create-form-label">Цвет карточки</label>
 
-          <div className="create-category-chips-row" role="radiogroup" aria-label="Выбор категории">
-            {/* Option: Без категории (reset) */}
+          <div
+            className="create-color-dots-row"
+            role="radiogroup"
+            aria-label="Выбор цвета карточки"
+          >
+            {/* Кружок 1: Сброс / «Без цвета» (Без категории) */}
             <button
               type="button"
               role="radio"
-              aria-checked={!selectedCategoryId}
-              className={`create-cat-chip create-cat-chip--none ${
-                !selectedCategoryId ? 'create-cat-chip--active' : ''
+              aria-checked={!selectedColor && !selectedCategoryId}
+              className={`create-color-dot-btn create-color-dot-btn--none ${
+                !selectedColor && !selectedCategoryId ? 'create-color-dot-btn--active' : ''
               }`}
               onClick={handleResetCategory}
-              title="Без категории"
-              aria-label="Без категории"
+              title="Без цвета (Без категории)"
+              aria-label="Без цвета (Без категории)"
             >
-              <span className="create-cat-circle create-cat-circle--none" aria-hidden="true" />
-              <span>Без категории</span>
+              <span className="create-color-dot-slash" aria-hidden="true" />
             </button>
 
-            {/* Ready standard base categories available immediately out of the box */}
+            {/* Доступные цвета категорий: только чистые кружки */}
             {activeCategories.map((cat) => {
-              const isSelected = selectedCategoryId === cat.id;
+              const isSelected = selectedCategoryId ? selectedCategoryId === cat.id : selectedColor === cat.color;
               const contrastText = getContrastColor(cat.color);
-              const hasName = Boolean(cat.name && cat.name.trim());
-              const displayName = hasName && cat.name ? cat.name.trim() : 'Категория';
+              const displayName = cat.name && cat.name.trim() ? cat.name.trim() : `Цвет ${cat.color}`;
 
               return (
                 <button
@@ -344,25 +335,23 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   type="button"
                   role="radio"
                   aria-checked={isSelected}
-                  className={`create-cat-chip ${isSelected ? 'create-cat-chip--active' : ''}`}
+                  className={`create-color-dot-btn ${isSelected ? 'create-color-dot-btn--active' : ''}`}
                   style={{
-                    backgroundColor: isSelected ? cat.color : `${cat.color}1e`,
-                    borderColor: cat.color,
-                    color: isSelected ? contrastText : 'var(--text-primary)',
+                    backgroundColor: cat.color,
                   }}
                   onClick={() => handleSelectSavedCategory(cat)}
                   title={displayName}
                   aria-label={displayName}
                 >
-                  <span
-                    className="create-cat-circle"
-                    style={{
-                      backgroundColor: cat.color,
-                      borderColor: isSelected ? 'rgba(255, 255, 255, 0.9)' : 'transparent',
-                    }}
-                    aria-hidden="true"
-                  />
-                  {hasName && <span className="create-cat-chip__label">{displayName}</span>}
+                  {isSelected && (
+                    <Icon
+                      name="check"
+                      size={14}
+                      strokeWidth={2.8}
+                      className="create-color-dot-check"
+                      style={{ color: contrastText }}
+                    />
+                  )}
                 </button>
               );
             })}

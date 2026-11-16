@@ -96,14 +96,13 @@ test('Сценарий 13: Полное окрашивание карточки 
   assert(reqListCode.includes('requests-color-filter-bar'), 'Фильтр списка использует цветные элементы');
 });
 
-// 9. Календарь: цветовые маркеры вместо текстовых названий категорий
-test('Сценарий 14: Календарь без текстовых названий категорий (цветовые маркеры)', () => {
+// 9. Календарь без громоздкого фильтра + перенос фильтра по цветам в Напоминания
+test('Сценарий 14: Календарь без громоздкого фильтра + цветовые маркеры в Напоминаниях', () => {
   const calCode = fs.readFileSync(path.resolve('src/components/home/HomeCalendar/HomeCalendar.tsx'), 'utf8');
-  assert(calCode.includes('selectedColors'), 'Фильтрация основана на цветах (selectedColors)');
-  assert(calCode.includes('handleToggleColor'), 'Поддерживает выбор одного или нескольких цветов');
-  assert(calCode.includes('handleResetFilters'), 'Поддерживает сброс фильтра');
-  assert(calCode.includes('home-calendar__color-swatch-btn'), 'Цветовые кнопки без текстовых названий категорий');
-  assert(!calCode.includes('<span>{cat.label}</span>'), 'Никаких текстовых названий категорий в фильтре');
+  const reqListCode = fs.readFileSync(path.resolve('src/components/home/RequestsList/RequestsList.tsx'), 'utf8');
+  assert(!calCode.includes('home-calendar__filter-bar'), 'Фильтр по цветам удален из календаря для чистоты интерфейса');
+  assert(reqListCode.includes('selectedColor'), 'Фильтрация по цветам перенесена в RequestsList');
+  assert(reqListCode.includes('requests-color-circle'), 'Компактные цветные кружки фильтра в RequestsList');
   assert(calCode.includes('getCardColorStyles'), 'Карточки событий дня адаптируют контраст под цвет');
 });
 

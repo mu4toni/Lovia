@@ -3,6 +3,7 @@ import { Card } from '../../ui/Card/Card';
 import { Button } from '../../ui/Button/Button';
 import { Icon } from '../../ui/Icon/Icon';
 import { useToast } from '../../ui/Toast/ToastContext';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './UnpairedBanner.css';
 
 export interface UnpairedBannerProps {
@@ -17,13 +18,16 @@ export const UnpairedBanner: React.FC<UnpairedBannerProps> = ({
   className = '',
 }) => {
   const { showToast } = useToast();
+  const { isFriendship } = useSpaceMode();
 
   const handleCopyLink = () => {
     const link = `https://t.me/lovia_bot?start=${inviteCode}`;
     navigator.clipboard?.writeText(link);
     showToast({
       title: 'Ссылка скопирована',
-      message: 'Отправьте её вашему партнёру в Telegram',
+      message: isFriendship
+        ? 'Отправьте её вашему другу в Telegram'
+        : 'Отправьте её вашему партнёру в Telegram',
       type: 'love',
     });
   };
@@ -31,16 +35,25 @@ export const UnpairedBanner: React.FC<UnpairedBannerProps> = ({
   return (
     <Card variant="solid" className={`unpaired-banner ${className}`}>
       <div className="unpaired-banner__icon-wrap" aria-hidden="true">
-        <Icon name="heart" size={28} className="unpaired-banner__icon" />
+        <Icon
+          name={isFriendship ? 'sparkles' : 'heart'}
+          size={28}
+          className="unpaired-banner__icon"
+        />
       </div>
-      <h2 className="unpaired-banner__title">Пригласите партнёра</h2>
+      <h2 className="unpaired-banner__title">
+        {isFriendship ? 'Пригласите друга' : 'Пригласите партнёра'}
+      </h2>
       <p className="unpaired-banner__desc">
-        Lovia создано для двоих. Отправьте приглашение, чтобы синхронизировать
-        общие напоминания, отмечать памятные даты и планировать свидания.
+        {isFriendship
+          ? 'Lovia создано для двоих. Отправьте приглашение, чтобы синхронизировать совместные списки, важные даты и встречи.'
+          : 'Lovia создано для двоих. Отправьте приглашение, чтобы синхронизировать общие напоминания, отмечать памятные даты и планировать свидания.'}
       </p>
 
       <div className="unpaired-banner__code-box">
-        <span className="unpaired-banner__code-label">Код пары:</span>
+        <span className="unpaired-banner__code-label">
+          {isFriendship ? 'Код дружбы:' : 'Код пары:'}
+        </span>
         <code className="unpaired-banner__code">{inviteCode}</code>
       </div>
 
@@ -51,7 +64,7 @@ export const UnpairedBanner: React.FC<UnpairedBannerProps> = ({
           leftIcon={<Icon name="copy" size={16} />}
           onClick={handleCopyLink}
         >
-          Скопировать ссылку для пары
+          {isFriendship ? 'Скопировать ссылку для друга' : 'Скопировать ссылку для пары'}
         </Button>
         <Button
           variant="secondary"

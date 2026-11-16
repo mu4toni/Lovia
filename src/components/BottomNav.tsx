@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Icon, IconName } from './ui/Icon/Icon';
 import { telegramService } from '../services/telegramService';
+import { useSpaceMode } from '../hooks/useSpaceMode';
 import './BottomNav.css';
 
 interface NavItem {
@@ -10,15 +11,26 @@ interface NavItem {
   isFeatured?: boolean;
 }
 
-const navItems: NavItem[] = [
-  { to: '/', label: 'Дом', icon: 'home' },
-  { to: '/wishlist', label: 'Вишлисты', icon: 'wishlist' },
-  { to: '/relationship', label: 'Отношения', icon: 'relationship', isFeatured: true },
-  { to: '/dates', label: 'Свидания', icon: 'dates' },
-  { to: '/profile', label: 'Профиль', icon: 'profile' },
-];
-
 export function BottomNav() {
+  const { isFriendship } = useSpaceMode();
+
+  const navItems: NavItem[] = [
+    { to: '/', label: 'Дом', icon: 'home' },
+    { to: '/wishlist', label: 'Вишлисты', icon: 'wishlist' },
+    {
+      to: '/relationship',
+      label: isFriendship ? 'Дружба' : 'Отношения',
+      icon: isFriendship ? 'sparkles' : 'relationship',
+      isFeatured: true,
+    },
+    {
+      to: '/dates',
+      label: isFriendship ? 'Встречи' : 'Свидания',
+      icon: 'dates',
+    },
+    { to: '/profile', label: 'Профиль', icon: 'profile' },
+  ];
+
   return (
     <nav className="bottom-nav" aria-label="Основная навигация">
       <div className="bottom-nav__dock">

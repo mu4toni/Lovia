@@ -7,7 +7,7 @@ import { DatePicker } from '../components/ui/DatePicker/DatePicker';
 import { Icon } from '../components/ui/Icon/Icon';
 import { Mascot } from '../components/ui/Mascot/Mascot';
 import { useToast } from '../components/ui/Toast/ToastContext';
-import { coupleService, CoupleSpace, RegisteredUser } from '../services/coupleService';
+import { coupleService, CoupleSpace, RegisteredUser, SpaceType } from '../services/coupleService';
 import { telegramService } from '../services/telegramService';
 import { getTodayDateString } from '../utils/dateCalculations';
 import { copyTextToClipboard } from '../utils/clipboard';
@@ -38,6 +38,7 @@ export function OnboardingPage() {
   });
   const [nameError, setNameError] = useState<string | null>(null);
   const [gender, setGender] = useState<'male' | 'female' | undefined>(currentUser.gender);
+  const [spaceType, setSpaceType] = useState<SpaceType>('relationship');
   const [startDate, setStartDate] = useState<string>(() => getTodayDateString());
 
   // Deep-link invite code from Telegram start_param (e.g. t.me/bot/app?startapp=CODE)
@@ -129,12 +130,16 @@ export function OnboardingPage() {
         name: validName,
         gender,
         startDate,
+        spaceType,
       });
       telegramService.hapticNotification('success');
       setCurrentCouple(couple);
       showToast({
-        title: 'Код пары создан!',
-        message: 'Отправьте код вашему партнёру для совместного подключения',
+        title: spaceType === 'friendship' ? 'Код дружбы создан!' : 'Код пары создан!',
+        message:
+          spaceType === 'friendship'
+            ? 'Отправьте код вашему другу для совместного подключения'
+            : 'Отправьте код вашему партнёру для совместного подключения',
         type: 'love',
       });
     } catch (err: unknown) {
@@ -219,6 +224,8 @@ export function OnboardingPage() {
   };
 
   const isWaitingPartner = Boolean(currentCouple && currentCouple.status === 'waiting_partner');
+  const activeSpaceType: SpaceType = currentCouple?.spaceType || spaceType;
+  const isFriendship = activeSpaceType === 'friendship';
 
   return (
     <div className="onboarding-page" data-testid="onboarding-page">
@@ -232,19 +239,21 @@ export function OnboardingPage() {
           </div>
           <div className="onboarding-hero__badge">
             <span className="onboarding-hero__logo-icon" aria-hidden="true">
-              <Icon name="heart-filled" size={16} />
+              <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={16} />
             </span>
             <span className="onboarding-hero__brand">Lovia</span>
           </div>
 
           <h1 className="onboarding-hero__title">Давайте знакомиться</h1>
           <p className="onboarding-hero__subtitle">
-            Создадим ваше маленькое общее пространство
+            {isFriendship
+              ? 'Создадим ваше тёплое пространство дружбы'
+              : 'Создадим ваше маленькое общее пространство'}
           </p>
         </header>
 
         {/* ================================================================= */}
-        {/* Блок 2. Имя пользователя + Блок 3. Выбор пола                     */}
+        {/* Блок 2. Имя пользователя + Блок 3. Выбор пола + Формат           */}
         {/* ================================================================= */}
         <Card variant="solid" className="onboarding-card">
           <div className="onboarding-field">
@@ -313,23 +322,85 @@ export function OnboardingPage() {
               </button>
             </div>
           </div>
+
+          {!isWaitingPartner && (
+            <div className="onboarding-field">
+              <label className="onboarding-label">Формат пространства</label>
+              <div
+                className="onboarding-gender-selector"
+                role="radiogroup"
+                aria-label="Выберите формат пространства"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={spaceType === 'relationship'}
+                  className={`onboarding-gender-pill ${
+                    spaceType === 'relationship' ? 'onboarding-gender-pill--active' : ''
+                  }`}
+                  onClick={() => setSpaceType('relationship')}
+                >
+                  <span className="onboarding-gender-icon" aria-hidden="true">
+                    <Icon name="heart" size={16} />
+                  </span>
+                  <span className="onboarding-gender-text">Отношения</span>
+                  {spaceType === 'relationship' && (
+                    <span className="onboarding-gender-check" aria-hidden="true">
+                      <Icon name="check" size={12} strokeWidth={2.8} />
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={spaceType === 'friendship'}
+                  className={`onboarding-gender-pill ${
+                    spaceType === 'friendship' ? 'onboarding-gender-pill--active' : ''
+                  }`}
+                  onClick={() => setSpaceType('friendship')}
+                >
+                  <span className="onboarding-gender-icon" aria-hidden="true">
+                    <Icon name="sparkles" size={16} />
+                  </span>
+                  <span className="onboarding-gender-text">Дружба</span>
+                  {spaceType === 'friendship' && (
+                    <span className="onboarding-gender-check" aria-hidden="true">
+                      <Icon name="check" size={12} strokeWidth={2.8} />
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* ================================================================= */}
-        {/* Блок 4. Создание и подключение пары                               */}
+        {/* Блок 4. Создание и подключение пары / пространства                */}
         {/* ================================================================= */}
-        <section className="onboarding-actions-section" aria-label="Создание и подключение пары">
-          {/* 4.1. Создать новую пару / Отображение созданного кода */}
+        <section
+          className="onboarding-actions-section"
+          aria-label={isFriendship ? 'Создание и подключение дружбы' : 'Создание и подключение пары'}
+        >
+          {/* 4.1. Создать новую пару / пространство дружбы */}
           {!isWaitingPartner ? (
             <Card variant="solid" className="onboarding-card onboarding-action-card">
               <div className="onboarding-action-card__header">
                 <div className="onboarding-action-card__icon-wrap">
-                  <Icon name="heart" size={20} className="onboarding-action-card__icon" />
+                  <Icon
+                    name={isFriendship ? 'sparkles' : 'heart'}
+                    size={20}
+                    className="onboarding-action-card__icon"
+                  />
                 </div>
                 <div className="onboarding-action-card__text">
-                  <h2 className="onboarding-action-card__title">Создать наше пространство</h2>
+                  <h2 className="onboarding-action-card__title">
+                    {isFriendship ? 'Создать пространство дружбы' : 'Создать наше пространство'}
+                  </h2>
                   <p className="onboarding-action-card__desc">
-                    Создайте свою пару и пригласите партнёра присоединиться
+                    {isFriendship
+                      ? 'Создайте общее пространство и пригласите друга присоединиться'
+                      : 'Создайте свою пару и пригласите партнёра присоединиться'}
                   </p>
                 </div>
               </div>
@@ -343,7 +414,7 @@ export function OnboardingPage() {
 
               <div className="onboarding-field" style={{ marginBottom: '16px' }}>
                 <DatePicker
-                  label="Когда вы начали встречаться?"
+                  label={isFriendship ? 'Когда вы начали дружить?' : 'Когда вы начали встречаться?'}
                   value={startDate}
                   maxDate={getTodayDateString()}
                   onChange={setStartDate}
@@ -361,20 +432,32 @@ export function OnboardingPage() {
                 className="onboarding-create-btn"
                 leftIcon={<Icon name="sparkles" size={17} />}
               >
-                {isCreating ? 'Создание кода...' : 'Создать код пары'}
+                {isCreating
+                  ? 'Создание кода...'
+                  : isFriendship
+                  ? 'Создать код дружбы'
+                  : 'Создать код пары'}
               </Button>
             </Card>
           ) : (
-            /* Отображение уже созданного кода пары (включая повторный вход) */
+            /* Отображение уже созданного кода */
             <Card variant="solid" className="onboarding-card onboarding-code-display-card">
               <div className="onboarding-code-status-pill">
                 <span className="onboarding-status-dot" aria-hidden="true" />
-                <span>Ожидание подключения партнёра</span>
+                <span>
+                  {isFriendship
+                    ? 'Ожидание подключения друга'
+                    : 'Ожидание подключения партнёра'}
+                </span>
               </div>
 
-              <h2 className="onboarding-code-heading">Код вашей пары</h2>
+              <h2 className="onboarding-code-heading">
+                {isFriendship ? 'Код вашей дружбы' : 'Код вашей пары'}
+              </h2>
               <p className="onboarding-code-subheading">
-                Отправьте этот уникальный код вашему партнёру. Как только он введёт его, вы сразу окажетесь в общем пространстве.
+                {isFriendship
+                  ? 'Отправьте этот уникальный код вашему другу. Как только он введёт его, вы сразу окажетесь в общем пространстве.'
+                  : 'Отправьте этот уникальный код вашему партнёру. Как только он введёт его, вы сразу окажетесь в общем пространстве.'}
               </p>
 
               <div className="onboarding-code-banner">
@@ -398,7 +481,9 @@ export function OnboardingPage() {
                   className="onboarding-cancel-waiting-btn"
                   onClick={handleCancelWaiting}
                 >
-                  Отменить и ввести код партнёра
+                  {isFriendship
+                    ? 'Отменить и ввести код друга'
+                    : 'Отменить и ввести код партнёра'}
                 </button>
               </div>
 
@@ -424,9 +509,13 @@ export function OnboardingPage() {
                   <Icon name="tag" size={18} className="onboarding-join-toggle__icon" />
                 </div>
                 <div className="onboarding-join-toggle__text">
-                  <h3 className="onboarding-join-toggle__title">Уже есть код пары?</h3>
+                  <h3 className="onboarding-join-toggle__title">
+                    {isFriendship ? 'Уже есть код дружбы?' : 'Уже есть код пары?'}
+                  </h3>
                   <p className="onboarding-join-toggle__desc">
-                    Введите код, который отправил вам партнёр
+                    {isFriendship
+                      ? 'Введите код, который отправил вам друг'
+                      : 'Введите код, который отправил вам партнёр'}
                   </p>
                 </div>
               </div>
@@ -444,7 +533,9 @@ export function OnboardingPage() {
               <form onSubmit={handleJoinCouple} className="onboarding-join-form">
                 <div className="onboarding-join-input-wrap">
                   <label htmlFor="join-code-input" className="onboarding-label">
-                    Код приглашения от партнёра
+                    {isFriendship
+                      ? 'Код приглашения от друга'
+                      : 'Код приглашения от партнёра'}
                   </label>
                   <Input
                     id="join-code-input"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { WishlistTab } from '../../../types/wishlist';
 import { Avatar } from '../../../components/ui/Avatar/Avatar';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './WishlistHeader.css';
 
 export interface WishlistHeaderProps {
@@ -48,10 +49,11 @@ export const WishlistHeader: React.FC<WishlistHeaderProps> = ({
   isOwnList,
   className = '',
 }) => {
-  const currentOwnerName = isOwnList ? userName : partnerName;
+  const { isFriendship } = useSpaceMode();
+  const currentOwnerName = isOwnList ? userName : (partnerName || (isFriendship ? 'Друг' : 'Партнёр'));
   const currentAvatarUrl = isOwnList ? userAvatarUrl : partnerAvatarUrl;
   const currentCount = isOwnList ? myItemsCount : partnerItemsCount;
-  const partnerGenitive = toGenitive(partnerName);
+  const partnerGenitive = partnerName ? toGenitive(partnerName) : (isFriendship ? 'друга' : 'партнёра');
 
   const countWord =
     currentCount === 1

@@ -1,5 +1,6 @@
 import { MemorableDate } from '../types/relationship';
 import { calculateDaysTogether, getAnniversaryInfo } from '../utils/dateCalculations';
+import { coupleService } from './coupleService';
 
 export type CelebrationType = 'anniversary' | 'milestone' | 'monthiversary' | 'memorable_date';
 
@@ -46,13 +47,19 @@ export function checkTodayCelebration(
 
   const anniversary = getAnniversaryInfo(startDate);
 
+  const isFriendship = coupleService.getSpaceType() === 'friendship';
+
   // 2. Yearly Anniversary (1 year, 2 years, etc.)
   if (anniversary.isToday && anniversary.yearsTogether >= 1 && daysTogether >= 365) {
     return {
       key: `anniversary_${anniversary.yearsTogether}`,
       type: 'anniversary',
-      title: `С ${anniversary.yearsTogether}-й годовщиной!`,
-      subtitle: `${daysTogether} дней счастливой совместной истории`,
+      title: isFriendship
+        ? `С ${anniversary.yearsTogether}-й годовщиной дружбы!`
+        : `С ${anniversary.yearsTogether}-й годовщиной!`,
+      subtitle: isFriendship
+        ? `${daysTogether} дней крепкой дружбы и взаимной поддержки`
+        : `${daysTogether} дней счастливой совместной истории`,
       dateStr: todayStr,
       yearsTogether: anniversary.yearsTogether,
       daysTogether,
@@ -65,8 +72,12 @@ export function checkTodayCelebration(
     return {
       key: `milestone_${daysTogether}`,
       type: 'milestone',
-      title: `Сегодня ровно ${daysTogether} дней вместе!`,
-      subtitle: 'Прекрасная круглая веха вашей любви',
+      title: isFriendship
+        ? `Сегодня ровно ${daysTogether} дней дружбы!`
+        : `Сегодня ровно ${daysTogether} дней вместе!`,
+      subtitle: isFriendship
+        ? 'Прекрасная круглая веха вашей дружбы'
+        : 'Прекрасная круглая веха вашей любви',
       dateStr: todayStr,
       daysTogether,
       burstCount: 6,

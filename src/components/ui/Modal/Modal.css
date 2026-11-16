@@ -28,6 +28,8 @@
   border-top-left-radius: var(--radius-xl);
   border-top-right-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  max-height: 90vh;
+  max-height: 90dvh;
   max-height: calc(100dvh - var(--tg-total-top-inset, env(safe-area-inset-top, 0px)) - 16px);
   display: flex;
   flex-direction: column;
@@ -141,7 +143,9 @@
 
 @media (max-width: 480px) {
   .modal-sheet {
-    max-height: calc(100dvh - var(--tg-total-top-inset, env(safe-area-inset-top, 0px)) - 16px);
+    max-height: 90vh;
+  max-height: 90dvh;
+  max-height: calc(100dvh - var(--tg-total-top-inset, env(safe-area-inset-top, 0px)) - 16px);
     border-top-left-radius: var(--radius-lg);
     border-top-right-radius: var(--radius-lg);
   }

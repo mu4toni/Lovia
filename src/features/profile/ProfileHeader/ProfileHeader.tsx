@@ -5,6 +5,7 @@ import { Avatar } from '../../../components/ui/Avatar/Avatar';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatMonthYearGenitive } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import { AvatarCropModal } from '../AvatarCropModal/AvatarCropModal';
 import './ProfileHeader.css';
 
@@ -24,6 +25,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onUpdateAvatar,
 }) => {
   const navigate = useNavigate();
+  const { isFriendship } = useSpaceMode();
   const [isEditingInline, setIsEditingInline] = useState(false);
   const [nameInput, setNameInput] = useState(user.name);
   const [rawImageForCrop, setRawImageForCrop] = useState<string | null>(null);
@@ -191,20 +193,24 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     navigate('/relationship');
                   }
                 }}
-                title="Перейти в раздел Отношения"
-                aria-label={`В паре с ${partnerName}. Нажмите для перехода в Отношения.`}
+                title={isFriendship ? 'Перейти в раздел Дружба' : 'Перейти в раздел Отношения'}
+                aria-label={
+                  isFriendship
+                    ? `Друзья с ${partnerName}. Нажмите для перехода в Дружбу.`
+                    : `В паре с ${partnerName}. Нажмите для перехода в Отношения.`
+                }
               >
                 <span className="profile-hero-dot" aria-hidden="true" />
-                <span>В паре с {partnerName}</span>
+                <span>{isFriendship ? `Друзья с ${partnerName}` : `В паре с ${partnerName}`}</span>
                 <span className="profile-hero-heart">
-                  <Icon name="heart-filled" size={12} />
+                  <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={12} />
                 </span>
                 <Icon name="chevron-right" size={12} className="profile-hero-chevron" />
               </span>
             ) : (
               <span className="profile-hero-card__badge profile-hero-card__badge--unpaired">
                 <span className="profile-hero-dot profile-hero-dot--offline" aria-hidden="true" />
-                <span>Партнёр не подключён</span>
+                <span>{isFriendship ? 'Друг не подключён' : 'Партнёр не подключён'}</span>
               </span>
             )}
           </div>

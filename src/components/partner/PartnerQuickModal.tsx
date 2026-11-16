@@ -5,6 +5,7 @@ import { Avatar } from '../ui/Avatar/Avatar';
 import { Icon } from '../ui/Icon/Icon';
 import { pluralizeRu } from '../../utils/dateCalculations';
 import { telegramService } from '../../services/telegramService';
+import { useSpaceMode } from '../../hooks/useSpaceMode';
 import './PartnerQuickModal.css';
 
 export interface PartnerQuickModalProps {
@@ -25,6 +26,7 @@ export const PartnerQuickModal: React.FC<PartnerQuickModalProps> = ({
   daysTogether,
 }) => {
   const navigate = useNavigate();
+  const { isFriendship } = useSpaceMode();
   const effectiveAvatar = avatarUrl || partnerAvatar;
   const daysLabel = pluralizeRu(daysTogether, 'день', 'дня', 'дней');
 
@@ -41,7 +43,11 @@ export const PartnerQuickModal: React.FC<PartnerQuickModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="О партнёре">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isFriendship ? 'О друге' : 'О партнёре'}
+    >
       <div className="partner-quick-modal" role="region" aria-label={`Профиль ${partnerName}`}>
         {/* Avatar */}
         <div className="partner-quick-modal__avatar-wrap">
@@ -54,9 +60,9 @@ export const PartnerQuickModal: React.FC<PartnerQuickModalProps> = ({
 
         {/* Days Box */}
         <div className="partner-quick-modal__days-box">
-          <Icon name="heart-filled" size={15} />
+          <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={15} />
           <span>
-            Вместе уже <strong>{daysTogether}</strong> {daysLabel}
+            {isFriendship ? 'Дружим уже ' : 'Вместе уже '}<strong>{daysTogether}</strong> {daysLabel}
           </span>
         </div>
 
@@ -72,7 +78,7 @@ export const PartnerQuickModal: React.FC<PartnerQuickModalProps> = ({
               <span className="partner-quick-modal__btn-icon">
                 <Icon name="gift" size={17} />
               </span>
-              <span>Вишлист партнёра</span>
+              <span>{isFriendship ? 'Вишлист друга' : 'Вишлист партнёра'}</span>
             </div>
             <Icon name="chevron-right" size={16} className="partner-quick-modal__chevron" />
           </button>
@@ -81,13 +87,13 @@ export const PartnerQuickModal: React.FC<PartnerQuickModalProps> = ({
             type="button"
             className="partner-quick-modal__btn"
             onClick={handleOpenHistory}
-            aria-label="Перейти в хронологию отношений"
+            aria-label={isFriendship ? 'Перейти в хронологию дружбы' : 'Перейти в хронологию отношений'}
           >
             <div className="partner-quick-modal__btn-content">
               <span className="partner-quick-modal__btn-icon">
                 <Icon name="calendar" size={17} />
               </span>
-              <span>Наша история и даты</span>
+              <span>{isFriendship ? 'Наша дружба и встречи' : 'Наша история и даты'}</span>
             </div>
             <Icon name="chevron-right" size={16} className="partner-quick-modal__chevron" />
           </button>

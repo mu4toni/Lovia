@@ -259,16 +259,27 @@ class DateMemoryService {
         throw new Error('Ошибка БД: ' + error.message);
       }
 
-      const mapped: DateMemory[] = (data || []).map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        date: row.date,
-        place: row.place || undefined,
-        location: row.location_data || undefined,
-        story: row.story || undefined,
-        photos: Array.isArray(row.photos) ? row.photos : [],
-        createdAt: row.created_at,
-      }));
+      const mapped: DateMemory[] = (data || []).map((row: any) => {
+        let rawLoc = row.location_data ?? row.location;
+        if (typeof rawLoc === 'string') {
+          try {
+            rawLoc = JSON.parse(rawLoc);
+          } catch {
+            rawLoc = undefined;
+          }
+        }
+
+        return {
+          id: row.id,
+          title: row.title,
+          date: row.date,
+          place: row.place || undefined,
+          location: rawLoc && typeof rawLoc === 'object' ? rawLoc : undefined,
+          story: row.story || undefined,
+          photos: Array.isArray(row.photos) ? row.photos : [],
+          createdAt: row.created_at,
+        };
+      });
 
       try {
         localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(mapped));

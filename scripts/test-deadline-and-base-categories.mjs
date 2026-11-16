@@ -44,11 +44,13 @@ test('3. CreateRequestModal: убрана заглушка, доступны б�
   assert(modalTsx.includes('DEFAULT_BASE_CATEGORIES'), 'Подключены базовые категории из коробки');
 });
 
-// 4. HomeCalendar: фильтр по базовым категориям
-test('4. HomeCalendar: фильтр по 3 базовым цветам совпадает с категориями в напоминаниях', () => {
+// 4. RequestsList: фильтр по 3 базовым цветам совпадает с категориями в напоминаниях
+test('4. RequestsList: фильтр по 3 базовым цветам совпадает с категориями в напоминаниях, а из HomeCalendar удален', () => {
+  const reqTsx = fs.readFileSync('src/components/home/RequestsList/RequestsList.tsx', 'utf8');
   const calTsx = fs.readFileSync('src/components/home/HomeCalendar/HomeCalendar.tsx', 'utf8');
-  assert(calTsx.includes('DEFAULT_BASE_CATEGORIES'), 'HomeCalendar использует DEFAULT_BASE_CATEGORIES');
-  assert(calTsx.includes('filterColors'), 'Используется вычисление цветов фильтра');
+  assert(reqTsx.includes('DEFAULT_BASE_CATEGORIES'), 'RequestsList использует DEFAULT_BASE_CATEGORIES');
+  assert(reqTsx.includes('filterColors'), 'В RequestsList используется вычисление цветов фильтра');
+  assert(!calTsx.includes('home-calendar__filter-bar'), 'Из HomeCalendar удален блок фильтра по цветам');
 });
 
 // 5. DeadlineSelector: строго взаимоисключающие режимы 'none' | 'today' | 'custom'

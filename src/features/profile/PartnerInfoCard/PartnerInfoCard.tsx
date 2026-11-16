@@ -6,6 +6,7 @@ import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatRussianDate, calculateDaysTogether } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
 import { PartnerQuickModal } from '../../../components/partner/PartnerQuickModal';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './PartnerInfoCard.css';
 
 export interface PartnerInfoCardProps {
@@ -15,6 +16,7 @@ export interface PartnerInfoCardProps {
 
 export const PartnerInfoCard: React.FC<PartnerInfoCardProps> = ({ partner, startDate }) => {
   const navigate = useNavigate();
+  const { isFriendship } = useSpaceMode();
   const [isQuickModalOpen, setIsQuickModalOpen] = useState(false);
   const daysTogether = calculateDaysTogether(startDate);
 
@@ -25,7 +27,10 @@ export const PartnerInfoCard: React.FC<PartnerInfoCardProps> = ({ partner, start
 
   return (
     <>
-      <section className="partner-info-card" aria-label="Совместное пространство">
+      <section
+        className="partner-info-card"
+        aria-label={isFriendship ? 'Совместное пространство дружбы' : 'Совместное пространство'}
+      >
         <div
           className="partner-info-card__top"
           role="button"
@@ -37,7 +42,11 @@ export const PartnerInfoCard: React.FC<PartnerInfoCardProps> = ({ partner, start
               handleOpenPartnerModal();
             }
           }}
-          aria-label={`Профиль партнёра: ${partner.name}. Нажмите для подробностей`}
+          aria-label={
+            isFriendship
+              ? `Профиль друга: ${partner.name}. Нажмите для подробностей`
+              : `Профиль партнёра: ${partner.name}. Нажмите для подробностей`
+          }
         >
           {/* Partner Avatar */}
           <div className="partner-info-card__avatar-wrap">
@@ -48,14 +57,16 @@ export const PartnerInfoCard: React.FC<PartnerInfoCardProps> = ({ partner, start
 
           <div className="partner-info-card__details">
             <div className="partner-info-card__status-line">
-              <span className="partner-info-card__tag">ПАРТНЁР</span>
+              <span className="partner-info-card__tag">
+                {isFriendship ? 'ДРУГ' : 'ПАРТНЁР'}
+              </span>
             </div>
 
             <h2 className="partner-info-card__name">{partner.name}</h2>
 
             <div className="partner-info-card__date-pill">
               <Icon name="calendar" size={12} className="partner-date-icon" />
-              <span>Вместе с {formatRussianDate(startDate)}</span>
+              <span>{isFriendship ? 'Дружим с' : 'Вместе с'} {formatRussianDate(startDate)}</span>
             </div>
           </div>
 
@@ -73,11 +84,15 @@ export const PartnerInfoCard: React.FC<PartnerInfoCardProps> = ({ partner, start
               telegramService.hapticImpact('light');
               navigate('/relationship');
             }}
-            aria-label="Открыть историю отношений"
+            aria-label={isFriendship ? 'Открыть историю дружбы' : 'Открыть историю отношений'}
           >
             <div className="partner-info-card__btn-left">
-              <Icon name="heart-filled" size={15} className="partner-action-icon" />
-              <span>Наша история и даты</span>
+              <Icon
+                name={isFriendship ? 'sparkles' : 'heart-filled'}
+                size={15}
+                className="partner-action-icon"
+              />
+              <span>{isFriendship ? 'Наша дружба и встречи' : 'Наша история и даты'}</span>
             </div>
             <Icon name="chevron-right" size={15} className="partner-action-chevron" />
           </button>

@@ -7,6 +7,9 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
   user-select: none;
   -webkit-user-select: none;
   transform-origin: center bottom;

@@ -12,6 +12,9 @@
   align-items: center;
   justify-content: center;
   margin-bottom: var(--space-md);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }

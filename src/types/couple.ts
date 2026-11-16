@@ -1,3 +1,5 @@
+export type SpaceType = 'relationship' | 'friendship';
+
 export interface User {
   id: string;
   name: string;
@@ -19,4 +21,5 @@ export interface CoupleProfile {
   daysTogether: number;
   inviteCode: string;
   motto?: string;
+  spaceType?: SpaceType;
 }

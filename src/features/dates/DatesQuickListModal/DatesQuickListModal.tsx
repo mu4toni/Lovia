@@ -4,6 +4,7 @@ import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatRussianDate, pluralizeRu } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DatesQuickListModal.css';
 
 export interface DatesQuickListModalProps {
@@ -19,13 +20,16 @@ export const DatesQuickListModal: React.FC<DatesQuickListModalProps> = ({
   memories,
   onSelectMemory,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const sortedMemories = useMemo(() => {
     return [...memories].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   }, [memories]);
 
-  const countLabel = pluralizeRu(sortedMemories.length, 'свидание', 'свидания', 'свиданий');
+  const countLabel = isFriendship
+    ? pluralizeRu(sortedMemories.length, 'встреча', 'встречи', 'встреч')
+    : pluralizeRu(sortedMemories.length, 'свидание', 'свидания', 'свиданий');
 
   const handleItemClick = (memory: DateMemory) => {
     telegramService.hapticImpact('light');
@@ -36,7 +40,7 @@ export const DatesQuickListModal: React.FC<DatesQuickListModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Список свиданий"
+      title={isFriendship ? 'Список встреч' : 'Список свиданий'}
       className="dates-quick-list-modal"
     >
       <div className="dates-quick-list">
@@ -53,9 +57,13 @@ export const DatesQuickListModal: React.FC<DatesQuickListModalProps> = ({
             <div className="dates-quick-list__empty-icon" aria-hidden="true">
               <Icon name="calendar" size={32} />
             </div>
-            <p className="dates-quick-list__empty-title">Пока нет сохранённых свиданий</p>
+            <p className="dates-quick-list__empty-title">
+              {isFriendship ? 'Пока нет сохранённых встреч' : 'Пока нет сохранённых свиданий'}
+            </p>
             <p className="dates-quick-list__empty-desc">
-              Добавляйте романтические встречи, чтобы создать красивую хронологию ваших моментов
+              {isFriendship
+                ? 'Добавляйте совместные встречи и прогулки, чтобы создать хронологию ваших моментов'
+                : 'Добавляйте романтические встречи, чтобы создать красивую хронологию ваших моментов'}
             </p>
           </div>
         ) : (
@@ -71,10 +79,20 @@ export const DatesQuickListModal: React.FC<DatesQuickListModalProps> = ({
                   type="button"
                   className="dates-quick-list__item"
                   onClick={() => handleItemClick(memory)}
-                  title={`Открыть свидание «${memory.title}»`}
-                  aria-label={`Свидание «${memory.title}», ${formatRussianDate(memory.date)}${
-                    placeName ? `, место: ${placeName}` : ''
-                  }`}
+                  title={
+                    isFriendship
+                      ? `Открыть встречу «${memory.title}»`
+                      : `Открыть свидание «${memory.title}»`
+                  }
+                  aria-label={
+                    isFriendship
+                      ? `Встреча «${memory.title}», ${formatRussianDate(memory.date)}${
+                          placeName ? `, место: ${placeName}` : ''
+                        }`
+                      : `Свидание «${memory.title}», ${formatRussianDate(memory.date)}${
+                          placeName ? `, место: ${placeName}` : ''
+                        }`
+                  }
                 >
                   <div className="dates-quick-list__thumb-wrap">
                     {firstPhoto ? (

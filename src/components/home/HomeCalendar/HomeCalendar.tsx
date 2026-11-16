@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { CalendarViewMode, CoupleEvent, CoupleReminder } from '../../../types';
-import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
+import { UserCategory } from '../../../types/category';
 import { Card } from '../../ui/Card/Card';
 import { DateBadge } from '../../ui/CalendarStrip/DateBadge';
 import { Icon } from '../../ui/Icon/Icon';
-import { getCardColorStyles, getRelativeLuminance } from '../../../utils/colorContrast';
+import { getCardColorStyles } from '../../../utils/colorContrast';
 import {
   formatLocalDate,
   isSameDay,
@@ -36,13 +36,12 @@ interface CalendarMonthCell {
 export const HomeCalendar: React.FC<HomeCalendarProps> = ({
   events,
   requests = [],
-  categories = [],
+  categories: _categories = [],
   selectedDate,
   onSelectDate,
   className = '',
 }) => {
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   // Navigation viewing month (independent from selectedDate)
   const [viewMonth, setViewMonth] = useState<Date>(() => {
@@ -125,39 +124,6 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
     return requests.filter((r) => r.status !== 'completed');
   }, [requests]);
 
-  // Collect all available colors for filtering: 3 standard base colors/categories + colors in active reminders
-  const filterColors = useMemo(() => {
-    return Array.from(
-      new Set([
-        ...DEFAULT_BASE_CATEGORIES.map((c) => c.color),
-        ...categories.map((c) => c.color).filter(Boolean),
-        ...activeRequests.map((r) => r.categoryColor).filter(Boolean) as string[],
-      ])
-    );
-  }, [activeRequests, categories]);
-
-  // Color filter handlers (multi-select supported)
-  const handleToggleColor = (colorHex: string) => {
-    setSelectedColors((prev) => {
-      const lower = colorHex.toLowerCase();
-      if (prev.some((c) => c.toLowerCase() === lower)) {
-        return prev.filter((c) => c.toLowerCase() !== lower);
-      } else {
-        return [...prev, colorHex];
-      }
-    });
-  };
-
-  const handleResetFilters = () => {
-    setSelectedColors([]);
-  };
-
-  const matchesColorFilter = (itemColor?: string) => {
-    if (selectedColors.length === 0) return true;
-    if (!itemColor) return false;
-    return selectedColors.some((c) => c.toLowerCase() === itemColor.toLowerCase());
-  };
-
   // Convert dated active requests into unified calendar items if they match the date
   const datedRequestsOnDay = useMemo(() => {
     return activeRequests
@@ -203,14 +169,10 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
     return [...validEvents, ...datedRequestsOnDay];
   }, [events, selectedDateStr, datedRequestsOnDay, activeRequests, requests]);
 
-  const filteredDayItems = useMemo(() => {
-    return dayEvents.filter((item) => matchesColorFilter(item.categoryColor));
-  }, [dayEvents, selectedColors]);
-
   // Find reminder colors on any date string for active reminders only
   const getReminderColorsOnDate = (dateStr: string): string[] => {
     const matching = activeRequests.filter(
-      (r) => r.dueDate && r.dueDate.startsWith(dateStr) && matchesColorFilter(r.categoryColor)
+      (r) => r.dueDate && r.dueDate.startsWith(dateStr)
     );
     const colors = matching.map((r) => r.categoryColor).filter(Boolean) as string[];
     return Array.from(new Set(colors));
@@ -508,87 +470,8 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
           </div>
         )}
 
-        {/* 3. Color Markers Filter Bar (Zero text category names) */}
-        <div
-          className="home-calendar__filter-bar"
-          role="toolbar"
-          aria-label="Фильтрация напоминаний по цветам"
-        >
-          <div className="home-calendar__filter-header">
-            <span className="home-calendar__filter-title">Фильтр по цветам</span>
-            {selectedColors.length > 0 && (
-              <button
-                type="button"
-                className="home-calendar__filter-reset"
-                onClick={handleResetFilters}
-              >
-                Сбросить ({selectedColors.length})
-              </button>
-            )}
-          </div>
 
-          <div
-            className="home-calendar__filter-chips"
-            role="group"
-            aria-label="Цветовые маркеры"
-          >
-            {/* 'Все' filter button */}
-            <button
-              type="button"
-              className={`home-calendar__color-filter-btn home-calendar__color-filter-btn--all ${
-                selectedColors.length === 0
-                  ? 'home-calendar__color-filter-btn--all-active'
-                  : ''
-              }`}
-              onClick={handleResetFilters}
-              aria-pressed={selectedColors.length === 0}
-            >
-              Все
-            </button>
-
-            {/* Compact Color Circles (No text category names!) */}
-            {filterColors.map((colorHex) => {
-              const active = selectedColors.some(
-                (c) => c.toLowerCase() === colorHex.toLowerCase()
-              );
-              const isLight = getRelativeLuminance(colorHex) > 0.42;
-              const checkColor = isLight ? '#171717' : '#FFFFFF';
-              const matchedCat =
-                categories.find(
-                  (c) => c.color.toLowerCase() === colorHex.toLowerCase()
-                ) ||
-                DEFAULT_BASE_CATEGORIES.find(
-                  (c) => c.color.toLowerCase() === colorHex.toLowerCase()
-                );
-
-              return (
-                <button
-                  key={colorHex}
-                  type="button"
-                  aria-pressed={active}
-                  aria-label={`Фильтровать по цвету ${colorHex}`}
-                  title={matchedCat?.name || `Цвет ${colorHex}`}
-                  onClick={() => handleToggleColor(colorHex)}
-                  className={`home-calendar__color-swatch-btn ${
-                    active ? 'home-calendar__color-swatch-btn--active' : ''
-                  }`}
-                  style={{ backgroundColor: colorHex, color: checkColor }}
-                >
-                  {active && (
-                    <Icon
-                      name="check"
-                      size={12}
-                      strokeWidth={2.8}
-                      style={{ color: checkColor }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 4. Scheduled Events & Reminders for Selected Date */}
+        {/* 3. Scheduled Events & Reminders for Selected Date */}
         <div className="home-calendar__events-section">
           <div className="home-calendar__events-header">
             <span className="home-calendar__events-title">
@@ -596,17 +479,17 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
               {MONTH_NAMES_GENITIVE_RU[selectedDate.getMonth()]}
             </span>
             <span className="home-calendar__events-count">
-              {filteredDayItems.length > 0
-                ? `${filteredDayItems.length} ${
-                    filteredDayItems.length === 1 ? 'событие' : 'события'
+              {dayEvents.length > 0
+                ? `${dayEvents.length} ${
+                    dayEvents.length === 1 ? 'событие' : 'события'
                   }`
                 : 'Нет планов'}
             </span>
           </div>
 
-          {filteredDayItems.length > 0 ? (
+          {dayEvents.length > 0 ? (
             <div className="home-calendar__events-list">
-              {filteredDayItems.map((item) => {
+              {dayEvents.map((item) => {
                 const cardStyles = getCardColorStyles(item.categoryColor);
 
                 return (
@@ -676,20 +559,7 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
             </div>
           ) : (
             <div className="home-calendar__empty-events">
-              {dayEvents.length > 0 && selectedColors.length > 0 ? (
-                <div className="home-calendar__empty-filter">
-                  <p>В выбранных цветах на этот день нет планов.</p>
-                  <button
-                    type="button"
-                    className="home-calendar__empty-reset-btn"
-                    onClick={handleResetFilters}
-                  >
-                    Показать все события этого дня
-                  </button>
-                </div>
-              ) : (
-                <span>День свободен — отличное время для совместного отдыха</span>
-              )}
+              <span>День свободен — отличное время для совместного отдыха</span>
             </div>
           )}
         </div>

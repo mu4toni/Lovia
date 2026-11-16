@@ -12,11 +12,15 @@ export interface UserRecord {
   avatarUrl?: string;
   joinedDate?: string;
   coupleId?: string | null;
+  timezoneOffset?: number;
+  notificationsEnabled?: boolean;
 }
 
 /**
  * Гарантирует наличие записи пользователя в public.users перед любыми операциями с public.couples.
  * Выполняет upsert по первичному ключу id.
+ * Автоматически сохраняет часовой пояс браузера (в минутах, например 180 для UTC+3)
+ * и статус разрешения уведомлений.
  */
 export async function ensureUserInSupabase(user: UserRecord): Promise<void> {
   if (!isSupabaseConfigured()) {
@@ -28,6 +32,22 @@ export async function ensureUserInSupabase(user: UserRecord): Promise<void> {
 
   const tgUser = telegramService.getTelegramUser();
   const telegramId = tgUser?.id ? Number(tgUser.id) : null;
+  const timezoneOffset =
+    typeof user.timezoneOffset === 'number'
+      ? user.timezoneOffset
+      : -new Date().getTimezoneOffset();
+
+  let notificationsEnabled = true;
+  if (typeof user.notificationsEnabled === 'boolean') {
+    notificationsEnabled = user.notificationsEnabled;
+  } else {
+    try {
+      const stored = localStorage.getItem('lovia_notifications_enabled');
+      if (stored !== null) notificationsEnabled = stored === 'true';
+    } catch {
+      // ignore localstorage failure
+    }
+  }
 
   const row = {
     id: user.id,
@@ -36,6 +56,8 @@ export async function ensureUserInSupabase(user: UserRecord): Promise<void> {
     gender: (user.gender as 'male' | 'female') || null,
     avatar_url: user.avatarUrl || tgUser?.photo_url || null,
     joined_date: user.joinedDate || new Date().toISOString().split('T')[0],
+    timezone_offset: timezoneOffset,
+    notifications_enabled: notificationsEnabled,
     updated_at: new Date().toISOString(),
   };
 

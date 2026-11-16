@@ -9,6 +9,7 @@ import { Icon } from '../../../components/ui/Icon/Icon';
 import { PlaceCard } from '../PlaceCard/PlaceCard';
 import { PlacePickerModal } from '../PlacePickerModal/PlacePickerModal';
 import { getTodayDateString, isFutureDate } from '../../../utils/dateCalculations';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './CreateEditDateMemoryModal.css';
 
 export interface CreateEditDateMemoryModalProps {
@@ -26,6 +27,7 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
   onSubmit,
   initialMemory,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const isEditing = Boolean(initialMemory);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -131,18 +133,20 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
 
     const cleanTitle = title.trim();
     if (!cleanTitle) {
-      setError('Введите название свидания');
+      setError(isFriendship ? 'Введите название встречи' : 'Введите название свидания');
       return;
     }
 
     if (!date) {
-      setError('Выберите дату свидания');
+      setError(isFriendship ? 'Выберите дату встречи' : 'Выберите дату свидания');
       return;
     }
 
     if (isFutureDate(date)) {
       setError(
-        'Можно сохранять только воспоминания о свиданиях, которые уже состоялись. Будущую дату выбрать нельзя.'
+        isFriendship
+          ? 'Можно сохранять только воспоминания о встречах, которые уже состоялись. Будущую дату выбрать нельзя.'
+          : 'Можно сохранять только воспоминания о свиданиях, которые уже состоялись. Будущую дату выбрать нельзя.'
       );
       return;
     }
@@ -164,7 +168,13 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={isEditing ? 'Редактировать свидание' : 'Новое воспоминание'}
+        title={
+          isEditing
+            ? isFriendship
+              ? 'Редактировать встречу'
+              : 'Редактировать свидание'
+            : 'Новое воспоминание'
+        }
       >
         <form onSubmit={handleSubmit} className="date-memory-form">
           {error && (
@@ -175,8 +185,12 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
 
           <div className="date-memory-form__field">
             <Input
-              label="Название свидания *"
-              placeholder="Например: Наш первый поход в кино, Вечер у моря..."
+              label={isFriendship ? 'Название встречи *' : 'Название свидания *'}
+              placeholder={
+                isFriendship
+                  ? 'Например: Прогулка в парке, Поездка за город...'
+                  : 'Например: Наш первый поход в кино, Вечер у моря...'
+              }
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -189,14 +203,16 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
 
           <div className="date-memory-form__field">
             <DatePicker
-              label="Дата свидания *"
+              label={isFriendship ? 'Дата встречи *' : 'Дата свидания *'}
               maxDate={getTodayDateString()}
               value={date}
               onChange={(newDate) => {
                 setDate(newDate);
                 if (isFutureDate(newDate)) {
                   setError(
-                    'Можно сохранять только воспоминания о свиданиях, которые уже состоялись. Будущую дату выбрать нельзя.'
+                    isFriendship
+                      ? 'Можно сохранять только воспоминания о встречах, которые уже состоялись. Будущую дату выбрать нельзя.'
+                      : 'Можно сохранять только воспоминания о свиданиях, которые уже состоялись. Будущую дату выбрать нельзя.'
                   );
                 } else if (error) {
                   setError(null);

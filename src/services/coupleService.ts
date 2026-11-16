@@ -14,6 +14,9 @@ import {
   updateUserCoupleId,
 } from './api';
 
+import type { SpaceType } from '../types/couple';
+export type { SpaceType };
+
 export interface RegisteredUser {
   id: string;
   name: string;
@@ -21,6 +24,8 @@ export interface RegisteredUser {
   avatarUrl?: string;
   joinedDate: string;
   coupleId?: string | null;
+  timezoneOffset?: number;
+  notificationsEnabled?: boolean;
 }
 
 export interface CoupleSpace {
@@ -28,6 +33,7 @@ export interface CoupleSpace {
   inviteCode: string;
   codeExpiresAt: string;
   codeStatus: 'active' | 'used' | 'expired';
+  spaceType?: SpaceType;
   user1: {
     id: string;
     name: string;
@@ -73,6 +79,7 @@ const defaultCouple: CoupleSpace = {
   inviteCode: 'LOVE-MARSEL-ALISA-77',
   codeExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   codeStatus: 'used',
+  spaceType: 'relationship',
   user1: {
     id: 'user-marsel',
     name: 'Марсель',
@@ -359,6 +366,12 @@ class CoupleService {
     return Boolean(couple && couple.id === 'couple-1');
   }
 
+  getSpaceType(): SpaceType {
+    this.init();
+    const couple = this.getCurrentCouple();
+    return couple?.spaceType || 'relationship';
+  }
+
   /**
    * Resets and clears all shared spaces across all services.
    * Ensures storage is set to empty arrays and no old couple data leaks.
@@ -452,6 +465,7 @@ class CoupleService {
         inviteCode: coupleRow.invite_code,
         codeExpiresAt: coupleRow.code_expires_at,
         codeStatus: coupleRow.code_status as 'active' | 'used' | 'expired',
+        spaceType: (coupleRow.space_type as SpaceType) || 'relationship',
         user1: {
           id: coupleRow.user1_id,
           name: user1Data?.name || 'Пользователь',
@@ -556,6 +570,24 @@ class CoupleService {
       }
     }
 
+    // Автоматическая синхронизация часового пояса браузера в public.users
+    const effectiveUserId = user.id && user.id !== 'user-marsel' && !user.id.startsWith('guest') ? user.id : null;
+    if (effectiveUserId) {
+      const timezoneOffset = -new Date().getTimezoneOffset();
+      supabase
+        .from('users')
+        .update({
+          timezone_offset: timezoneOffset,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', effectiveUserId)
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[coupleService] Failed to sync timezone_offset to Supabase:', error.message);
+          }
+        });
+    }
+
     // 2. Если coupleId есть, подтягиваем актуальные данные из public.couples
     if (user.coupleId && user.coupleId !== 'couple-1') {
       const synced = await this.syncCoupleFromSupabase(user.coupleId);
@@ -586,6 +618,7 @@ class CoupleService {
     name: string;
     gender?: 'male' | 'female';
     startDate?: string;
+    spaceType?: SpaceType;
   }): Promise<CoupleSpace> {
     this.init();
     const cleanName = input.name.trim();
@@ -614,6 +647,10 @@ class CoupleService {
           relationshipService.setStartDate(input.startDate);
           this.saveToStorage();
         }
+        if (input.spaceType) {
+          existing.spaceType = input.spaceType;
+          this.saveToStorage();
+        }
         return existing;
       }
     }
@@ -626,6 +663,7 @@ class CoupleService {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const effectiveStartDate = input.startDate || todayStr;
+    const effectiveSpaceType: SpaceType = input.spaceType || 'relationship';
     // 7 days expiration
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -641,6 +679,7 @@ class CoupleService {
           user1_id: user.id,
           status: 'waiting_partner',
           start_date: effectiveStartDate,
+          space_type: effectiveSpaceType,
         });
 
       if (insertError) {
@@ -660,6 +699,7 @@ class CoupleService {
       inviteCode,
       codeExpiresAt: expiresAt,
       codeStatus: 'active',
+      spaceType: effectiveSpaceType,
       user1: {
         id: user.id,
         name: user.name,
@@ -718,6 +758,7 @@ class CoupleService {
 
     let targetCoupleId = '';
     let targetCoupleCode = cleanCode;
+    let targetSpaceType: SpaceType = 'relationship';
     let effectiveStartDate = new Date().toISOString().split('T')[0];
     let user1Info: CoupleSpace['user1'] = {
       id: '',
@@ -797,6 +838,7 @@ class CoupleService {
 
       targetCoupleId = targetCouple.id;
       targetCoupleCode = targetCouple.invite_code;
+      targetSpaceType = (targetCouple.space_type as SpaceType) || 'relationship';
       effectiveStartDate = targetCouple.start_date || effectiveStartDate;
       createdAt = targetCouple.created_at;
     } else {
@@ -832,6 +874,7 @@ class CoupleService {
 
       targetCoupleId = targetCouple.id;
       targetCoupleCode = targetCouple.inviteCode;
+      targetSpaceType = targetCouple.spaceType || 'relationship';
       user1Info = { ...targetCouple.user1 };
       effectiveStartDate = targetCouple.startDate || effectiveStartDate;
       createdAt = targetCouple.createdAt;
@@ -843,6 +886,7 @@ class CoupleService {
       inviteCode: targetCoupleCode,
       codeExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       codeStatus: 'used',
+      spaceType: targetSpaceType,
       user1: user1Info,
       user2: {
         id: user.id,

@@ -6,6 +6,7 @@ import { AnniversaryProgressBar } from '../../../components/ui/AnniversaryProgre
 import { RelationshipMilestonesModal } from '../../../components/relationship/RelationshipMilestonesModal';
 import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './AnniversaryCard.css';
 
 export interface AnniversaryCardProps {
@@ -21,6 +22,7 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
   onClick,
   onAddMemorableDate,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const [isMilestonesModalOpen, setIsMilestonesModalOpen] = useState(false);
 
   const {
@@ -61,13 +63,21 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
         tabIndex={0}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        aria-label="Блок годовщины отношений. Нажмите, чтобы открыть подробные вехи."
-        title="Нажмите, чтобы посмотреть все вехи отношений"
+        aria-label={
+          isFriendship
+            ? 'Блок годовщины дружбы. Нажмите, чтобы открыть подробные вехи.'
+            : 'Блок годовщины отношений. Нажмите, чтобы открыть подробные вехи.'
+        }
+        title={
+          isFriendship
+            ? 'Нажмите, чтобы посмотреть все вехи дружбы'
+            : 'Нажмите, чтобы посмотреть все вехи отношений'
+        }
       >
         {isToday && (
           <div className="anniversary-showcase__confetti" aria-hidden="true">
             <Icon name="sparkles" size={13} className="confetti-sparkle c1" />
-            <Icon name="heart-filled" size={11} className="confetti-sparkle c2" />
+            <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={11} className="confetti-sparkle c2" />
             <Icon name="sparkles" size={13} className="confetti-sparkle c3" />
           </div>
         )}
@@ -80,12 +90,18 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
               {isToday
                 ? 'Праздник сегодня!'
                 : isUpcoming
-                ? 'Годовщина совсем скоро'
+                ? isFriendship
+                  ? 'Годовщина дружбы скоро'
+                  : 'Годовщина совсем скоро'
                 : 'Следующая веха'}
             </span>
             <h3 className="anniversary-showcase__title">
               {isToday
-                ? `Поздравляем с годовщиной!`
+                ? isFriendship
+                  ? 'Поздравляем с годовщиной дружбы!'
+                  : 'Поздравляем с годовщиной!'
+                : isFriendship
+                ? `${yearsTogether} ${yearsLabel} крепкой дружбы`
                 : `${yearsTogether} ${yearsLabel} вместе`}
             </h3>
           </div>

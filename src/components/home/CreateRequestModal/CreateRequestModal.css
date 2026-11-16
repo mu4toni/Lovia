@@ -84,6 +84,86 @@
   margin-top: 2px;
 }
 
+/* 2. Чистые цветные кружки (без текстовых названий) */
+.create-color-dots-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  padding: 4px 2px;
+  width: 100%;
+}
+
+.create-color-dot-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform var(--duration-fast, 150ms) var(--ease-spring, ease),
+              box-shadow var(--duration-fast, 150ms) var(--ease-spring, ease);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  outline: none;
+  padding: 0;
+  background: transparent;
+}
+
+.create-color-dot-btn:hover {
+  transform: scale(1.08);
+}
+
+.create-color-dot-btn:active {
+  transform: scale(0.95);
+}
+
+.create-color-dot-btn--none {
+  border: 1.5px dashed var(--text-tertiary, #999999);
+  background: var(--bg-card, #ffffff);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .create-color-dot-btn--none {
+  border-color: var(--text-tertiary, #777777);
+  background: var(--bg-surface-subtle, #222222);
+}
+
+.create-color-dot-slash {
+  width: 16px;
+  height: 1.5px;
+  background-color: var(--text-tertiary, #999999);
+  transform: rotate(-45deg);
+  border-radius: 1px;
+  display: block;
+}
+
+[data-theme='dark'] .create-color-dot-slash {
+  background-color: var(--text-tertiary, #777777);
+}
+
+.create-color-dot-btn--active {
+  box-shadow: 0 0 0 2px var(--bg-card, #ffffff), 0 0 0 4px var(--color-primary, #da0038);
+}
+
+[data-theme='dark'] .create-color-dot-btn--active {
+  box-shadow: 0 0 0 2px var(--bg-surface, #1e1e1e), 0 0 0 4px var(--color-primary, #da0038);
+}
+
+.create-color-dot-btn--none.create-color-dot-btn--active {
+  border-style: solid;
+  border-color: var(--color-primary, #da0038);
+}
+
+.create-color-dot-check {
+  pointer-events: none;
+}
+
 /* 2. Компактные иконки категорий */
 .create-category-chips-row {
   display: flex;

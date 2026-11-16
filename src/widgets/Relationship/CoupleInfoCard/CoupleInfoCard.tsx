@@ -7,6 +7,7 @@ import { formatRussianDate, pluralizeRu } from '../../../utils/dateCalculations'
 import { PartnerQuickModal } from '../../../components/partner/PartnerQuickModal';
 import { RelationshipMilestonesModal } from '../../../components/relationship/RelationshipMilestonesModal';
 import { telegramService } from '../../../services/telegramService';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './CoupleInfoCard.css';
 
 export interface CoupleInfoCardProps {
@@ -26,15 +27,18 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
   onAddMemorableDate,
 }) => {
   const navigate = useNavigate();
+  const { isFriendship } = useSpaceMode();
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
   const [isMilestonesModalOpen, setIsMilestonesModalOpen] = useState(false);
 
   const userName = profile?.user?.name || 'Марсель';
-  const partnerName = profile?.partner?.name || 'Алиса';
+  const partnerName = profile?.partner?.name || (isFriendship ? 'Друг' : 'Алиса');
   const hasPartner = profile?.isPartnerConnected && Boolean(profile.partner);
 
   const daysLabel = pluralizeRu(daysTogether, 'день', 'дня', 'дней');
-  const datesLabel = pluralizeRu(heldDatesCount, 'свидание', 'свидания', 'свиданий');
+  const datesLabel = isFriendship
+    ? pluralizeRu(heldDatesCount, 'встреча', 'встречи', 'встреч')
+    : pluralizeRu(heldDatesCount, 'свидание', 'свидания', 'свиданий');
 
   const handleUserClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
@@ -120,11 +124,11 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
                   setIsMilestonesModalOpen(true);
                 }
               }}
-              title="Нажмите, чтобы посмотреть вехи отношений"
-              aria-label={`Вместе с ${formatRussianDate(startDate)}. Нажмите для просмотра вех.`}
+              title={isFriendship ? 'Нажмите, чтобы посмотреть вехи дружбы' : 'Нажмите, чтобы посмотреть вехи отношений'}
+              aria-label={`${isFriendship ? 'Дружим с' : 'Вместе с'} ${formatRussianDate(startDate)}. Нажмите для просмотра вех.`}
             >
               <Icon name="calendar" size={12} className="start-date-icon" />
-              <span>Вместе с {formatRussianDate(startDate)}</span>
+              <span>{isFriendship ? 'Дружим с' : 'Вместе с'} {formatRussianDate(startDate)}</span>
             </div>
           </div>
 
@@ -140,8 +144,16 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
                 handlePartnerClick(e);
               }
             }}
-            title={hasPartner ? 'Информация о партнёре' : 'Подключить партнёра'}
-            aria-label={hasPartner ? `Информация о партнёре: ${partnerName}` : 'Подключить партнёра'}
+            title={
+              hasPartner
+                ? `${isFriendship ? 'Информация о друге' : 'Информация о партнёре'}`
+                : `${isFriendship ? 'Подключить друга' : 'Подключить партнёра'}`
+            }
+            aria-label={
+              hasPartner
+                ? `${isFriendship ? 'Информация о друге' : 'Информация о партнёре'}: ${partnerName}`
+                : `${isFriendship ? 'Подключить друга' : 'Подключить партнёра'}`
+            }
           >
             <div className="relationship-hero-card__avatar-frame relationship-hero-card__avatar-frame--partner">
               <Avatar
@@ -156,7 +168,11 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
         </div>
 
         {/* 2 Split Restrained Clickable Stats Cards */}
-        <div className="relationship-hero-card__stats" role="group" aria-label="Статистика отношений">
+        <div
+          className="relationship-hero-card__stats"
+          role="group"
+          aria-label={isFriendship ? 'Статистика дружбы' : 'Статистика отношений'}
+        >
           {/* Left Mini-Card: Days together (Clickable -> Milestones Modal) */}
           <div
             className="relationship-hero-card__stat-item relationship-hero-card__stat-item--days"
@@ -169,12 +185,12 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
                 handleDaysClick();
               }
             }}
-            title="Нажмите, чтобы посмотреть вехи отношений"
-            aria-label={`Вместе ${daysTogether} ${daysLabel}. Нажмите для просмотра вех.`}
+            title={isFriendship ? 'Нажмите, чтобы посмотреть вехи дружбы' : 'Нажмите, чтобы посмотреть вехи отношений'}
+            aria-label={`${isFriendship ? 'Дружим' : 'Вместе'} ${daysTogether} ${daysLabel}. Нажмите для просмотра вех.`}
           >
             {/* Large blurred background icon on right/bottom */}
             <div className="relationship-hero-card__stat-bg-icon" aria-hidden="true">
-              <Icon name="heart-filled" size={100} />
+              <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={100} />
             </div>
 
             <div className="relationship-hero-card__stat-chevron-wrap" aria-hidden="true">
@@ -186,7 +202,9 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
                 <span className="relationship-hero-card__stat-num">{daysTogether}</span>
                 <span className="relationship-hero-card__stat-unit">{daysLabel}</span>
               </div>
-              <span className="relationship-hero-card__stat-sub">непрерывной истории</span>
+              <span className="relationship-hero-card__stat-sub">
+                {isFriendship ? 'крепкой дружбы' : 'непрерывной истории'}
+              </span>
             </div>
           </div>
 
@@ -202,8 +220,8 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
                 handleDatesClick();
               }
             }}
-            title="Нажмите, чтобы открыть дневник свиданий"
-            aria-label={`${heldDatesCount} ${datesLabel} в дневнике воспоминаний. Нажмите для перехода.`}
+            title={isFriendship ? 'Нажмите, чтобы открыть дневник встреч' : 'Нажмите, чтобы открыть дневник свиданий'}
+            aria-label={`${heldDatesCount} ${datesLabel} в дневнике ${isFriendship ? 'встреч' : 'воспоминаний'}. Нажмите для перехода.`}
           >
             {/* Large blurred background icon on right/bottom */}
             <div className="relationship-hero-card__stat-bg-icon" aria-hidden="true">
@@ -219,7 +237,9 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
                 <span className="relationship-hero-card__stat-num">{heldDatesCount}</span>
                 <span className="relationship-hero-card__stat-unit">{datesLabel}</span>
               </div>
-              <span className="relationship-hero-card__stat-sub">в дневнике воспоминаний</span>
+              <span className="relationship-hero-card__stat-sub">
+                {isFriendship ? 'встреч в дневнике' : 'в дневнике воспоминаний'}
+              </span>
             </div>
           </div>
         </div>

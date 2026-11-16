@@ -2,6 +2,7 @@ import React from 'react';
 import { DateMemorySort } from '../../../types/dates';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { pluralizeRu } from '../../../utils/dateCalculations';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DatesHeader.css';
 
 export interface DatesHeaderProps {
@@ -29,18 +30,21 @@ export const DatesHeader: React.FC<DatesHeaderProps> = ({
   onOpenQuickList,
   onOpenAlbum,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const photosCount = totalPhotosCount !== undefined ? totalPhotosCount : (memoriesWithPhotosCount || 0);
 
-  const datesLabel = pluralizeRu(heldDatesCount, 'свидание', 'свидания', 'свиданий');
+  const datesLabel = isFriendship
+    ? pluralizeRu(heldDatesCount, 'встреча', 'встречи', 'встреч')
+    : pluralizeRu(heldDatesCount, 'свидание', 'свидания', 'свиданий');
   const photosLabel = pluralizeRu(photosCount, 'фотография', 'фотографии', 'фотографий');
 
   return (
-    <header className="dates-header" aria-label="Шапка дневника свиданий">
+    <header className="dates-header" aria-label={isFriendship ? 'Шапка дневника встреч' : 'Шапка дневника свиданий'}>
       {/* 1. Header Hero with Clean Title & Compact Pills */}
       <div className="dates-header__hero">
         <div className="dates-header__titles">
           {/* Legacy test assertion: Моменты, которые хочется сохранить */}
-          <h1 className="dates-header__title">Свидания</h1>
+          <h1 className="dates-header__title">{isFriendship ? 'Встречи' : 'Свидания'}</h1>
         </div>
 
         {/* Compact Stat Bar with Divider (Unified row / card without borders) */}
@@ -50,8 +54,12 @@ export const DatesHeader: React.FC<DatesHeaderProps> = ({
               type="button"
               className="dates-header__stat-pill dates-header__stat-pill--dates"
               onClick={onOpenQuickList}
-              title="Открыть мини-список свиданий"
-              aria-label={`Открыть список свиданий: ${heldDatesCount} ${datesLabel}`}
+              title={isFriendship ? 'Открыть мини-список встреч' : 'Открыть мини-список свиданий'}
+              aria-label={
+                isFriendship
+                  ? `Открыть список встреч: ${heldDatesCount} ${datesLabel}`
+                  : `Открыть список свиданий: ${heldDatesCount} ${datesLabel}`
+              }
             >
               <div className="dates-header__stat-bg-icon" aria-hidden="true">
                 <Icon name="calendar" size={28} />

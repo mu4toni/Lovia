@@ -17,6 +17,7 @@ import { AnniversaryProgressBar } from '../../ui/AnniversaryProgress/Anniversary
 import { PartnerQuickModal } from '../../partner/PartnerQuickModal';
 import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../ui/Mascot/Mascot';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './HomeHeader.css';
 
 interface HomeHeaderProps {
@@ -31,6 +32,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onInvitePartner,
 }) => {
   const navigate = useNavigate();
+  const { isFriendship } = useSpaceMode();
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
 
   const today = new Date();
@@ -140,15 +142,23 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             tabIndex={0}
             onClick={handleCardClick}
             onKeyDown={handleCardKeyDown}
-            aria-label="Перейти в раздел Отношения и памятные даты"
-            title="Нажмите, чтобы открыть историю отношений"
+            aria-label={
+              isFriendship
+                ? 'Перейти в раздел Дружба и памятные даты'
+                : 'Перейти в раздел Отношения и памятные даты'
+            }
+            title={
+              isFriendship
+                ? 'Нажмите, чтобы открыть историю дружбы'
+                : 'Нажмите, чтобы открыть историю отношений'
+            }
           >
           <div className="home-header__card-glow" aria-hidden="true" />
 
           {anniversary.isToday && (
             <div className="home-header__card-confetti" aria-hidden="true">
               <Icon name="sparkles" size={13} className="home-header__sparkle s1" />
-              <Icon name="heart-filled" size={11} className="home-header__sparkle s2" />
+              <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={11} className="home-header__sparkle s2" />
               <Icon name="sparkles" size={13} className="home-header__sparkle s3" />
             </div>
           )}
@@ -184,10 +194,10 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <div className="home-header__names-row">
               <span className="home-header__name-text">{profile.user.name}</span>
               <span className="home-header__heart-badge" aria-hidden="true">
-                <Icon name="heart-filled" size={14} />
+                <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={14} />
               </span>
               <span className="home-header__name-text">
-                {hasPartner ? profile.partner?.name : 'Партнёр'}
+                {hasPartner ? profile.partner?.name : (isFriendship ? 'Друг' : 'Партнёр')}
               </span>
             </div>
 
@@ -209,7 +219,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             ) : (
               <div className="home-header__unpaired-block">
                 <span className="home-header__unpaired-desc">
-                  Пригласите партнёра для общего прогресса
+                  {isFriendship
+                    ? 'Пригласите друга для общего прогресса'
+                    : 'Пригласите партнёра для общего прогресса'}
                 </span>
                 {onInvitePartner && (
                   <button
@@ -239,8 +251,20 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 handlePartnerClick(e);
               }
             }}
-            title={hasPartner ? `О партнёре: ${profile.partner?.name}` : 'Пригласить партнёра'}
-            aria-label={hasPartner ? `Партнёр: ${profile.partner?.name}` : 'Пригласить партнёра'}
+            title={
+              hasPartner
+                ? `${isFriendship ? 'О друге' : 'О партнёре'}: ${profile.partner?.name}`
+                : isFriendship
+                ? 'Пригласить друга'
+                : 'Пригласить партнёра'
+            }
+            aria-label={
+              hasPartner
+                ? `${isFriendship ? 'Друг' : 'Партнёр'}: ${profile.partner?.name}`
+                : isFriendship
+                ? 'Пригласить друга'
+                : 'Пригласить партнёра'
+            }
           >
             {hasPartner ? (
               <div className="home-header__avatar-frame home-header__avatar-frame--partner">
@@ -259,8 +283,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   e.stopPropagation();
                   handlePartnerClick(e);
                 }}
-                title="Пригласить партнёра"
-                aria-label="Пригласить партнёра"
+                title={isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
+                aria-label={isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
               >
                 <Icon name="plus" size={20} />
               </button>

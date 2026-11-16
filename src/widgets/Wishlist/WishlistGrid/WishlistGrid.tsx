@@ -4,6 +4,7 @@ import { WishCard } from '../WishCard/WishCard';
 import { Button } from '../../../components/ui/Button/Button';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './WishlistGrid.css';
 
 export interface WishlistGridProps {
@@ -29,6 +30,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
   onRemindPartner,
   className = '',
 }) => {
+  const { isFriendship } = useSpaceMode();
   // 1. Empty States
   if (items.length === 0) {
     // A: Own list is empty
@@ -41,7 +43,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
           <h2 className="wishlist-empty-title">Ваш вишлист пока пуст</h2>
           <p className="wishlist-empty-desc">
             Добавьте то, о чём давно мечтаете: желанные вещи, впечатления, книги или уютные мелочи.
-            Партнёр увидит ваш список и сможет порадовать сюрпризом!
+            {isFriendship ? ' Друг' : ' Партнёр'} увидит ваш список и сможет порадовать сюрпризом!
           </p>
         </div>
       );
@@ -49,13 +51,19 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
 
     // B: Partner's list is empty
     return (
-      <div className="wishlist-empty-card" role="region" aria-label="Вишлист партнёра пуст">
+      <div
+        className="wishlist-empty-card"
+        role="region"
+        aria-label={isFriendship ? 'Вишлист друга пуст' : 'Вишлист партнёра пуст'}
+      >
         <div className="wishlist-empty-icon" aria-hidden="true">
           <Mascot variant="sleepy" size={120} animated interactive />
         </div>
         <h2 className="wishlist-empty-title">У {partnerName} пока нет желаний</h2>
         <p className="wishlist-empty-desc">
-          Список желаний {partnerName} пока пуст. Отправьте нежное напоминание, чтобы партнёр добавил пару идей для подарка!
+          Список желаний {partnerName} пока пуст. Отправьте{' '}
+          {isFriendship ? 'дружеское' : 'нежное'} напоминание, чтобы{' '}
+          {isFriendship ? 'друг' : 'партнёр'} добавил пару идей для подарка!
         </p>
         {onRemindPartner && (
           <Button

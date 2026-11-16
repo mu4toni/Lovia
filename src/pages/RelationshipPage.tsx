@@ -9,9 +9,11 @@ import { BottomActionButton } from '../components/ui/BottomActionButton/BottomAc
 import { useToast } from '../components/ui/Toast/ToastContext';
 import { MemorableDate, CreateMemorableDateInput } from '../types/relationship';
 import { Skeleton } from '../components/ui/Loading/Skeleton';
+import { useSpaceMode } from '../hooks/useSpaceMode';
 import './RelationshipPage.css';
 
 export function RelationshipPage() {
+  const { isFriendship } = useSpaceMode();
   const {
     profile,
     startDate,
@@ -46,7 +48,7 @@ export function RelationshipPage() {
         await addMemorableDate(input);
         showToast({
           title: 'Памятная дата добавлена',
-          message: `«${input.title}» добавлена в историю пары`,
+          message: `«${input.title}» добавлена в историю ${isFriendship ? 'дружбы' : 'пары'}`,
           type: 'love',
         });
       }
@@ -92,7 +94,7 @@ export function RelationshipPage() {
   return (
     <div className="relationship-page">
       <header className="relationship-page__header">
-        <h1 className="relationship-page__title">Наша история</h1>
+        <h1 className="relationship-page__title">{isFriendship ? 'Наша дружба' : 'Наша история'}</h1>
       </header>
 
       {/* 1.1 Couple Info Card */}

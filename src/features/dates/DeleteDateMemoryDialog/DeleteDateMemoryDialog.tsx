@@ -3,6 +3,7 @@ import { Modal } from '../../../components/ui/Modal/Modal';
 import { Button } from '../../../components/ui/Button/Button';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { DateMemory } from '../../../types/dates';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 
 export interface DeleteDateMemoryDialogProps {
   isOpen: boolean;
@@ -17,10 +18,15 @@ export const DeleteDateMemoryDialog: React.FC<DeleteDateMemoryDialogProps> = ({
   onConfirm,
   targetMemory,
 }) => {
+  const { isFriendship } = useSpaceMode();
   if (!targetMemory) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Удалить свидание?">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isFriendship ? 'Удалить встречу?' : 'Удалить свидание?'}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
           <div
@@ -59,7 +65,7 @@ export const DeleteDateMemoryDialog: React.FC<DeleteDateMemoryDialogProps> = ({
               }}
             >
               Запись «<strong style={{ color: 'var(--text-primary)' }}>{targetMemory.title}</strong>»
-              будет удалена из дневника свиданий.
+              будет удалена из дневника {isFriendship ? 'встреч' : 'свиданий'}.
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatRussianDate, pluralizeRu } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './AllDatesAlbumModal.css';
 
 export interface AlbumPhotoItem {
@@ -26,6 +27,7 @@ export const AllDatesAlbumModal: React.FC<AllDatesAlbumModalProps> = ({
   memories,
   onOpenPhotoLightbox,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const allPhotos = useMemo(() => {
     // Sort memories newest first
     const sorted = [...memories].sort(
@@ -61,7 +63,7 @@ export const AllDatesAlbumModal: React.FC<AllDatesAlbumModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Все фотографии свиданий"
+      title={isFriendship ? 'Все фотографии встреч' : 'Все фотографии свиданий'}
       className="all-dates-album-modal"
     >
       <div className="all-dates-album">
@@ -92,7 +94,9 @@ export const AllDatesAlbumModal: React.FC<AllDatesAlbumModalProps> = ({
                 className="all-dates-album__item"
                 onClick={() => handlePhotoClick(index)}
                 title={`Фото из «${item.memoryTitle}» (${formatRussianDate(item.memoryDate)})`}
-                aria-label={`Фото ${index + 1} из ${allPhotos.length}: свидание «${item.memoryTitle}», ${formatRussianDate(item.memoryDate)}`}
+                aria-label={`Фото ${index + 1} из ${allPhotos.length}: ${
+                  isFriendship ? 'встреча' : 'свидание'
+                } «${item.memoryTitle}», ${formatRussianDate(item.memoryDate)}`}
               >
                 <img
                   src={item.url}

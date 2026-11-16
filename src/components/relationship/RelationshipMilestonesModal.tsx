@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal/Modal';
 import { Icon } from '../ui/Icon/Icon';
 import { calculateDaysTogether, getAnniversaryInfo, pluralizeRu } from '../../utils/dateCalculations';
 import { telegramService } from '../../services/telegramService';
+import { useSpaceMode } from '../../hooks/useSpaceMode';
 import './RelationshipMilestonesModal.css';
 
 export interface RelationshipMilestonesModalProps {
@@ -20,6 +21,8 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
   startDate,
   onAddMemorableDate,
 }) => {
+  const { isFriendship } = useSpaceMode();
+
   const { daysTogether, weeksTogether, monthsTogether, hoursTogether, milestoneItems } =
     useMemo(() => {
       const days = calculateDaysTogether(startDate);
@@ -35,7 +38,7 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
         const diff = targetDays - days;
         let label = '';
         if (targetDays === 365) {
-          label = '1 год отношений';
+          label = isFriendship ? '1 год дружбы' : '1 год отношений';
         } else {
           label = `${targetDays} ${pluralizeRu(targetDays, 'день', 'дня', 'дней')}`;
         }
@@ -53,7 +56,9 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
         const nextYears = anniv.isToday ? anniv.yearsTogether : anniv.yearsTogether + 1;
         items.push({
           targetDays: days + anniv.daysUntil,
-          label: `${nextYears} ${pluralizeRu(nextYears, 'год', 'года', 'лет')} вместе`,
+          label: `${nextYears} ${pluralizeRu(nextYears, 'год', 'года', 'лет')} ${
+            isFriendship ? 'дружбы' : 'вместе'
+          }`,
           isPassed: anniv.isToday,
           diff: anniv.daysUntil,
         });
@@ -69,7 +74,7 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
         hoursTogether: hours,
         milestoneItems: items,
       };
-    }, [startDate]);
+    }, [startDate, isFriendship]);
 
   const daysLabel = pluralizeRu(daysTogether, 'день', 'дня', 'дней');
   const weeksLabel = pluralizeRu(weeksTogether, 'неделя', 'недели', 'недель');
@@ -80,15 +85,23 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
   const nextMilestone = milestoneItems.find((m) => !m.isPassed);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Вехи отношений">
-      <div className="milestones-modal" role="region" aria-label="Статистика и вехи отношений">
+    <Modal isOpen={isOpen} onClose={onClose} title={isFriendship ? 'Вехи дружбы' : 'Вехи отношений'}>
+      <div
+        className="milestones-modal"
+        role="region"
+        aria-label={isFriendship ? 'Статистика и вехи дружбы' : 'Статистика и вехи отношений'}
+      >
         {/* 1. Hero Summary */}
         <div className="milestones-modal__hero">
-          <div className="milestones-modal__hero-title">История любви в цифрах</div>
+          <div className="milestones-modal__hero-title">
+            {isFriendship ? 'История дружбы в цифрах' : 'История любви в цифрах'}
+          </div>
           <div className="milestones-modal__hero-days">
             {daysTogether} {daysLabel}
           </div>
-          <div className="milestones-modal__hero-sub">непрерывной заботы и тепла</div>
+          <div className="milestones-modal__hero-sub">
+            {isFriendship ? 'крепкой дружбы и поддержки' : 'непрерывной заботы и тепла'}
+          </div>
         </div>
 
         {/* 2. Grid of 4 Units */}
@@ -115,7 +128,7 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
         <div className="milestones-modal__section">
           <div className="milestones-modal__section-title">
             <Icon name="sparkles" size={15} />
-            <span>Круглые вехи совместного пути</span>
+            <span>{isFriendship ? 'Круглые вехи нашей дружбы' : 'Круглые вехи совместного пути'}</span>
           </div>
 
           <div className="milestones-modal__list">

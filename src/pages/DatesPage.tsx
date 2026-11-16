@@ -13,9 +13,11 @@ import { useToast } from '../components/ui/Toast/ToastContext';
 import { DateMemory, CreateDateMemoryInput } from '../types/dates';
 import { Mascot } from '../components/ui/Mascot/Mascot';
 import { telegramService } from '../services/telegramService';
+import { useSpaceMode } from '../hooks/useSpaceMode';
 import './DatesPage.css';
 
 export function DatesPage() {
+  const { isFriendship } = useSpaceMode();
   const {
     memories,
     allMemories,
@@ -76,14 +78,14 @@ export function DatesPage() {
         telegramService.hapticNotification('success');
         showToast({
           title: 'Воспоминание сохранено',
-          message: `«${input.title}» добавлено в ваш дневник свиданий`,
+          message: `«${input.title}» добавлено в ваш дневник ${isFriendship ? 'встреч' : 'свиданий'}`,
           type: 'love',
         });
       }
     } catch (err: any) {
       showToast({
         title: 'Ошибка сохранения',
-        message: err.message || 'Не удалось сохранить свидание в Supabase',
+        message: err.message || (isFriendship ? 'Не удалось сохранить встречу в Supabase' : 'Не удалось сохранить свидание в Supabase'),
         type: 'info',
       });
     }
@@ -95,8 +97,8 @@ export function DatesPage() {
     try {
       await deleteMemory(deletingMemory.id);
       showToast({
-        title: 'Свидание удалено',
-        message: `«${title}» удалено из дневника свиданий`,
+        title: isFriendship ? 'Встреча удалена' : 'Свидание удалено',
+        message: `«${title}» удалено из дневника ${isFriendship ? 'встреч' : 'свиданий'}`,
         type: 'info',
       });
       if (selectedMemory && selectedMemory.id === deletingMemory.id) {
@@ -105,7 +107,7 @@ export function DatesPage() {
     } catch (err: any) {
       showToast({
         title: 'Ошибка удаления',
-        message: err.message || 'Не удалось удалить свидание из базы данных',
+        message: err.message || (isFriendship ? 'Не удалось удалить встречу из базы данных' : 'Не удалось удалить свидание из базы данных'),
         type: 'info',
       });
     }
@@ -142,7 +144,10 @@ export function DatesPage() {
 
       {/* List of date memories or empty state */}
       {memories.length === 0 ? (
-        <section className="dates-empty-state" aria-label="Нет сохранённых свиданий">
+        <section
+          className="dates-empty-state"
+          aria-label={isFriendship ? 'Нет сохранённых встреч' : 'Нет сохранённых свиданий'}
+        >
           <div className="dates-empty-state__icon-box" aria-hidden="true">
             <Mascot variant="sleepy" size={120} animated interactive />
           </div>
@@ -154,7 +159,10 @@ export function DatesPage() {
           </p>
         </section>
       ) : (
-        <section className="dates-list" aria-label="Список прошедших свиданий">
+        <section
+          className="dates-list"
+          aria-label={isFriendship ? 'Список прошедших встреч' : 'Список прошедших свиданий'}
+        >
           {memories.map((memory) => (
             <DateMemoryCard
               key={memory.id}
@@ -185,7 +193,11 @@ export function DatesPage() {
           setIsCreateModalOpen(true);
         }}
         iconName="plus"
-        ariaLabel="Добавить воспоминание о свидании"
+        ariaLabel={
+          isFriendship
+            ? 'Добавить воспоминание о встрече'
+            : 'Добавить воспоминание о свидании'
+        }
       />
 
       {/* Create / Edit Modal */}

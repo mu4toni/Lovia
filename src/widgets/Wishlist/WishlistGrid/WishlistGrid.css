@@ -42,7 +42,9 @@
 .wishlist-empty-icon {
   width: auto;
   min-height: 64px;
-  background: transparent;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -11,6 +11,7 @@ import { coupleService } from '../../../services/coupleService';
 import { telegramService } from '../../../services/telegramService';
 import { useToast } from '../../../components/ui/Toast/ToastContext';
 import { copyTextToClipboard } from '../../../utils/clipboard';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './SharedSpaceSettings.css';
 
 export interface SharedSpaceSettingsProps {
@@ -27,6 +28,7 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
   onPartnerStatusChanged,
 }) => {
   const navigate = useNavigate();
+  const { isFriendship } = useSpaceMode();
   const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
   const [isEditDateOpen, setIsEditDateOpen] = useState(false);
@@ -87,11 +89,20 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
   };
 
   return (
-    <section className="shared-space-settings" aria-label="Управление совместным пространством">
+    <section
+      className="shared-space-settings"
+      aria-label={isFriendship ? 'Управление пространством дружбы' : 'Управление совместным пространством'}
+    >
       <div className="shared-space-settings__header">
         <div className="shared-space-settings__title-row">
-          <Icon name="heart" size={17} className="shared-space-settings__icon" />
-          <h3 className="shared-space-settings__title">Наше пространство</h3>
+          <Icon
+            name={isFriendship ? 'sparkles' : 'heart'}
+            size={17}
+            className="shared-space-settings__icon"
+          />
+          <h3 className="shared-space-settings__title">
+            {isFriendship ? 'Пространство дружбы' : 'Наше пространство'}
+          </h3>
         </div>
       </div>
 
@@ -99,7 +110,9 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
         {/* Row 1: Start Date */}
         <div className="shared-space-row">
           <div className="shared-space-row__info">
-            <span className="shared-space-row__label">Дата начала отношений</span>
+            <span className="shared-space-row__label">
+              {isFriendship ? 'Дата начала дружбы' : 'Дата начала отношений'}
+            </span>
             <span className="shared-space-row__value">{formatRussianDate(startDate)}</span>
           </div>
           <Button
@@ -119,7 +132,9 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
         {/* Row 2: Invite Code */}
         <div className="shared-space-row">
           <div className="shared-space-row__info">
-            <span className="shared-space-row__label">Код совместного доступа</span>
+            <span className="shared-space-row__label">
+              {isFriendship ? 'Код дружбы' : 'Код совместного доступа'}
+            </span>
             <code className="shared-space-code">{partner.inviteCode || 'Не создан'}</code>
           </div>
           {partner.inviteCode && (
@@ -128,7 +143,7 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
               size="sm"
               onClick={handleCopyCode}
               className="shared-space-row__btn"
-              aria-label="Скопировать код совместного доступа"
+              aria-label={isFriendship ? 'Скопировать код дружбы' : 'Скопировать код совместного доступа'}
             >
               {copied ? 'Скопировано' : 'Скопировать'}
             </Button>
@@ -144,6 +159,8 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
             <span className="shared-space-row__value">
               {partner.isPartnerConnected
                 ? `Подключено к ${partner.name}`
+                : isFriendship
+                ? 'Связь с другом не подключена'
                 : 'Связь с партнёром не подключена'}
             </span>
           </div>
@@ -186,13 +203,13 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
             <Icon name="alert" size={24} className="shared-warning-icon" />
             <div className="shared-space-warning-text">
               <p className="shared-warning-lead">
-                Это действие завершит ваше совместное пространство. Все общие данные, воспоминания, напоминания, желания, категории и история свиданий будут безвозвратно удалены.
+                Это действие завершит ваше совместное пространство. Все общие данные, воспоминания, напоминания, желания, категории и история {isFriendship ? 'встреч' : 'свиданий'} будут безвозвратно удалены.
               </p>
               <p className="shared-warning-highlight">
                 Восстановить их после разрыва связи будет невозможно.
               </p>
               <p className="shared-warning-partner">
-                Ваш партнёр также потеряет доступ к совместному пространству.
+                Ваш {isFriendship ? 'друг' : 'партнёр'} также потеряет доступ к совместному пространству.
               </p>
             </div>
           </div>

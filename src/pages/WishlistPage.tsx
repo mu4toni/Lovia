@@ -1,4 +1,5 @@
 import { useWishlist } from '../hooks/useWishlist';
+import { useSpaceMode } from '../hooks/useSpaceMode';
 import { WishlistHeader, WishlistGrid } from '../widgets/Wishlist';
 import { CreateEditWishModal, DeleteWishConfirmDialog } from '../features/wishlist';
 import { Skeleton } from '../components/ui/Loading/Skeleton';
@@ -9,6 +10,7 @@ import { telegramService } from '../services/telegramService';
 import './WishlistPage.css';
 
 export function WishlistPage() {
+  const { isFriendship } = useSpaceMode();
   const {
     profile,
     activeTab,
@@ -98,7 +100,7 @@ export function WishlistPage() {
       if (updated.isReserved) {
         showToast({
           title: 'Секретная бронь сохранена',
-          message: `Вы зарезервировали: «${targetItem?.title}». Партнёр не увидит эту отметку, чтобы сюрприз удался!`,
+          message: `Вы зарезервировали: «${targetItem?.title}». ${isFriendship ? 'Друг' : 'Партнёр'} не увидит эту отметку, чтобы сюрприз удался!`,
           type: 'love',
         });
       } else {

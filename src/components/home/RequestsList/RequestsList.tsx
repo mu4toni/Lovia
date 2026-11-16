@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CoupleReminder, RequestFilterTab } from '../../../types';
-import { UserCategory } from '../../../types/category';
+import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
 import { EmptyState } from '../../ui/EmptyState/EmptyState';
 import { Icon } from '../../ui/Icon/Icon';
 import { getCardColorStyles } from '../../../utils/colorContrast';
+import { getContrastColor } from '../../../utils/categories';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './RequestsList.css';
 
 export interface RequestsListProps {
@@ -21,6 +23,7 @@ export interface RequestsListProps {
 
 export const RequestsList: React.FC<RequestsListProps> = ({
   requests,
+  categories = [],
   currentUserId,
   onToggleStatus,
   onDeleteRequest,
@@ -28,13 +31,27 @@ export const RequestsList: React.FC<RequestsListProps> = ({
   onCreateClick: _onCreateClick,
   className = '',
 }) => {
+  const { isFriendship } = useSpaceMode();
   const [activeTab, setActiveTab] = useState<RequestFilterTab>('all');
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
-  // Extract unique category colors present in current requests
-  const presentColors = Array.from(
-    new Set(requests.map((r) => r.categoryColor).filter(Boolean) as string[])
-  );
+  // Extract / collect unique category colors for filtering
+  const filterColors = useMemo(() => {
+    const fromRequests = requests.map((r) => r.categoryColor).filter(Boolean) as string[];
+    const fromCategories = (categories && categories.length > 0 ? categories : DEFAULT_BASE_CATEGORIES)
+      .map((c: UserCategory) => c.color)
+      .filter(Boolean);
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const c of [...fromRequests, ...fromCategories]) {
+      const lower = c.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        result.push(c);
+      }
+    }
+    return result;
+  }, [requests, categories]);
 
   // Filter by tab + selected color
   const filteredRequests = requests.filter((req) => {
@@ -85,48 +102,6 @@ export const RequestsList: React.FC<RequestsListProps> = ({
         </div>
       </div>
 
-      {/* Color Filter Swatches Bar (if requests with colors exist) */}
-      {presentColors.length > 0 && (
-        <div
-          className="requests-color-filter-bar"
-          role="toolbar"
-          aria-label="Фильтрация напоминаний по цвету"
-        >
-          <button
-            type="button"
-            className={`requests-color-pill ${selectedColor === null ? 'requests-color-pill--active' : ''}`}
-            onClick={() => setSelectedColor(null)}
-            aria-pressed={selectedColor === null}
-          >
-            Все цвета
-          </button>
-          {presentColors.map((colorHex) => {
-            const isSelected = selectedColor?.toLowerCase() === colorHex.toLowerCase();
-            return (
-              <button
-                key={colorHex}
-                type="button"
-                className={`requests-color-swatch-btn ${isSelected ? 'requests-color-swatch-btn--active' : ''}`}
-                style={{ backgroundColor: colorHex }}
-                onClick={() => setSelectedColor(isSelected ? null : colorHex)}
-                aria-pressed={isSelected}
-                aria-label={`Фильтр по цвету ${colorHex}`}
-                title={`Фильтр по цвету`}
-              >
-                {isSelected && (
-                  <Icon
-                    name="check"
-                    size={12}
-                    strokeWidth={2.8}
-                    className="requests-color-swatch__check"
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       {/* Overdue Alert Banner if any */}
       {overdueRequests.length > 0 && (
         <div className="requests-overdue-banner" role="alert">
@@ -172,6 +147,59 @@ export const RequestsList: React.FC<RequestsListProps> = ({
           От меня
         </button>
       </div>
+
+      {/* Compact Color Filter Bar (Right below the tabs) */}
+      {filterColors.length > 0 && (
+        <div
+          className="requests-color-filter-bar"
+          role="toolbar"
+          aria-label="Фильтрация напоминаний по цвету"
+        >
+          <button
+            type="button"
+            className={`requests-color-pill requests-color-all-btn ${
+              selectedColor === null ? 'requests-color-pill--active requests-color-all-btn--active' : ''
+            }`}
+            onClick={() => setSelectedColor(null)}
+            aria-pressed={selectedColor === null}
+          >
+            Все
+          </button>
+          {filterColors.map((colorHex) => {
+            const isSelected = selectedColor?.toLowerCase() === colorHex.toLowerCase();
+            const checkColor = getContrastColor(colorHex);
+            const matchedCat =
+              categories.find((c: UserCategory) => c.color.toLowerCase() === colorHex.toLowerCase()) ||
+              DEFAULT_BASE_CATEGORIES.find((c: UserCategory) => c.color.toLowerCase() === colorHex.toLowerCase());
+            const catName = matchedCat?.name || `Цвет ${colorHex}`;
+
+            return (
+              <button
+                key={colorHex}
+                type="button"
+                className={`requests-color-circle requests-color-swatch-btn ${
+                  isSelected ? 'requests-color-circle--active requests-color-swatch-btn--active' : ''
+                }`}
+                style={{ backgroundColor: colorHex }}
+                onClick={() => setSelectedColor(isSelected ? null : colorHex)}
+                aria-pressed={isSelected}
+                aria-label={`Фильтр по цвету: ${catName}`}
+                title={catName}
+              >
+                {isSelected && (
+                  <Icon
+                    name="check"
+                    size={11}
+                    strokeWidth={3}
+                    className="requests-color-swatch__check"
+                    style={{ color: checkColor }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Reminders List with Full Card Background Tinting */}
       {filteredRequests.length > 0 ? (
@@ -384,9 +412,15 @@ export const RequestsList: React.FC<RequestsListProps> = ({
             selectedColor
               ? 'Создайте напоминание с этим цветом или сбросьте фильтр.'
               : activeTab === 'for_me'
-              ? 'Здесь появятся напоминания и знаки заботы от партнёра.'
+              ? isFriendship
+                ? 'Здесь появятся напоминания и знаки заботы от друга.'
+                : 'Здесь появятся напоминания и знаки заботы от партнёра.'
               : activeTab === 'from_me'
-              ? 'Создайте приятное напоминание или просьбу для партнёра!'
+              ? isFriendship
+                ? 'Создайте приятное напоминание или просьбу для друга!'
+                : 'Создайте приятное напоминание или просьбу для партнёра!'
+              : isFriendship
+              ? 'У вас пока нет активных напоминаний. Создайте приятное напоминание для друга!'
               : 'У вас пока нет активных напоминаний. Создайте приятное напоминание для партнёра!'
           }
         />

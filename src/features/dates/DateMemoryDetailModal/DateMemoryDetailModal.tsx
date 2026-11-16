@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button/Button';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { PlaceCard } from '../PlaceCard/PlaceCard';
 import { formatRussianDate } from '../../../utils/dateCalculations';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DateMemoryDetailModal.css';
 
 export interface DateMemoryDetailModalProps {
@@ -24,6 +25,7 @@ export const DateMemoryDetailModal: React.FC<DateMemoryDetailModalProps> = ({
   onDelete,
   onOpenPhotoLightbox,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   useEffect(() => {
@@ -38,11 +40,22 @@ export const DateMemoryDetailModal: React.FC<DateMemoryDetailModalProps> = ({
   const effectivePlace = location || (place ? { placeName: place, latitude: 55.7522, longitude: 37.6156 } : null);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Воспоминание о свидании">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isFriendship ? 'Воспоминание о встрече' : 'Воспоминание о свидании'}
+    >
       <article className="date-memory-detail">
         {/* 1. Large Hero Photo Gallery / Slider at the top (260px–340px) */}
         {hasPhotos && photos && (
-          <section className="date-memory-detail__hero-slider" aria-label="Галерея фотографий свидания">
+          <section
+            className="date-memory-detail__hero-slider"
+            aria-label={
+              isFriendship
+                ? 'Галерея фотографий встречи'
+                : 'Галерея фотографий свидания'
+            }
+          >
             <div
               className="date-memory-detail__hero-photo-wrap"
               onClick={() => onOpenPhotoLightbox(photos, currentPhotoIndex)}

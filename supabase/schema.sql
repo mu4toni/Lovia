@@ -19,9 +19,15 @@ CREATE TABLE IF NOT EXISTS public.users (
   avatar_url TEXT,
   couple_id TEXT,
   joined_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  timezone_offset INTEGER NOT NULL DEFAULT 0,
+  notifications_enabled BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
+
+-- Migrations for existing users table
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS timezone_offset INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN NOT NULL DEFAULT true;
 
 -- Couples table
 CREATE TABLE IF NOT EXISTS public.couples (
@@ -29,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.couples (
   invite_code TEXT UNIQUE NOT NULL,
   code_expires_at TIMESTAMPTZ NOT NULL,
   code_status TEXT NOT NULL DEFAULT 'active' CHECK (code_status IN ('active', 'used', 'expired')),
+  space_type TEXT NOT NULL DEFAULT 'relationship',
   user1_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   user2_id TEXT REFERENCES public.users(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'waiting_partner' CHECK (status IN ('waiting_partner', 'connected', 'dissolved')),
@@ -36,6 +43,9 @@ CREATE TABLE IF NOT EXISTS public.couples (
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
   dissolved_at TIMESTAMPTZ
 );
+
+-- Migration for existing couples table
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS space_type TEXT NOT NULL DEFAULT 'relationship';
 
 -- Foreign key back from users to couples
 DO $$
@@ -128,6 +138,16 @@ CREATE TABLE IF NOT EXISTS public.date_memories (
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
+-- Notification logs table (Tracks sent telegram notifications to avoid duplicates)
+CREATE TABLE IF NOT EXISTS public.notification_logs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE,
+  couple_id TEXT REFERENCES public.couples(id) ON DELETE CASCADE,
+  notification_type TEXT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+  payload JSONB
+);
+
 -- ============================================================
 -- 3. Indexes for maximum query performance
 -- ============================================================
@@ -139,6 +159,8 @@ CREATE INDEX IF NOT EXISTS idx_events_couple_id ON public.events(couple_id);
 CREATE INDEX IF NOT EXISTS idx_wishlist_couple_id ON public.wishlist_items(couple_id);
 CREATE INDEX IF NOT EXISTS idx_memorable_dates_couple ON public.memorable_dates(couple_id);
 CREATE INDEX IF NOT EXISTS idx_date_memories_couple ON public.date_memories(couple_id);
+CREATE INDEX IF NOT EXISTS idx_notification_logs_user ON public.notification_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_logs_type ON public.notification_logs(notification_type);
 
 -- ============================================================
 -- 4. Enable Supabase Realtime publication
@@ -168,6 +190,7 @@ ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.memorable_dates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.date_memories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_logs ENABLE ROW LEVEL SECURITY;
 
 -- Allow anon & authenticated access with API key (Lovia client-side model)
 DO $$
@@ -180,6 +203,7 @@ BEGIN
   CREATE POLICY "Public access to memorable_dates" ON public.memorable_dates FOR ALL USING (true) WITH CHECK (true);
   CREATE POLICY "Public access to date_memories" ON public.date_memories FOR ALL USING (true) WITH CHECK (true);
   CREATE POLICY "Public access to categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
+  CREATE POLICY "Public access to notification_logs" ON public.notification_logs FOR ALL USING (true) WITH CHECK (true);
 EXCEPTION WHEN OTHERS THEN
   NULL;
 END $$;

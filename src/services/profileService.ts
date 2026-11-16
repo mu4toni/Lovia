@@ -2,6 +2,7 @@ import { CoupleProfile } from '../types/couple';
 import { initialCoupleProfile } from './mockData';
 import { relationshipService } from './relationshipService';
 import { coupleService } from './coupleService';
+import { supabase, isSupabaseConfigured } from './api';
 
 const NOTIFICATIONS_KEY = 'lovia_notifications_enabled';
 
@@ -43,6 +44,33 @@ class ProfileService {
       // Fallback
     }
     this.initialized = true;
+
+    // Фоновая синхронизация настройки уведомлений из Supabase
+    if (isSupabaseConfigured()) {
+      const activeUser = coupleService.getActiveUser();
+      const effectiveUserId =
+        activeUser?.id && activeUser.id !== 'user-marsel' && !activeUser.id.startsWith('guest')
+          ? activeUser.id
+          : null;
+      if (effectiveUserId) {
+        supabase
+          .from('users')
+          .select('notifications_enabled')
+          .eq('id', effectiveUserId)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data && typeof data.notifications_enabled === 'boolean') {
+              this.notificationsEnabled = data.notifications_enabled;
+              try {
+                localStorage.setItem(NOTIFICATIONS_KEY, String(data.notifications_enabled));
+              } catch {
+                // ignore
+              }
+              this.notify();
+            }
+          });
+      }
+    }
   }
 
   getUser(): UserProfileData {
@@ -125,6 +153,7 @@ class ProfileService {
       daysTogether: initialCoupleProfile.daysTogether,
       inviteCode: partner.inviteCode,
       motto: initialCoupleProfile.motto,
+      spaceType: coupleService.getSpaceType(),
     };
   }
 
@@ -147,6 +176,29 @@ class ProfileService {
       console.warn('Failed to save notifications setting:', e);
     }
     this.notify();
+
+    // Синхронизация настройки уведомлений в Supabase public.users
+    if (isSupabaseConfigured()) {
+      const activeUser = coupleService.getActiveUser();
+      const effectiveUserId =
+        activeUser?.id && activeUser.id !== 'user-marsel' && !activeUser.id.startsWith('guest')
+          ? activeUser.id
+          : null;
+      if (effectiveUserId) {
+        supabase
+          .from('users')
+          .update({
+            notifications_enabled: enabled,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq('id', effectiveUserId)
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[profileService] Failed to update notifications_enabled in Supabase:', error.message);
+            }
+          });
+      }
+    }
   }
 
   async unpairPartner(): Promise<{ success: boolean; error?: string }> {
