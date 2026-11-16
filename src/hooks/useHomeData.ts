@@ -131,14 +131,38 @@ export function useHomeData() {
     window.addEventListener('lovia_categories_updated', onCatsUpdated);
     window.addEventListener('lovia_relationship_updated', onRelUpdated);
     window.addEventListener('lovia_couple_updated', onRelUpdated);
+    window.addEventListener('lovia_couple_connected', onRelUpdated);
+    window.addEventListener('lovia_reminders_updated', onRelUpdated);
     window.addEventListener('lovia_profile_updated', onRelUpdated);
+
+    // Visibility change (returning to Telegram from background)
+    const onVisibility = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // Silent background poll every 5 seconds so partner sees new reminders
+    const intervalId = setInterval(() => {
+      if (!document.hidden && demoMode === 'normal') {
+        requestsService.getRequests(false).then((list) => {
+          setRequests(list);
+        }).catch(() => {});
+      }
+    }, 5000);
+
     return () => {
       window.removeEventListener('lovia_categories_updated', onCatsUpdated);
       window.removeEventListener('lovia_relationship_updated', onRelUpdated);
       window.removeEventListener('lovia_couple_updated', onRelUpdated);
+      window.removeEventListener('lovia_couple_connected', onRelUpdated);
+      window.removeEventListener('lovia_reminders_updated', onRelUpdated);
       window.removeEventListener('lovia_profile_updated', onRelUpdated);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(intervalId);
     };
-  }, [loadData, handleCategoriesChanged]);
+  }, [loadData, handleCategoriesChanged, demoMode]);
 
   return {
     profile,

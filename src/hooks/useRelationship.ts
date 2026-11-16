@@ -27,13 +27,18 @@ export function useRelationship() {
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const refreshData = useCallback(() => {
+  const refreshData = useCallback(async () => {
     const curStart = relationshipService.getStartDate();
     setStartDateState(curStart);
     setDaysTogether(calculateDaysTogether(curStart));
     setAnniversary(getAnniversaryInfo(curStart));
     setHeldDatesCount(dateMemoryService.getHeldDatesCount());
-    setMemorableDates(relationshipService.getMemorableDates());
+    try {
+      const dates = await relationshipService.fetchMemorableDates();
+      setMemorableDates(dates);
+    } catch {
+      setMemorableDates(relationshipService.getMemorableDates());
+    }
   }, []);
 
   useEffect(() => {
@@ -44,7 +49,7 @@ export function useRelationship() {
         const prof = await requestsService.getProfile();
         if (isMounted) {
           setProfile(prof);
-          refreshData();
+          await refreshData();
         }
       } finally {
         if (isMounted) setIsLoading(false);
@@ -57,11 +62,30 @@ export function useRelationship() {
 
     window.addEventListener('lovia_relationship_updated', handleRelUpdate);
     window.addEventListener('lovia_dates_updated', handleDatesUpdate);
+    window.addEventListener('lovia_couple_connected', handleRelUpdate);
+    window.addEventListener('lovia_couple_updated', handleRelUpdate);
+
+    const onVisibility = () => {
+      if (!document.hidden) {
+        refreshData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshData();
+      }
+    }, 5000);
 
     return () => {
       isMounted = false;
       window.removeEventListener('lovia_relationship_updated', handleRelUpdate);
       window.removeEventListener('lovia_dates_updated', handleDatesUpdate);
+      window.removeEventListener('lovia_couple_connected', handleRelUpdate);
+      window.removeEventListener('lovia_couple_updated', handleRelUpdate);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(intervalId);
     };
   }, [refreshData]);
 

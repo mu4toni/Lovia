@@ -12,6 +12,7 @@ import {
 import { profileService } from './profileService';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
+import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_REMINDERS_KEY = 'lovia_reminders';
 const STORAGE_EVENTS_KEY = 'lovia_events';
@@ -20,24 +21,71 @@ class RemindersService {
   private reminders: CoupleReminder[] = [];
   private events: CoupleEvent[] = [];
   private initialized = false;
+  private currentChannel: any = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
       window.addEventListener('lovia_couple_updated', () => {
         this.initialized = false;
+        this.subscribeToRealtime();
+      });
+      window.addEventListener('lovia_couple_connected', () => {
+        this.initialized = false;
+        this.subscribeToRealtime();
       });
       window.addEventListener('lovia_couple_dissolved', () => {
         this.reminders = [];
         this.events = [];
         this.initialized = false;
-      });
-      window.addEventListener('lovia_couple_connected', () => {
-        this.initialized = false;
+        if (this.currentChannel) {
+          try {
+            supabase.removeChannel(this.currentChannel);
+            this.currentChannel = null;
+          } catch {
+            // ignore
+          }
+        }
       });
     }
   }
 
-  private init() {
+  private subscribeToRealtime(): void {
+    if (!isSupabaseConfigured() || typeof window === 'undefined') return;
+    const couple = coupleService.getCurrentCouple();
+    if (!couple || couple.id === 'couple-1') return;
+
+    if (this.currentChannel) {
+      try {
+        supabase.removeChannel(this.currentChannel);
+        this.currentChannel = null;
+      } catch {
+        // ignore
+      }
+    }
+
+    try {
+      this.currentChannel = supabase
+        .channel(`reminders_${couple.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'reminders',
+            filter: `couple_id=eq.${couple.id}`,
+          },
+          async () => {
+            await this.fetchFromSupabase(couple.id);
+            window.dispatchEvent(new CustomEvent('lovia_reminders_updated'));
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('[requestsService] Realtime subscription error:', e);
+    }
+  }
+
+  private initLocal(): void {
     if (this.initialized) return;
     try {
       const stored = localStorage.getItem(STORAGE_REMINDERS_KEY);
@@ -45,10 +93,9 @@ class RemindersService {
         this.reminders = JSON.parse(stored);
       } else if (isLocalDevHost() && coupleService.isDemoCouple()) {
         this.reminders = [...initialRequests];
-        this.save();
+        this.saveLocal();
       } else {
         this.reminders = [];
-        this.save();
       }
 
       const storedEvents = localStorage.getItem(STORAGE_EVENTS_KEY);
@@ -56,10 +103,9 @@ class RemindersService {
         this.events = JSON.parse(storedEvents);
       } else if (isLocalDevHost() && coupleService.isDemoCouple()) {
         this.events = [...initialEvents];
-        this.saveEvents();
+        this.saveEventsLocal();
       } else {
         this.events = [];
-        this.saveEvents();
       }
     } catch {
       this.reminders = isLocalDevHost() && coupleService.isDemoCouple() ? [...initialRequests] : [];
@@ -68,19 +114,22 @@ class RemindersService {
     this.initialized = true;
   }
 
-  private save() {
+  private saveLocal() {
     try {
       localStorage.setItem(STORAGE_REMINDERS_KEY, JSON.stringify(this.reminders));
     } catch (e) {
       console.warn('Failed to save reminders to localStorage:', e);
     }
+  }
+
+  private notify() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('lovia_reminders_updated'));
       window.dispatchEvent(new CustomEvent('lovia_categories_updated'));
     }
   }
 
-  private saveEvents() {
+  private saveEventsLocal() {
     try {
       localStorage.setItem(STORAGE_EVENTS_KEY, JSON.stringify(this.events));
     } catch (e) {
@@ -90,30 +139,115 @@ class RemindersService {
 
   async getProfile(): Promise<CoupleProfile> {
     return new Promise((resolve) => {
-      setTimeout(() => resolve(profileService.getCoupleProfile()), 60);
+      setTimeout(() => resolve(profileService.getCoupleProfile()), 40);
     });
+  }
+
+  private async fetchFromSupabase(coupleId: string): Promise<CoupleReminder[]> {
+    const couple = coupleService.getCurrentCouple();
+    const { data, error } = await supabase
+      .from('reminders')
+      .select('*')
+      .eq('couple_id', coupleId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[requestsService] Failed to load reminders from Supabase:', error);
+      throw new Error('Ошибка БД: ' + error.message);
+    }
+
+    const mapped: CoupleReminder[] = (data || []).map((row: any) => {
+      const isUser1Target = couple ? row.for_user_id === couple.user1.id : false;
+      const isUser2Target = couple && couple.user2 ? row.for_user_id === couple.user2.id : false;
+      const targetName = isUser1Target
+        ? couple?.user1.name || 'Партнёр'
+        : isUser2Target
+        ? couple?.user2?.name || 'Партнёр'
+        : row.for_user_id === 'both'
+        ? 'Для нас обоих'
+        : 'Партнёр';
+
+      const isUser1Author = couple ? row.created_by_id === couple.user1.id : false;
+      const authorName = isUser1Author
+        ? couple?.user1.name || 'Пользователь'
+        : couple?.user2?.name || 'Партнёр';
+
+      const dueLabel = row.due_date
+        ? row.due_time
+          ? `${row.due_date} · ${row.due_time}`
+          : row.due_date
+        : 'Несрочно';
+
+      return {
+        id: row.id,
+        title: row.title,
+        description: row.description || undefined,
+        authorId: row.created_by_id,
+        authorName,
+        targetId: row.for_user_id,
+        targetName,
+        dueDate: row.due_date || '',
+        dueLabel,
+        dueTime: row.due_time || undefined,
+        urgency: (row.priority as 'low' | 'medium' | 'high') || 'medium',
+        categoryId: row.category_id || undefined,
+        category: row.category_id || undefined,
+        status: (row.status as 'pending' | 'completed') || 'pending',
+        createdAt: row.created_at,
+        rewardNote: row.reward_note || undefined,
+      };
+    });
+
+    this.reminders = mapped;
+    this.saveLocal();
+    return mapped;
   }
 
   async getRequests(includeOverdue = false): Promise<CoupleReminder[]> {
-    this.init();
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const list = [...this.reminders];
-        if (includeOverdue && !list.some((r) => r.id === overdueRequest.id)) {
-          list.unshift(overdueRequest);
-        }
-        resolve(list);
-      }, 80);
-    });
+    this.initLocal();
+
+    if (isSupabaseConfigured() && !isLocalDevHost()) {
+      let couple = coupleService.getCurrentCouple();
+      if (!couple || couple.id === 'couple-1') {
+        await coupleService.syncCurrentCoupleFromSupabase();
+        couple = coupleService.getCurrentCouple();
+      }
+
+      if (!couple || couple.id === 'couple-1') {
+        return [];
+      }
+
+      this.subscribeToRealtime();
+      return await this.fetchFromSupabase(couple.id);
+    }
+
+    const list = [...this.reminders];
+    if (includeOverdue && !list.some((r) => r.id === overdueRequest.id)) {
+      list.unshift(overdueRequest);
+    }
+    return list;
   }
 
   async createRequest(input: CreateReminderInput): Promise<CoupleReminder> {
-    this.init();
+    this.initLocal();
     const activeUser = coupleService.getActiveUser();
+    let couple = coupleService.getCurrentCouple();
+
+    if (isSupabaseConfigured() && !isLocalDevHost()) {
+      if (!couple || couple.id === 'couple-1') {
+        await coupleService.syncCurrentCoupleFromSupabase();
+        couple = coupleService.getCurrentCouple();
+      }
+
+      if (!couple || couple.id === 'couple-1') {
+        throw new Error('Пара не подключена. Сначала создайте или подключитесь к паре.');
+      }
+    }
+
     const newReminder: CoupleReminder = {
-      id: `rem-${Date.now()}`,
-      title: input.title,
-      description: input.description,
+      id: `rem-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      title: input.title.trim(),
+      description: input.description?.trim(),
       authorId: activeUser.id,
       authorName: activeUser.name,
       targetId: input.targetId,
@@ -129,24 +263,70 @@ class RemindersService {
       category: input.category,
       status: 'pending',
       createdAt: new Date().toISOString(),
-      rewardNote: input.rewardNote,
+      rewardNote: input.rewardNote?.trim(),
     };
 
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+      const row = {
+        id: newReminder.id,
+        couple_id: couple.id,
+        title: newReminder.title,
+        category_id: newReminder.categoryId || null,
+        priority: newReminder.urgency || 'medium',
+        for_user_id: newReminder.targetId,
+        created_by_id: newReminder.authorId,
+        status: newReminder.status,
+        due_date: newReminder.dueDate || null,
+        due_time: newReminder.dueTime || null,
+        created_at: newReminder.createdAt,
+      };
+
+      const { error } = await supabase.from('reminders').insert(row);
+      if (error) {
+        console.error('[requestsService] Failed to insert reminder in Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
+
     this.reminders.unshift(newReminder);
-    this.save();
+    this.saveLocal();
+    this.notify();
     return newReminder;
   }
 
   async updateRequest(id: string, input: Partial<CreateReminderInput>): Promise<CoupleReminder | undefined> {
-    this.init();
+    this.initLocal();
+    const couple = coupleService.getCurrentCouple();
+
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+      const updateData: any = {};
+      if (input.title !== undefined) updateData.title = input.title.trim();
+      if (input.urgency !== undefined) updateData.priority = input.urgency;
+      if (input.targetId !== undefined) updateData.for_user_id = input.targetId;
+      if (input.dueDate !== undefined) updateData.due_date = input.dueDate || null;
+      if (input.dueTime !== undefined) updateData.due_time = input.dueTime || null;
+      if (input.categoryId !== undefined) updateData.category_id = input.categoryId || null;
+
+      const { error } = await supabase
+        .from('reminders')
+        .update(updateData)
+        .eq('id', id)
+        .eq('couple_id', couple.id);
+
+      if (error) {
+        console.error('[requestsService] Failed to update reminder in Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
+
     const index = this.reminders.findIndex((r) => r.id === id);
     if (index === -1) return undefined;
 
     const existing = this.reminders[index];
     const updated: CoupleReminder = {
       ...existing,
-      title: input.title !== undefined ? input.title : existing.title,
-      description: input.description !== undefined ? input.description : existing.description,
+      title: input.title !== undefined ? input.title.trim() : existing.title,
+      description: input.description !== undefined ? input.description.trim() : existing.description,
       targetId: input.targetId !== undefined ? input.targetId : existing.targetId,
       targetName: input.targetName !== undefined ? input.targetName : existing.targetName,
       dueDate: input.dueDate !== undefined ? input.dueDate : existing.dueDate,
@@ -162,43 +342,74 @@ class RemindersService {
     };
 
     this.reminders[index] = updated;
-    this.save();
+    this.saveLocal();
+    this.notify();
     return { ...updated };
   }
 
   async toggleStatus(id: string): Promise<CoupleReminder | undefined> {
-    this.init();
+    this.initLocal();
     const rem = this.reminders.find((r) => r.id === id);
     if (!rem) return undefined;
 
-    rem.status = rem.status === 'completed' ? 'pending' : 'completed';
-    this.save();
+    const newStatus = rem.status === 'completed' ? 'pending' : 'completed';
+    const couple = coupleService.getCurrentCouple();
+
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+      const { error } = await supabase
+        .from('reminders')
+        .update({
+          status: newStatus,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+        })
+        .eq('id', id)
+        .eq('couple_id', couple.id);
+
+      if (error) {
+        console.error('[requestsService] Failed to toggle reminder status in Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
+
+    rem.status = newStatus;
+    this.saveLocal();
+    this.notify();
     return { ...rem };
   }
 
   async deleteRequest(id: string): Promise<boolean> {
-    this.init();
+    this.initLocal();
+    const couple = coupleService.getCurrentCouple();
+
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('id', id)
+        .eq('couple_id', couple.id);
+
+      if (error) {
+        console.error('[requestsService] Failed to delete reminder from Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
+
     const prevLen = this.reminders.length;
     this.reminders = this.reminders.filter((r) => r.id !== id);
-    this.save();
+    this.saveLocal();
+    this.notify();
     return this.reminders.length < prevLen;
   }
 
-  /**
-   * Returns count of reminders (active and completed) associated with the category
-   */
   getAffectedRemindersCount(categoryId: string): number {
-    this.init();
+    this.initLocal();
     return this.reminders.filter(
       (r) => r.categoryId === categoryId || r.category === categoryId
     ).length;
   }
 
-  /**
-   * Safe category deletion: unlinks category from reminders so data is NEVER lost
-   */
   async unlinkCategory(categoryId: string): Promise<void> {
-    this.init();
+    this.initLocal();
     let updated = false;
     this.reminders = this.reminders.map((r) => {
       if (r.categoryId === categoryId || r.category === categoryId) {
@@ -215,15 +426,13 @@ class RemindersService {
       return r;
     });
     if (updated) {
-      this.save();
+      this.saveLocal();
+      this.notify();
     }
   }
 
-  /**
-   * Updates category info (color/name/icon) across all associated reminders
-   */
   async updateCategoryInfo(categoryId: string, name?: string, color?: string, icon?: string): Promise<void> {
-    this.init();
+    this.initLocal();
     let updated = false;
     this.reminders = this.reminders.map((r) => {
       if (r.categoryId === categoryId || r.category === categoryId) {
@@ -238,13 +447,11 @@ class RemindersService {
       return r;
     });
     if (updated) {
-      this.save();
+      this.saveLocal();
+      this.notify();
     }
   }
 
-  /**
-   * Reassigns all reminders from one category to another
-   */
   async reassignCategory(
     fromCategoryId: string,
     toCategoryId: string,
@@ -252,7 +459,7 @@ class RemindersService {
     toCategoryColor?: string,
     toCategoryIcon?: string
   ): Promise<void> {
-    this.init();
+    this.initLocal();
     let updated = false;
     this.reminders = this.reminders.map((r) => {
       if (r.categoryId === fromCategoryId || r.category === fromCategoryId) {
@@ -269,20 +476,41 @@ class RemindersService {
       return r;
     });
     if (updated) {
-      this.save();
+      this.saveLocal();
+      this.notify();
     }
   }
 
   async getEvents(): Promise<CoupleEvent[]> {
-    this.init();
-    return new Promise((resolve) => {
-      setTimeout(() => resolve([...this.events]), 60);
-    });
+    this.initLocal();
+    if (isSupabaseConfigured() && !isLocalDevHost()) {
+      const couple = coupleService.getCurrentCouple();
+      if (couple && couple.id !== 'couple-1') {
+        try {
+          const { data, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('couple_id', couple.id);
+
+          if (!error && data && data.length > 0) {
+            return data.map((e: any) => ({
+              id: e.id,
+              title: e.title,
+              date: e.date,
+              time: e.time || undefined,
+              category: (e.category || 'dates') as any,
+              emoji: e.emoji || '✨',
+              location: e.location || undefined,
+            }));
+          }
+        } catch {
+          // fallback to local events
+        }
+      }
+    }
+    return [...this.events];
   }
 
-  /**
-   * Completely clears all shared reminders and resets state upon couple dissolution
-   */
   async clearSharedData(): Promise<void> {
     this.reminders = [];
     this.events = [];

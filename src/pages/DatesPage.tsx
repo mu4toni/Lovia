@@ -54,44 +54,60 @@ export function DatesPage() {
     isQuickListOpen ||
     isAlbumOpen;
 
-  const handleCreateOrEditSubmit = (input: CreateDateMemoryInput) => {
-    if (editingMemory) {
-      updateMemory(editingMemory.id, input);
-      showToast({
-        title: 'Воспоминание сохранено',
-        message: `«${input.title}» успешно обновлено`,
-        type: 'success',
-      });
-      if (selectedMemory && selectedMemory.id === editingMemory.id) {
-        setSelectedMemory({
-          ...selectedMemory,
-          ...input,
-          photos: input.photos || [],
+  const handleCreateOrEditSubmit = async (input: CreateDateMemoryInput) => {
+    try {
+      if (editingMemory) {
+        await updateMemory(editingMemory.id, input);
+        showToast({
+          title: 'Воспоминание сохранено',
+          message: `«${input.title}» успешно обновлено`,
+          type: 'success',
+        });
+        if (selectedMemory && selectedMemory.id === editingMemory.id) {
+          setSelectedMemory({
+            ...selectedMemory,
+            ...input,
+            photos: input.photos || [],
+          });
+        }
+        setEditingMemory(null);
+      } else {
+        await createMemory(input);
+        telegramService.hapticNotification('success');
+        showToast({
+          title: 'Воспоминание сохранено',
+          message: `«${input.title}» добавлено в ваш дневник свиданий`,
+          type: 'love',
         });
       }
-      setEditingMemory(null);
-    } else {
-      createMemory(input);
-      telegramService.hapticNotification('success');
+    } catch (err: any) {
       showToast({
-        title: 'Воспоминание сохранено',
-        message: `«${input.title}» добавлено в ваш дневник свиданий`,
-        type: 'love',
+        title: 'Ошибка сохранения',
+        message: err.message || 'Не удалось сохранить свидание в Supabase',
+        type: 'info',
       });
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingMemory) return;
     const title = deletingMemory.title;
-    deleteMemory(deletingMemory.id);
-    showToast({
-      title: 'Свидание удалено',
-      message: `«${title}» удалено из дневника свиданий`,
-      type: 'info',
-    });
-    if (selectedMemory && selectedMemory.id === deletingMemory.id) {
-      setSelectedMemory(null);
+    try {
+      await deleteMemory(deletingMemory.id);
+      showToast({
+        title: 'Свидание удалено',
+        message: `«${title}» удалено из дневника свиданий`,
+        type: 'info',
+      });
+      if (selectedMemory && selectedMemory.id === deletingMemory.id) {
+        setSelectedMemory(null);
+      }
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка удаления',
+        message: err.message || 'Не удалось удалить свидание из базы данных',
+        type: 'info',
+      });
     }
     setDeletingMemory(null);
   };

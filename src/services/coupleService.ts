@@ -112,6 +112,25 @@ class CoupleService {
           }
         }
       });
+
+      // Background synchronization on tab visibility and focus
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && isSupabaseConfigured()) {
+          this.syncCurrentCoupleFromSupabase();
+        }
+      });
+      window.addEventListener('focus', () => {
+        if (isSupabaseConfigured()) {
+          this.syncCurrentCoupleFromSupabase();
+        }
+      });
+
+      // Initial background sync to restore couple session from Supabase
+      setTimeout(() => {
+        if (isSupabaseConfigured()) {
+          this.syncCurrentCoupleFromSupabase();
+        }
+      }, 50);
     }
   }
 
@@ -479,6 +498,7 @@ class CoupleService {
       }
 
       this.saveToStorage();
+      this.notify();
 
       if (wasWaiting && syncedCouple.status === 'connected' && syncedCouple.user2) {
         if (typeof window !== 'undefined') {
@@ -491,6 +511,62 @@ class CoupleService {
       console.warn('[coupleService] Failed syncCoupleFromSupabase:', e?.message || e);
       return null;
     }
+  }
+
+  /**
+   * Подтягивает актуальную пару из Supabase при старте приложения и возвращении в Telegram
+   */
+  async syncCurrentCoupleFromSupabase(): Promise<CoupleSpace | null> {
+    if (!isSupabaseConfigured()) return null;
+    this.init();
+
+    const user = this.getActiveUser();
+    const tgUser = telegramService.getTelegramUser();
+
+    // 1. Если локально coupleId не привязан, проверяем в public.users
+    if (!user.coupleId || user.coupleId === 'couple-1') {
+      try {
+        let dbUser: any = null;
+        if (tgUser?.id) {
+          const { data } = await supabase
+            .from('users')
+            .select('*')
+            .eq('telegram_id', Number(tgUser.id))
+            .maybeSingle();
+          dbUser = data;
+        }
+        if (!dbUser && user.id && user.id !== 'user-marsel' && !user.id.startsWith('guest')) {
+          const { data } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+          dbUser = data;
+        }
+
+        if (dbUser && dbUser.couple_id) {
+          user.coupleId = dbUser.couple_id;
+          if (dbUser.name) user.name = dbUser.name;
+          if (dbUser.avatar_url) user.avatarUrl = dbUser.avatar_url;
+          this.users[user.id] = { ...user };
+          this.saveToStorage();
+        }
+      } catch (e) {
+        console.warn('[coupleService] Failed checking user in Supabase:', e);
+      }
+    }
+
+    // 2. Если coupleId есть, подтягиваем актуальные данные из public.couples
+    if (user.coupleId && user.coupleId !== 'couple-1') {
+      const synced = await this.syncCoupleFromSupabase(user.coupleId);
+      if (synced) {
+        this.subscribeToCoupleUpdates(user.coupleId);
+        this.notify();
+        return synced;
+      }
+    }
+
+    return null;
   }
 
   /**

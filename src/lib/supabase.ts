@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { isLocalDevHost } from '../utils/env';
 
 export interface Database {
   public: {
@@ -298,11 +299,33 @@ const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(supabaseUrl && supabaseAnonKey);
+  return Boolean(
+    supabaseAnonKey && (supabaseUrl || (typeof window !== 'undefined' && !isLocalDevHost()))
+  );
 }
 
-// Fallback dummy URL to satisfy client initialization without crashing
-const effectiveUrl = supabaseUrl || 'https://placeholder-project.supabase.co';
+/**
+ * Returns the effective Supabase URL.
+ * In production / Telegram (non-localhost), requests are proxied via Vercel (/supabase-proxy)
+ * on the app's own origin to avoid Russian ISP blocks on *.supabase.co (TypeError: Failed to fetch).
+ */
+function getEffectiveSupabaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    // In production, Telegram, or when accessing by IP/domain:
+    if (!isLocalDevHost()) {
+      return `${window.location.origin}/supabase-proxy`;
+    }
+    // On localhost: use explicit env URL if configured, or proxy
+    if (supabaseUrl) {
+      return supabaseUrl;
+    }
+    return `${window.location.origin}/supabase-proxy`;
+  }
+
+  return supabaseUrl || 'https://uwbdtisxjzmnzkodiexo.supabase.co';
+}
+
+const effectiveUrl = getEffectiveSupabaseUrl();
 const effectiveKey = supabaseAnonKey || 'placeholder-anon-key';
 
 export const supabase: SupabaseClient<any> = createClient(

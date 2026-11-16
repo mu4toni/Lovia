@@ -36,50 +36,82 @@ export function WishlistPage() {
   const partnerName = profile?.partner?.name || 'Алиса';
 
   const onCreateSubmit = async (input: CreateWishInput) => {
-    await handleCreateWish(input);
-    telegramService.hapticNotification('success');
-    showToast({
-      title: 'Желание сохранено',
-      message: `«${input.title}» добавлено в ваш вишлист`,
-      type: 'love',
-    });
+    try {
+      await handleCreateWish(input);
+      telegramService.hapticNotification('success');
+      showToast({
+        title: 'Желание сохранено',
+        message: `«${input.title}» добавлено в ваш вишлист`,
+        type: 'love',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка сохранения',
+        message: err.message || 'Не удалось сохранить желание в базе данных',
+        type: 'info',
+      });
+    }
   };
 
   const onEditSubmit = async (input: CreateWishInput) => {
     if (!editingWish) return;
-    await handleUpdateWish(editingWish.id, input);
-    showToast({
-      title: 'Изменения сохранены',
-      message: `«${input.title}» успешно обновлено`,
-      type: 'success',
-    });
+    try {
+      await handleUpdateWish(editingWish.id, input);
+      showToast({
+        title: 'Изменения сохранены',
+        message: `«${input.title}» успешно обновлено`,
+        type: 'success',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка обновления',
+        message: err.message || 'Не удалось обновить желание в базе данных',
+        type: 'info',
+      });
+    }
   };
 
   const onDeleteConfirm = async () => {
     if (!deletingWish) return;
     const title = deletingWish.title;
-    await handleDeleteWish(deletingWish.id);
-    showToast({
-      title: 'Желание удалено',
-      message: `«${title}» удалено из вишлиста`,
-      type: 'info',
-    });
+    try {
+      await handleDeleteWish(deletingWish.id);
+      showToast({
+        title: 'Желание удалено',
+        message: `«${title}» удалено из вишлиста`,
+        type: 'info',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка удаления',
+        message: err.message || 'Не удалось удалить желание из базы данных',
+        type: 'info',
+      });
+    }
   };
 
   const onToggleReserveWithToast = async (id: string) => {
     const targetItem = displayedItems.find((w) => w.id === id);
-    const updated = await handleToggleReserve(id);
-    telegramService.hapticImpact('light');
-    if (updated.isReserved) {
+    try {
+      const updated = await handleToggleReserve(id);
+      telegramService.hapticImpact('light');
+      if (updated.isReserved) {
+        showToast({
+          title: 'Секретная бронь сохранена',
+          message: `Вы зарезервировали: «${targetItem?.title}». Партнёр не увидит эту отметку, чтобы сюрприз удался!`,
+          type: 'love',
+        });
+      } else {
+        showToast({
+          title: 'Бронь снята',
+          message: `Вы отменили резервирование подарка «${targetItem?.title}».`,
+          type: 'info',
+        });
+      }
+    } catch (err: any) {
       showToast({
-        title: 'Секретная бронь сохранена',
-        message: `Вы зарезервировали: «${targetItem?.title}». Партнёр не увидит эту отметку, чтобы сюрприз удался!`,
-        type: 'love',
-      });
-    } else {
-      showToast({
-        title: 'Бронь снята',
-        message: `Вы отменили резервирование подарка «${targetItem?.title}».`,
+        title: 'Ошибка бронирования',
+        message: err.message || 'Не удалось обновить статус брони в базе данных',
         type: 'info',
       });
     }

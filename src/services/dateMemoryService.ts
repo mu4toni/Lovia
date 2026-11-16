@@ -6,6 +6,7 @@ import type {
 import { isFutureDate } from '../utils/dateCalculations';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
+import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_DATE_MEMORIES_KEY = 'lovia_date_memories_v1';
 
@@ -109,7 +110,108 @@ export const initialDateMemories: DateMemory[] = [
   },
 ];
 
+async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<string> {
+  if (!photo || !photo.startsWith('data:')) {
+    return photo;
+  }
+  try {
+    const match = photo.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+    if (!match) return photo;
+    const mime = match[1];
+    const b64 = match[2];
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const ext = mime.split('/')[1] || 'jpg';
+    const filePath = `${coupleId}/dates/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+
+    const { error: err1 } = await supabase.storage.from('lovia_media').upload(filePath, bytes, {
+      contentType: mime,
+      upsert: true,
+    });
+
+    if (!err1) {
+      const { data } = supabase.storage.from('lovia_media').getPublicUrl(filePath);
+      if (data?.publicUrl) return data.publicUrl;
+    } else {
+      const { error: err2 } = await supabase.storage.from('lovia-media').upload(filePath, bytes, {
+        contentType: mime,
+        upsert: true,
+      });
+      if (!err2) {
+        const { data } = supabase.storage.from('lovia-media').getPublicUrl(filePath);
+        if (data?.publicUrl) return data.publicUrl;
+      }
+    }
+  } catch (e) {
+    console.warn('[dateMemoryService] Failed to upload photo to storage:', e);
+  }
+  return photo;
+}
+
 class DateMemoryService {
+  private currentChannel: any = null;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('lovia_couple_connected', () => {
+        this.subscribeToRealtime();
+      });
+      window.addEventListener('lovia_couple_updated', () => {
+        this.subscribeToRealtime();
+      });
+      window.addEventListener('lovia_couple_dissolved', () => {
+        if (this.currentChannel) {
+          try {
+            supabase.removeChannel(this.currentChannel);
+            this.currentChannel = null;
+          } catch {
+            // ignore
+          }
+        }
+        this.clearSharedData();
+      });
+    }
+  }
+
+  private subscribeToRealtime(): void {
+    if (!isSupabaseConfigured() || typeof window === 'undefined') return;
+    const couple = coupleService.getCurrentCouple();
+    if (!couple || couple.id === 'couple-1') return;
+
+    if (this.currentChannel) {
+      try {
+        supabase.removeChannel(this.currentChannel);
+        this.currentChannel = null;
+      } catch {
+        // ignore
+      }
+    }
+
+    try {
+      this.currentChannel = supabase
+        .channel(`date_memories_${couple.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'date_memories',
+            filter: `couple_id=eq.${couple.id}`,
+          },
+          async () => {
+            await this.fetchDateMemories();
+            this.notify();
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('[dateMemoryService] Realtime subscription error:', e);
+    }
+  }
+
   private notify() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('lovia_dates_updated'));
@@ -124,7 +226,6 @@ class DateMemoryService {
           localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(initialDateMemories));
           return [...initialDateMemories];
         }
-        localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify([]));
         return [];
       }
       return JSON.parse(stored);
@@ -133,20 +234,88 @@ class DateMemoryService {
     }
   }
 
+  async fetchDateMemories(): Promise<DateMemory[]> {
+    if (isSupabaseConfigured() && !isLocalDevHost()) {
+      let couple = coupleService.getCurrentCouple();
+      if (!couple || couple.id === 'couple-1') {
+        await coupleService.syncCurrentCoupleFromSupabase();
+        couple = coupleService.getCurrentCouple();
+      }
+
+      if (!couple || couple.id === 'couple-1') {
+        return [];
+      }
+
+      this.subscribeToRealtime();
+
+      const { data, error } = await supabase
+        .from('date_memories')
+        .select('*')
+        .eq('couple_id', couple.id)
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('[dateMemoryService] Failed to load date memories from Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+
+      const mapped: DateMemory[] = (data || []).map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        date: row.date,
+        place: row.place || undefined,
+        location: row.location_data || undefined,
+        story: row.story || undefined,
+        photos: Array.isArray(row.photos) ? row.photos : [],
+        createdAt: row.created_at,
+      }));
+
+      try {
+        localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(mapped));
+      } catch (e) {
+        console.warn('Failed to cache date memories:', e);
+      }
+
+      return mapped;
+    }
+
+    return this.getDateMemories();
+  }
+
   getDateMemoryById(id: string): DateMemory | null {
     const list = this.getDateMemories();
     return list.find((m) => m.id === id) || null;
   }
 
-  createDateMemory(input: CreateDateMemoryInput): DateMemory {
+  async createDateMemory(input: CreateDateMemoryInput): Promise<DateMemory> {
     if (isFutureDate(input.date)) {
       throw new Error(
         'Можно сохранять только воспоминания о свиданиях, которые уже состоялись. Будущую дату выбрать нельзя.'
       );
     }
 
+    let couple = coupleService.getCurrentCouple();
+
+    if (isSupabaseConfigured() && !isLocalDevHost()) {
+      if (!couple || couple.id === 'couple-1') {
+        await coupleService.syncCurrentCoupleFromSupabase();
+        couple = coupleService.getCurrentCouple();
+      }
+
+      if (!couple || couple.id === 'couple-1') {
+        throw new Error('Пара не подключена. Сначала создайте или подключитесь к паре.');
+      }
+    }
+
     const list = this.getDateMemories();
     const effectivePlace = input.place?.trim() || input.location?.placeName || undefined;
+
+    let processedPhotos: string[] = input.photos ? [...input.photos] : [];
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+      processedPhotos = await Promise.all(
+        processedPhotos.map((p) => uploadPhotoIfNeeded(couple.id, p))
+      );
+    }
 
     const newEntry: DateMemory = {
       id: `memory-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -155,10 +324,30 @@ class DateMemoryService {
       place: effectivePlace,
       location: input.location ? { ...input.location } : undefined,
       story: input.story?.trim() || undefined,
-      photos: input.photos ? [...input.photos] : [],
+      photos: processedPhotos,
       linkUrl: input.linkUrl?.trim() || undefined,
       createdAt: new Date().toISOString(),
     };
+
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+      const row = {
+        id: newEntry.id,
+        couple_id: couple.id,
+        title: newEntry.title,
+        date: newEntry.date,
+        place: newEntry.place || null,
+        location_data: newEntry.location || null,
+        story: newEntry.story || null,
+        photos: newEntry.photos,
+        created_at: newEntry.createdAt,
+      };
+
+      const { error } = await supabase.from('date_memories').insert(row as any);
+      if (error) {
+        console.error('[dateMemoryService] Failed to insert date memory in Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
 
     const updated = [newEntry, ...list];
     try {
@@ -170,13 +359,14 @@ class DateMemoryService {
     return newEntry;
   }
 
-  updateDateMemory(id: string, input: UpdateDateMemoryInput): DateMemory | null {
+  async updateDateMemory(id: string, input: UpdateDateMemoryInput): Promise<DateMemory | null> {
     if (input.date && isFutureDate(input.date)) {
       throw new Error(
         'Можно сохранять только воспоминания о свиданиях, которые уже состоялись. Будущую дату выбрать нельзя.'
       );
     }
 
+    const couple = coupleService.getCurrentCouple();
     const list = this.getDateMemories();
     const index = list.findIndex((m) => m.id === id);
     if (index === -1) return null;
@@ -189,6 +379,34 @@ class DateMemoryService {
         ? input.location?.placeName
         : existing.place;
 
+    let processedPhotos = input.photos !== undefined ? [...input.photos] : existing.photos;
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple && input.photos !== undefined) {
+      processedPhotos = await Promise.all(
+        processedPhotos.map((p) => uploadPhotoIfNeeded(couple.id, p))
+      );
+    }
+
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+      const updateData: any = {};
+      if (input.title !== undefined) updateData.title = input.title.trim();
+      if (input.date !== undefined) updateData.date = input.date;
+      if (input.place !== undefined || input.location !== undefined) updateData.place = effectivePlace || null;
+      if (input.location !== undefined) updateData.location_data = input.location ? { ...input.location } : null;
+      if (input.story !== undefined) updateData.story = input.story?.trim() || null;
+      if (input.photos !== undefined) updateData.photos = processedPhotos;
+
+      const { error } = await supabase
+        .from('date_memories')
+        .update(updateData)
+        .eq('id', id)
+        .eq('couple_id', couple.id);
+
+      if (error) {
+        console.error('[dateMemoryService] Failed to update date memory in Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
+
     const updatedEntry: DateMemory = {
       ...existing,
       ...(input.title !== undefined ? { title: input.title.trim() } : {}),
@@ -196,7 +414,7 @@ class DateMemoryService {
       place: effectivePlace,
       ...(input.location !== undefined ? { location: input.location ? { ...input.location } : undefined } : {}),
       ...(input.story !== undefined ? { story: input.story.trim() || undefined } : {}),
-      ...(input.photos !== undefined ? { photos: [...input.photos] } : {}),
+      photos: processedPhotos,
       ...(input.linkUrl !== undefined ? { linkUrl: input.linkUrl.trim() || undefined } : {}),
       updatedAt: new Date().toISOString(),
     };
@@ -211,7 +429,22 @@ class DateMemoryService {
     return updatedEntry;
   }
 
-  deleteDateMemory(id: string): boolean {
+  async deleteDateMemory(id: string): Promise<boolean> {
+    const couple = coupleService.getCurrentCouple();
+
+    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+      const { error } = await supabase
+        .from('date_memories')
+        .delete()
+        .eq('id', id)
+        .eq('couple_id', couple.id);
+
+      if (error) {
+        console.error('[dateMemoryService] Failed to delete date memory from Supabase:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
+    }
+
     const list = this.getDateMemories();
     const filtered = list.filter((m) => m.id !== id);
     if (filtered.length === list.length) return false;
@@ -229,9 +462,6 @@ class DateMemoryService {
     return this.getDateMemories().length;
   }
 
-  /**
-   * Completely clears all shared date memories upon couple dissolution
-   */
   clearSharedData(): void {
     try {
       localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify([]));

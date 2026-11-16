@@ -45,45 +45,76 @@ export function HomePage() {
 
     telegramService.hapticImpact('light');
     const willBeCompleted = req.status !== 'completed';
-    await handleToggleStatus(id);
-
-    showToast({
-      title: willBeCompleted ? 'Напоминание выполнено' : 'Вернули в активные',
-      message: willBeCompleted
-        ? `«${req.title}» отмечено как выполненное.`
-        : `«${req.title}» снова в списке дел.`,
-      type: willBeCompleted ? 'love' : 'info',
-    });
+    try {
+      await handleToggleStatus(id);
+      showToast({
+        title: willBeCompleted ? 'Напоминание выполнено' : 'Вернули в активные',
+        message: willBeCompleted
+          ? `«${req.title}» отмечено как выполненное.`
+          : `«${req.title}» снова в списке дел.`,
+        type: willBeCompleted ? 'love' : 'info',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка обновления',
+        message: err.message || 'Не удалось обновить статус напоминания в базе данных',
+        type: 'info',
+      });
+    }
   };
 
   const handleCreateWithToast = async (input: Parameters<typeof handleCreateRequest>[0]) => {
-    await handleCreateRequest(input);
-    telegramService.hapticNotification('success');
-    showToast({
-      title: 'Напоминание сохранено',
-      message: `«${input.title}» добавлено в ваш список`,
-      type: 'love',
-    });
+    try {
+      await handleCreateRequest(input);
+      telegramService.hapticNotification('success');
+      showToast({
+        title: 'Напоминание сохранено',
+        message: `«${input.title}» добавлено в ваш список`,
+        type: 'love',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка создания',
+        message: err.message || 'Не удалось сохранить напоминание в базе данных',
+        type: 'info',
+      });
+    }
   };
 
   const handleUpdateWithToast = async (id: string, input: Parameters<typeof handleUpdateRequest>[1]) => {
-    await handleUpdateRequest(id, input);
-    telegramService.hapticNotification('success');
-    showToast({
-      title: 'Напоминание обновлено',
-      message: `«${input.title || 'Напоминание'}» успешно обновлено`,
-      type: 'love',
-    });
+    try {
+      await handleUpdateRequest(id, input);
+      telegramService.hapticNotification('success');
+      showToast({
+        title: 'Напоминание обновлено',
+        message: `«${input.title || 'Напоминание'}» успешно обновлено`,
+        type: 'love',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка обновления',
+        message: err.message || 'Не удалось обновить напоминание в базе данных',
+        type: 'info',
+      });
+    }
   };
 
   const handleDeleteWithToast = async (id: string) => {
     const req = requests.find((r) => r.id === id);
-    await handleDeleteRequest(id);
-    showToast({
-      title: 'Напоминание удалено',
-      message: req ? `«${req.title}» удалено из списка` : undefined,
-      type: 'info',
-    });
+    try {
+      await handleDeleteRequest(id);
+      showToast({
+        title: 'Напоминание удалено',
+        message: req ? `«${req.title}» удалено из списка` : undefined,
+        type: 'info',
+      });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка удаления',
+        message: err.message || 'Не удалось удалить напоминание из базы данных',
+        type: 'info',
+      });
+    }
   };
 
   return (

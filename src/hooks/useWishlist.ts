@@ -41,6 +41,35 @@ export function useWishlist() {
 
   useEffect(() => {
     loadData();
+
+    const handleUpdate = () => {
+      wishlistService.getWishlist().then((data) => setItems(data)).catch(() => {});
+    };
+
+    window.addEventListener('lovia_wishlist_updated', handleUpdate);
+    window.addEventListener('lovia_couple_connected', loadData);
+    window.addEventListener('lovia_couple_updated', loadData);
+
+    const onVisibility = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        wishlistService.getWishlist().then((data) => setItems(data)).catch(() => {});
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('lovia_wishlist_updated', handleUpdate);
+      window.removeEventListener('lovia_couple_connected', loadData);
+      window.removeEventListener('lovia_couple_updated', loadData);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(intervalId);
+    };
   }, [loadData]);
 
   const currentUserId = profile?.user.id || 'user-marsel';

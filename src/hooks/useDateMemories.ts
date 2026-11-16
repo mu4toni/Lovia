@@ -15,15 +15,42 @@ export function useDateMemories() {
   const [sortOrder, setSortOrder] = useState<DateMemorySort>('newest');
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
-  const refreshMemories = useCallback(() => {
-    setAllMemories(dateMemoryService.getDateMemories());
+  const refreshMemories = useCallback(async () => {
+    try {
+      const list = await dateMemoryService.fetchDateMemories();
+      setAllMemories(list);
+    } catch {
+      setAllMemories(dateMemoryService.getDateMemories());
+    }
   }, []);
 
   useEffect(() => {
+    refreshMemories();
+
     const handleUpdate = () => refreshMemories();
     window.addEventListener('lovia_dates_updated', handleUpdate);
+    window.addEventListener('lovia_couple_connected', handleUpdate);
+    window.addEventListener('lovia_couple_updated', handleUpdate);
+
+    const onVisibility = () => {
+      if (!document.hidden) {
+        refreshMemories();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshMemories();
+      }
+    }, 5000);
+
     return () => {
       window.removeEventListener('lovia_dates_updated', handleUpdate);
+      window.removeEventListener('lovia_couple_connected', handleUpdate);
+      window.removeEventListener('lovia_couple_updated', handleUpdate);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(intervalId);
     };
   }, [refreshMemories]);
 
@@ -67,21 +94,21 @@ export function useDateMemories() {
     return allMemories.reduce((acc, m) => acc + (m.photos ? m.photos.length : 0), 0);
   }, [allMemories]);
 
-  const createMemory = useCallback((input: CreateDateMemoryInput) => {
-    const created = dateMemoryService.createDateMemory(input);
-    refreshMemories();
+  const createMemory = useCallback(async (input: CreateDateMemoryInput) => {
+    const created = await dateMemoryService.createDateMemory(input);
+    await refreshMemories();
     return created;
   }, [refreshMemories]);
 
-  const updateMemory = useCallback((id: string, input: UpdateDateMemoryInput) => {
-    const updated = dateMemoryService.updateDateMemory(id, input);
-    refreshMemories();
+  const updateMemory = useCallback(async (id: string, input: UpdateDateMemoryInput) => {
+    const updated = await dateMemoryService.updateDateMemory(id, input);
+    await refreshMemories();
     return updated;
   }, [refreshMemories]);
 
-  const deleteMemory = useCallback((id: string) => {
-    const ok = dateMemoryService.deleteDateMemory(id);
-    refreshMemories();
+  const deleteMemory = useCallback(async (id: string) => {
+    const ok = await dateMemoryService.deleteDateMemory(id);
+    await refreshMemories();
     return ok;
   }, [refreshMemories]);
 

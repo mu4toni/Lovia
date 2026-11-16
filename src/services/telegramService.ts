@@ -96,7 +96,10 @@ export interface TelegramWebApp {
       | 'qrTextReceived'
       | 'clipboardTextReceived'
       | 'writeAccessRequested'
-      | 'contactRequested',
+      | 'contactRequested'
+      | 'safeAreaChanged'
+      | 'contentSafeAreaChanged'
+      | string,
     eventHandler: () => void
   ): void;
   offEvent(eventType: string, eventHandler: () => void): void;
@@ -167,6 +170,12 @@ class TelegramService {
         tg.onEvent('viewportChanged', () => {
           this.updateViewportAndSafeAreas();
         });
+        tg.onEvent('safeAreaChanged', () => {
+          this.updateViewportAndSafeAreas();
+        });
+        tg.onEvent('contentSafeAreaChanged', () => {
+          this.updateViewportAndSafeAreas();
+        });
       } catch (e) {
         console.warn('[TelegramService] Error attaching WebApp event listeners:', e);
       }
@@ -220,7 +229,8 @@ class TelegramService {
   }
 
   /**
-   * Syncs viewport height and safe area insets to CSS custom properties
+   * Syncs viewport height and safe area insets to CSS custom properties.
+   * Calculates --tg-total-top-inset as safeAreaInset.top + contentSafeAreaInset.top.
    */
   updateViewportAndSafeAreas(): void {
     if (typeof document === 'undefined') return;
@@ -231,19 +241,32 @@ class TelegramService {
       root.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
     }
 
+    const safeTop = tg?.safeAreaInset?.top ?? 0;
+    const contentTop = tg?.contentSafeAreaInset?.top ?? 0;
+    const totalTop = safeTop + contentTop;
+
+    root.style.setProperty('--tg-safe-area-inset-top', `${safeTop}px`);
+    root.style.setProperty('--tg-content-safe-area-inset-top', `${contentTop}px`);
+    root.style.setProperty('--tg-total-top-inset', `${totalTop}px`);
+
     if (tg?.safeAreaInset) {
-      root.style.setProperty('--tg-safe-area-inset-top', `${tg.safeAreaInset.top}px`);
       root.style.setProperty('--tg-safe-area-inset-bottom', `${tg.safeAreaInset.bottom}px`);
       root.style.setProperty('--tg-safe-area-inset-left', `${tg.safeAreaInset.left}px`);
       root.style.setProperty('--tg-safe-area-inset-right', `${tg.safeAreaInset.right}px`);
     }
 
     if (tg?.contentSafeAreaInset) {
-      root.style.setProperty('--tg-content-safe-area-inset-top', `${tg.contentSafeAreaInset.top}px`);
       root.style.setProperty('--tg-content-safe-area-inset-bottom', `${tg.contentSafeAreaInset.bottom}px`);
       root.style.setProperty('--tg-content-safe-area-inset-left', `${tg.contentSafeAreaInset.left}px`);
       root.style.setProperty('--tg-content-safe-area-inset-right', `${tg.contentSafeAreaInset.right}px`);
     }
+  }
+
+  /**
+   * Alias for updateViewportAndSafeAreas
+   */
+  updateViewportVars(): void {
+    this.updateViewportAndSafeAreas();
   }
 
   /**

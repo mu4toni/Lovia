@@ -32,35 +32,51 @@ export function RelationshipPage() {
   const [deletingDate, setDeletingDate] = useState<MemorableDate | null>(null);
   const isEditStartDateOpen = false;
 
-  const handleCreateOrEditSubmit = (input: CreateMemorableDateInput) => {
-    if (editingDate) {
-      updateMemorableDate(editingDate.id, input);
+  const handleCreateOrEditSubmit = async (input: CreateMemorableDateInput) => {
+    try {
+      if (editingDate) {
+        await updateMemorableDate(editingDate.id, input);
+        showToast({
+          title: 'Дата обновлена',
+          message: `«${input.title}» успешно сохранена`,
+          type: 'success',
+        });
+        setEditingDate(null);
+      } else {
+        await addMemorableDate(input);
+        showToast({
+          title: 'Памятная дата добавлена',
+          message: `«${input.title}» добавлена в историю пары`,
+          type: 'love',
+        });
+      }
+    } catch (err: any) {
       showToast({
-        title: 'Дата обновлена',
-        message: `«${input.title}» успешно сохранена`,
-        type: 'success',
-      });
-      setEditingDate(null);
-    } else {
-      addMemorableDate(input);
-      showToast({
-        title: 'Памятная дата добавлена',
-        message: `«${input.title}» добавлена в историю пары`,
-        type: 'love',
+        title: 'Ошибка сохранения',
+        message: err.message || 'Не удалось сохранить дату в базе данных',
+        type: 'info',
       });
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingDate) return;
     const title = deletingDate.title;
-    deleteMemorableDate(deletingDate.id);
-    showToast({
-      title: 'Дата удалена',
-      message: `«${title}» удалена из списка памятных дат`,
-      type: 'info',
-    });
-    setDeletingDate(null);
+    try {
+      await deleteMemorableDate(deletingDate.id);
+      showToast({
+        title: 'Дата удалена',
+        message: `«${title}» удалена из списка памятных дат`,
+        type: 'info',
+      });
+      setDeletingDate(null);
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка удаления',
+        message: err.message || 'Не удалось удалить дату из базы данных',
+        type: 'info',
+      });
+    }
   };
 
   if (isLoading) {
