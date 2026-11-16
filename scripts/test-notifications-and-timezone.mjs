@@ -119,14 +119,15 @@ test('8. api/telegram/webhook.ts: обработка /start с приветст�
   assert(webhookCode.includes('status(200)'), 'Возвращает 200 OK в Telegram');
 });
 
-// 9. Проверка vercel.json: настройка Vercel crons
-test('9. vercel.json: расписание Vercel crons для api/cron/notifications', () => {
+// 9. Проверка vercel.json: только rewrites, crons удален для совместимости с Vercel Hobby и cron-job.org
+test('9. vercel.json: только rewrites, crons отсутствует (внешний cron через cron-job.org)', () => {
   const vercelJson = JSON.parse(fs.readFileSync(path.resolve('vercel.json'), 'utf8'));
 
-  assert(Array.isArray(vercelJson.crons), 'vercel.json содержит секцию crons');
+  assert(!vercelJson.crons, 'Секция crons отсутствует в vercel.json (не блокирует деплой на Vercel Hobby)');
+  assert(Array.isArray(vercelJson.rewrites), 'vercel.json содержит секцию rewrites');
   assert(
-    vercelJson.crons.some((c) => c.path === '/api/cron/notifications'),
-    'Настроен cron для /api/cron/notifications'
+    vercelJson.rewrites.some((r) => r.source === '/api/(.*)' && r.destination === '/api/$1'),
+    'Настроен rewrite для /api/* эндпоинтов'
   );
 });
 
