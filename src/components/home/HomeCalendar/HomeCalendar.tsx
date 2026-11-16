@@ -1,0 +1,699 @@
+import React, { useState, useMemo } from 'react';
+import { CalendarViewMode, CoupleEvent, CoupleReminder } from '../../../types';
+import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
+import { Card } from '../../ui/Card/Card';
+import { DateBadge } from '../../ui/CalendarStrip/DateBadge';
+import { Icon } from '../../ui/Icon/Icon';
+import { getCardColorStyles, getRelativeLuminance } from '../../../utils/colorContrast';
+import {
+  formatLocalDate,
+  isSameDay,
+  isToday,
+  MONTH_NAMES_RU,
+  MONTH_NAMES_GENITIVE_RU,
+  WEEKDAYS_SHORT_RU,
+} from '../../../shared/lib/dateUtils';
+import './HomeCalendar.css';
+
+interface HomeCalendarProps {
+  events: CoupleEvent[];
+  requests?: CoupleReminder[];
+  categories?: UserCategory[];
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+  className?: string;
+}
+
+interface CalendarMonthCell {
+  date: Date;
+  dateStr: string;
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  isPrevMonth?: boolean;
+  isNextMonth?: boolean;
+}
+
+export const HomeCalendar: React.FC<HomeCalendarProps> = ({
+  events,
+  requests = [],
+  categories = [],
+  selectedDate,
+  onSelectDate,
+  className = '',
+}) => {
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+
+  // Navigation viewing month (independent from selectedDate)
+  const [viewMonth, setViewMonth] = useState<Date>(() => {
+    return new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+  });
+
+  const today = useMemo(() => new Date(), []);
+  const selectedDateStr = formatLocalDate(selectedDate);
+
+  // Navigation handlers depending on active viewMode
+  const handlePrev = () => {
+    if (viewMode === 'month') {
+      setViewMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    } else if (viewMode === 'week') {
+      const prevWeekDate = new Date(selectedDate);
+      prevWeekDate.setDate(selectedDate.getDate() - 7);
+      setViewMonth(new Date(prevWeekDate.getFullYear(), prevWeekDate.getMonth(), 1));
+      onSelectDate(prevWeekDate);
+    } else {
+      // Day view
+      const prevDay = new Date(selectedDate);
+      prevDay.setDate(selectedDate.getDate() - 1);
+      setViewMonth(new Date(prevDay.getFullYear(), prevDay.getMonth(), 1));
+      onSelectDate(prevDay);
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === 'month') {
+      setViewMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    } else if (viewMode === 'week') {
+      const nextWeekDate = new Date(selectedDate);
+      nextWeekDate.setDate(selectedDate.getDate() + 7);
+      setViewMonth(new Date(nextWeekDate.getFullYear(), nextWeekDate.getMonth(), 1));
+      onSelectDate(nextWeekDate);
+    } else {
+      // Day view
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(selectedDate.getDate() + 1);
+      setViewMonth(new Date(nextDay.getFullYear(), nextDay.getMonth(), 1));
+      onSelectDate(nextDay);
+    }
+  };
+
+  const handleJumpToToday = () => {
+    const now = new Date();
+    setViewMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    onSelectDate(now);
+  };
+
+  const isViewingCurrentMonth = useMemo(() => {
+    const activeDate = viewMode === 'month' ? viewMonth : selectedDate;
+    return (
+      activeDate.getFullYear() === today.getFullYear() &&
+      activeDate.getMonth() === today.getMonth()
+    );
+  }, [viewMode, viewMonth, selectedDate, today]);
+
+  const headerTitle = useMemo(() => {
+    const activeDate = viewMode === 'month' ? viewMonth : selectedDate;
+    return `${MONTH_NAMES_RU[activeDate.getMonth()]} ${activeDate.getFullYear()}`;
+  }, [viewMode, viewMonth, selectedDate]);
+
+  const prevAriaLabel =
+    viewMode === 'month'
+      ? 'Предыдущий месяц'
+      : viewMode === 'week'
+      ? 'Предыдущая неделя'
+      : 'Предыдущий день';
+
+  const nextAriaLabel =
+    viewMode === 'month'
+      ? 'Следующий месяц'
+      : viewMode === 'week'
+      ? 'Следующая неделя'
+      : 'Следующий день';
+
+  // Only active (non-completed) requests should appear on the calendar
+  const activeRequests = useMemo(() => {
+    return requests.filter((r) => r.status !== 'completed');
+  }, [requests]);
+
+  // Collect all available colors for filtering: 3 standard base colors/categories + colors in active reminders
+  const filterColors = useMemo(() => {
+    return Array.from(
+      new Set([
+        ...DEFAULT_BASE_CATEGORIES.map((c) => c.color),
+        ...categories.map((c) => c.color).filter(Boolean),
+        ...activeRequests.map((r) => r.categoryColor).filter(Boolean) as string[],
+      ])
+    );
+  }, [activeRequests, categories]);
+
+  // Color filter handlers (multi-select supported)
+  const handleToggleColor = (colorHex: string) => {
+    setSelectedColors((prev) => {
+      const lower = colorHex.toLowerCase();
+      if (prev.some((c) => c.toLowerCase() === lower)) {
+        return prev.filter((c) => c.toLowerCase() !== lower);
+      } else {
+        return [...prev, colorHex];
+      }
+    });
+  };
+
+  const handleResetFilters = () => {
+    setSelectedColors([]);
+  };
+
+  const matchesColorFilter = (itemColor?: string) => {
+    if (selectedColors.length === 0) return true;
+    if (!itemColor) return false;
+    return selectedColors.some((c) => c.toLowerCase() === itemColor.toLowerCase());
+  };
+
+  // Convert dated active requests into unified calendar items if they match the date
+  const datedRequestsOnDay = useMemo(() => {
+    return activeRequests
+      .filter((r) => {
+        if (!r.dueDate) return false;
+        return r.dueDate.startsWith(selectedDateStr);
+      })
+      .map((r) => ({
+        id: `req-${r.id}`,
+        title: r.title,
+        time: r.dueTime || (r.dueLabel.includes('·') ? r.dueLabel.split('·')[1].trim() : undefined),
+        location: undefined as string | undefined,
+        categoryColor: r.categoryColor,
+        categoryIcon: r.categoryIcon,
+        isRequest: true,
+        rewardNote: r.rewardNote,
+      }));
+  }, [activeRequests, selectedDateStr]);
+
+  const dayEvents = useMemo(() => {
+    const activeTitles = new Set(activeRequests.map((r) => r.title.trim().toLowerCase()));
+    const completedTitles = new Set(
+      requests
+        .filter((r) => r.status === 'completed')
+        .map((r) => r.title.trim().toLowerCase())
+    );
+
+    const validEvents = events
+      .filter((e) => e.date === selectedDateStr)
+      .filter((e) => !completedTitles.has(e.title.trim().toLowerCase()))
+      .filter((e) => !activeTitles.has(e.title.trim().toLowerCase()))
+      .map((e) => ({
+        id: e.id,
+        title: e.title,
+        time: e.time,
+        location: e.location,
+        categoryColor: undefined as string | undefined,
+        categoryIcon: undefined as string | undefined,
+        isRequest: false,
+        rewardNote: undefined,
+      }));
+
+    return [...validEvents, ...datedRequestsOnDay];
+  }, [events, selectedDateStr, datedRequestsOnDay, activeRequests, requests]);
+
+  const filteredDayItems = useMemo(() => {
+    return dayEvents.filter((item) => matchesColorFilter(item.categoryColor));
+  }, [dayEvents, selectedColors]);
+
+  // Find reminder colors on any date string for active reminders only
+  const getReminderColorsOnDate = (dateStr: string): string[] => {
+    const matching = activeRequests.filter(
+      (r) => r.dueDate && r.dueDate.startsWith(dateStr) && matchesColorFilter(r.categoryColor)
+    );
+    const colors = matching.map((r) => r.categoryColor).filter(Boolean) as string[];
+    return Array.from(new Set(colors));
+  };
+
+  // Calculate days of current week (Monday-based)
+  const weekDays = useMemo(() => {
+    const days: Date[] = [];
+    const current = new Date(selectedDate);
+    const dayOfWeek = (current.getDay() + 6) % 7;
+    const monday = new Date(current);
+    monday.setDate(current.getDate() - dayOfWeek);
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [selectedDate]);
+
+  // Calculate complete month matrix including neighbor months
+  const monthCells = useMemo((): CalendarMonthCell[] => {
+    const year = viewMonth.getFullYear();
+    const month = viewMonth.getMonth();
+
+    const firstDayOfMonth = new Date(year, month, 1);
+    const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // 0 for Mon, 6 for Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const cells: CalendarMonthCell[] = [];
+
+    // 1. Leading days from previous month
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const d = new Date(year, month - 1, dayNum);
+      cells.push({
+        date: d,
+        dateStr: formatLocalDate(d),
+        dayNumber: dayNum,
+        isCurrentMonth: false,
+        isPrevMonth: true,
+      });
+    }
+
+    // 2. Days of current month
+    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+      const d = new Date(year, month, dayNum);
+      cells.push({
+        date: d,
+        dateStr: formatLocalDate(d),
+        dayNumber: dayNum,
+        isCurrentMonth: true,
+      });
+    }
+
+    // 3. Trailing days from next month (complete to 35 or 42 rows)
+    const targetTotal = cells.length <= 35 ? 35 : 42;
+    const needed = targetTotal - cells.length;
+    for (let dayNum = 1; dayNum <= needed; dayNum++) {
+      const d = new Date(year, month + 1, dayNum);
+      cells.push({
+        date: d,
+        dateStr: formatLocalDate(d),
+        dayNumber: dayNum,
+        isCurrentMonth: false,
+        isNextMonth: true,
+      });
+    }
+
+    return cells;
+  }, [viewMonth]);
+
+  const handleSelectMonthCell = (cell: CalendarMonthCell) => {
+    if (!cell.isCurrentMonth) {
+      setViewMonth(new Date(cell.date.getFullYear(), cell.date.getMonth(), 1));
+    }
+    onSelectDate(cell.date);
+  };
+
+  return (
+    <section className={`home-calendar ${className}`} aria-label="Совместный календарь">
+      <Card variant="solid" className="home-calendar__card">
+        {/* 1. Header with Month, Arrow Navigation and View Switcher */}
+        <div className="home-calendar__header">
+          <div className="home-calendar__month-controls">
+            <button
+              type="button"
+              className="home-calendar__arrow-btn"
+              onClick={handlePrev}
+              aria-label={prevAriaLabel}
+              title={prevAriaLabel}
+            >
+              <Icon name="chevron-left" size={16} />
+            </button>
+
+            <span className="home-calendar__month-name" aria-live="polite">
+              {headerTitle}
+            </span>
+
+            <button
+              type="button"
+              className="home-calendar__arrow-btn"
+              onClick={handleNext}
+              aria-label={nextAriaLabel}
+              title={nextAriaLabel}
+            >
+              <Icon name="chevron-right" size={16} />
+            </button>
+          </div>
+
+          {/* View mode switcher */}
+          <div
+            className="home-calendar__view-switch"
+            role="group"
+            aria-label="Режим отображения календаря"
+          >
+            <button
+              type="button"
+              className={`home-calendar__view-btn ${
+                viewMode === 'day' ? 'home-calendar__view-btn--active' : ''
+              }`}
+              onClick={() => setViewMode('day')}
+              aria-pressed={viewMode === 'day'}
+            >
+              День
+            </button>
+            <button
+              type="button"
+              className={`home-calendar__view-btn ${
+                viewMode === 'week' ? 'home-calendar__view-btn--active' : ''
+              }`}
+              onClick={() => setViewMode('week')}
+              aria-pressed={viewMode === 'week'}
+            >
+              Неделя
+            </button>
+            <button
+              type="button"
+              className={`home-calendar__view-btn ${
+                viewMode === 'month' ? 'home-calendar__view-btn--active' : ''
+              }`}
+              onClick={() => setViewMode('month')}
+              aria-pressed={viewMode === 'month'}
+            >
+              Месяц
+            </button>
+          </div>
+        </div>
+
+        {/* Quick jump to Today notice if navigated away from current month */}
+        {!isViewingCurrentMonth && (
+          <div className="home-calendar__month-notice" role="status">
+            <div className="home-calendar__month-notice-content">
+              <Icon name="calendar" size={14} className="home-calendar__month-notice-icon" />
+              <span className="home-calendar__month-notice-text">
+                Просмотр архива или планов другого месяца
+              </span>
+            </div>
+            <button
+              type="button"
+              className="home-calendar__today-jump-btn"
+              onClick={handleJumpToToday}
+              aria-label="Вернуться к сегодняшнему дню"
+            >
+              Сегодня
+            </button>
+          </div>
+        )}
+
+        {/* 2. Calendar Views */}
+
+        {/* Day View */}
+        {viewMode === 'day' && (
+          <div className="home-calendar__day-view">
+            <DateBadge
+              day={selectedDate.getDate()}
+              month={MONTH_NAMES_RU[selectedDate.getMonth()].slice(0, 3).toUpperCase()}
+              highlight
+            />
+            <div className="home-calendar__day-info">
+              <span className="home-calendar__day-weekday">
+                {selectedDate.toLocaleDateString('ru-RU', { weekday: 'long' })}
+              </span>
+              <span className="home-calendar__day-full">
+                {selectedDate.getDate()} {MONTH_NAMES_GENITIVE_RU[selectedDate.getMonth()]}{' '}
+                {selectedDate.getFullYear()}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Week View */}
+        {viewMode === 'week' && (
+          <div className="home-calendar__week-view" role="grid" aria-label="Дни недели">
+            <div className="home-calendar__week-badges">
+              {weekDays.map((date) => {
+                const dateStr = formatLocalDate(date);
+                const isSel = isSameDay(date, selectedDate);
+                const isTod = isToday(date);
+                const colors = getReminderColorsOnDate(dateStr);
+                const dayOfWeek = WEEKDAYS_SHORT_RU[(date.getDay() + 6) % 7];
+
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    onClick={() => onSelectDate(date)}
+                    aria-pressed={isSel}
+                    aria-label={`${date.getDate()} ${MONTH_NAMES_RU[date.getMonth()]}${
+                      isTod ? ', сегодня' : ''
+                    }${isSel ? ', выбрано' : ''}${
+                      colors.length > 0 ? ', есть напоминания' : ''
+                    }`}
+                    className={`calendar-day ${isSel ? 'calendar-day--selected' : ''} ${
+                      isTod ? 'calendar-day--today' : ''
+                    }`}
+                  >
+                    <span className="calendar-day__weekday">{dayOfWeek}</span>
+                    <span className="calendar-day__number">{date.getDate()}</span>
+                    {colors.length > 0 && (
+                      <div className="calendar-day__dots" aria-hidden="true">
+                        {colors.slice(0, 2).map((col, idx) => (
+                          <span
+                            key={idx}
+                            className="calendar-day__dot"
+                            style={{
+                              backgroundColor: isSel ? '#ffffff' : col || 'var(--color-primary)',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Month Grid View */}
+        {viewMode === 'month' && (
+          <div className="home-calendar__month-view" role="grid" aria-label="Сетка месяца">
+            {/* Weekdays table header */}
+            <div className="home-calendar__month-weekdays" aria-hidden="true">
+              {WEEKDAYS_SHORT_RU.map((wd) => (
+                <span key={wd} className="home-calendar__month-th">
+                  {wd}
+                </span>
+              ))}
+            </div>
+
+            {/* Complete grid of days */}
+            <div className="home-calendar__month-grid">
+              {monthCells.map((cell) => {
+                const isSel = isSameDay(cell.date, selectedDate);
+                const isTod = isToday(cell.date);
+                const reminderColors = getReminderColorsOnDate(cell.dateStr);
+
+                return (
+                  <button
+                    key={cell.dateStr}
+                    type="button"
+                    className={`home-calendar__month-cell ${
+                      !cell.isCurrentMonth ? 'home-calendar__month-cell--neighbor' : ''
+                    } ${isTod && !isSel ? 'home-calendar__month-cell--today' : ''} ${
+                      isSel ? 'home-calendar__month-cell--selected' : ''
+                    }`}
+                    onClick={() => handleSelectMonthCell(cell)}
+                    aria-label={`${cell.dayNumber} ${MONTH_NAMES_RU[cell.date.getMonth()]}${
+                      isTod ? ', сегодня' : ''
+                    }${isSel ? ', выбрано' : ''}${
+                      reminderColors.length > 0 ? ', есть напоминания' : ''
+                    }`}
+                  >
+                    <span className="home-calendar__month-num">{cell.dayNumber}</span>
+                    {reminderColors.length > 0 && (
+                      <div className="home-calendar__cell-dots" aria-hidden="true">
+                        {reminderColors.slice(0, 3).map((col, i) => (
+                          <span
+                            key={i}
+                            className="home-calendar__cell-dot"
+                            style={{
+                              backgroundColor: isSel ? '#ffffff' : col || 'var(--color-primary)',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 3. Color Markers Filter Bar (Zero text category names) */}
+        <div
+          className="home-calendar__filter-bar"
+          role="toolbar"
+          aria-label="Фильтрация напоминаний по цветам"
+        >
+          <div className="home-calendar__filter-header">
+            <span className="home-calendar__filter-title">Фильтр по цветам</span>
+            {selectedColors.length > 0 && (
+              <button
+                type="button"
+                className="home-calendar__filter-reset"
+                onClick={handleResetFilters}
+              >
+                Сбросить ({selectedColors.length})
+              </button>
+            )}
+          </div>
+
+          <div
+            className="home-calendar__filter-chips"
+            role="group"
+            aria-label="Цветовые маркеры"
+          >
+            {/* 'Все' filter button */}
+            <button
+              type="button"
+              className={`home-calendar__color-filter-btn home-calendar__color-filter-btn--all ${
+                selectedColors.length === 0
+                  ? 'home-calendar__color-filter-btn--all-active'
+                  : ''
+              }`}
+              onClick={handleResetFilters}
+              aria-pressed={selectedColors.length === 0}
+            >
+              Все
+            </button>
+
+            {/* Compact Color Circles (No text category names!) */}
+            {filterColors.map((colorHex) => {
+              const active = selectedColors.some(
+                (c) => c.toLowerCase() === colorHex.toLowerCase()
+              );
+              const isLight = getRelativeLuminance(colorHex) > 0.42;
+              const checkColor = isLight ? '#171717' : '#FFFFFF';
+              const matchedCat =
+                categories.find(
+                  (c) => c.color.toLowerCase() === colorHex.toLowerCase()
+                ) ||
+                DEFAULT_BASE_CATEGORIES.find(
+                  (c) => c.color.toLowerCase() === colorHex.toLowerCase()
+                );
+
+              return (
+                <button
+                  key={colorHex}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={`Фильтровать по цвету ${colorHex}`}
+                  title={matchedCat?.name || `Цвет ${colorHex}`}
+                  onClick={() => handleToggleColor(colorHex)}
+                  className={`home-calendar__color-swatch-btn ${
+                    active ? 'home-calendar__color-swatch-btn--active' : ''
+                  }`}
+                  style={{ backgroundColor: colorHex, color: checkColor }}
+                >
+                  {active && (
+                    <Icon
+                      name="check"
+                      size={12}
+                      strokeWidth={2.8}
+                      style={{ color: checkColor }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. Scheduled Events & Reminders for Selected Date */}
+        <div className="home-calendar__events-section">
+          <div className="home-calendar__events-header">
+            <span className="home-calendar__events-title">
+              Планы и напоминания на {selectedDate.getDate()}{' '}
+              {MONTH_NAMES_GENITIVE_RU[selectedDate.getMonth()]}
+            </span>
+            <span className="home-calendar__events-count">
+              {filteredDayItems.length > 0
+                ? `${filteredDayItems.length} ${
+                    filteredDayItems.length === 1 ? 'событие' : 'события'
+                  }`
+                : 'Нет планов'}
+            </span>
+          </div>
+
+          {filteredDayItems.length > 0 ? (
+            <div className="home-calendar__events-list">
+              {filteredDayItems.map((item) => {
+                const cardStyles = getCardColorStyles(item.categoryColor);
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`home-calendar__event-card ${
+                      item.categoryColor ? 'home-calendar__event-card--tinted' : ''
+                    }`}
+                    style={{
+                      backgroundColor: cardStyles.backgroundColor,
+                      borderColor: cardStyles.borderColor,
+                      color: cardStyles.color,
+                    }}
+                  >
+                    <div className="home-calendar__event-info">
+                      <div className="home-calendar__event-title-row">
+                        <span
+                          className="home-calendar__event-name"
+                          style={{ color: cardStyles.color }}
+                        >
+                          {item.title}
+                        </span>
+                      </div>
+                      <div className="home-calendar__event-meta">
+                        {item.time && (
+                          <span
+                            className="home-calendar__event-meta-item"
+                            style={{ color: cardStyles.colorSecondary }}
+                          >
+                            <Icon
+                              name="clock"
+                              size={13}
+                              style={{ color: cardStyles.colorTertiary }}
+                            />
+                            {item.time}
+                          </span>
+                        )}
+                        {item.location && (
+                          <span
+                            className="home-calendar__event-meta-item"
+                            style={{ color: cardStyles.colorSecondary }}
+                          >
+                            <Icon
+                              name="pin"
+                              size={13}
+                              style={{ color: cardStyles.colorTertiary }}
+                            />
+                            {item.location}
+                          </span>
+                        )}
+                        {item.isRequest && (
+                          <span
+                            className="home-calendar__event-meta-item home-calendar__event-req-tag"
+                            style={{
+                              backgroundColor: cardStyles.urgencyBg,
+                              color: cardStyles.color,
+                            }}
+                          >
+                            Напоминание пары
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="home-calendar__empty-events">
+              {dayEvents.length > 0 && selectedColors.length > 0 ? (
+                <div className="home-calendar__empty-filter">
+                  <p>В выбранных цветах на этот день нет планов.</p>
+                  <button
+                    type="button"
+                    className="home-calendar__empty-reset-btn"
+                    onClick={handleResetFilters}
+                  >
+                    Показать все события этого дня
+                  </button>
+                </div>
+              ) : (
+                <span>День свободен — отличное время для совместного отдыха</span>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+    </section>
+  );
+};

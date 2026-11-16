@@ -1,0 +1,92 @@
+.glass-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  line-height: 1.25;
+  user-select: none;
+  white-space: nowrap;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-subtle);
+  color: var(--text-secondary);
+}
+
+.glass-badge__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.glass-badge__icon {
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+}
+
+/* Default */
+.glass-badge--default {
+  background: var(--bg-surface-subtle);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+/* Primary */
+.glass-badge--primary {
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  border-color: var(--color-primary-subtle-border);
+}
+
+/* Urgency variants */
+.glass-badge--urgency-low {
+  background: var(--urgency-low-bg);
+  color: var(--urgency-low);
+  border-color: var(--urgency-low-border);
+}
+
+.glass-badge--urgency-medium {
+  background: var(--urgency-medium-bg);
+  color: var(--urgency-medium);
+  border-color: var(--urgency-medium-border);
+}
+
+.glass-badge--urgency-high {
+  background: var(--urgency-high-bg);
+  color: var(--urgency-high);
+  border-color: var(--urgency-high-border);
+}
+
+/* Category variants */
+.glass-badge--cat-dates {
+  background: var(--cat-dates-bg);
+  color: var(--cat-dates);
+  border-color: var(--cat-dates-border);
+}
+
+.glass-badge--cat-chores {
+  background: var(--cat-chores-bg);
+  color: var(--cat-chores);
+  border-color: var(--cat-chores-border);
+}
+
+.glass-badge--cat-gifts {
+  background: var(--cat-gifts-bg);
+  color: var(--cat-gifts);
+  border-color: var(--cat-gifts-border);
+}
+
+.glass-badge--cat-wishes {
+  background: var(--cat-wishes-bg);
+  color: var(--cat-wishes);
+  border-color: var(--cat-wishes-border);
+}
+
+.glass-badge--cat-memories {
+  background: var(--cat-memories-bg);
+  color: var(--cat-memories);
+  border-color: var(--cat-memories-border);
+}

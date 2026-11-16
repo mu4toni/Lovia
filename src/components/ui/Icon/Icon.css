@@ -1,0 +1,7 @@
+.lovia-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              stroke var(--duration-fast) ease;
+}

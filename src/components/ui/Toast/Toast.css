@@ -1,0 +1,109 @@
+.toast-container {
+  position: fixed;
+  top: env(safe-area-inset-top, 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  pointer-events: none;
+}
+
+.toast-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: toastSlideIn var(--duration-normal) var(--ease-spring);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              opacity var(--duration-fast) ease;
+}
+
+.toast-item:active {
+  transform: scale(0.97);
+}
+
+.toast-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.toast-item--love .toast-item__icon {
+  color: var(--color-primary);
+}
+
+.toast-item--success .toast-item__icon {
+  color: #047857;
+}
+
+.toast-item--warning .toast-item__icon {
+  color: #b45309;
+}
+
+.toast-item--info .toast-item__icon {
+  color: var(--color-secondary);
+}
+
+.toast-item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-item__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.toast-item__message {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.toast-item__close {
+  color: var(--text-tertiary);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.toast-item__close:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* Modifiers */
+.toast-item--love {
+  border-color: rgba(200, 54, 73, 0.3);
+}
+
+.toast-item--success {
+  border-color: rgba(4, 120, 87, 0.3);
+}
+
+.toast-item--warning {
+  border-color: rgba(180, 83, 9, 0.3);
+}

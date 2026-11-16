@@ -1,0 +1,132 @@
+/* ==========================================================================
+   LOVIA — PartnerQuickModal Component Styles
+   ========================================================================== */
+
+.partner-quick-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4px 0 8px;
+}
+
+.partner-quick-modal__avatar-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.partner-quick-modal__avatar-frame {
+  position: relative;
+  display: inline-block;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.partner-quick-modal__name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+}
+
+.partner-quick-modal__days-box {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.partner-quick-modal__days-box strong {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quick Action Buttons */
+.partner-quick-modal__actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.partner-quick-modal__btn {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background var(--duration-fast) ease,
+              border-color var(--duration-fast) ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.partner-quick-modal__btn:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-surface-hover);
+}
+
+.partner-quick-modal__btn:active {
+  transform: scale(0.985);
+}
+
+.partner-quick-modal__btn--primary {
+  background: var(--color-primary-soft);
+  border-color: rgba(227, 163, 180, 0.28);
+  color: var(--color-primary);
+}
+
+.partner-quick-modal__btn--primary:hover {
+  background: rgba(227, 163, 180, 0.24);
+  border-color: rgba(227, 163, 180, 0.4);
+}
+
+.partner-quick-modal__btn-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-quick-modal__btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.partner-quick-modal__chevron {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+[data-theme='dark'] .partner-quick-modal__days-box {
+  background: var(--bg-surface-subtle);
+  border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .partner-quick-modal__btn--primary {
+  background: var(--color-primary-soft);
+  border-color: rgba(227, 163, 180, 0.24);
+}

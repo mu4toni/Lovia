@@ -1,0 +1,83 @@
+.anniversary-progress {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.anniversary-progress__track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.06));
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+  position: relative;
+}
+
+.anniversary-progress__fill {
+  height: 100%;
+  border-radius: var(--radius-full, 9999px);
+  background: linear-gradient(
+    90deg,
+    #e3a3b4 0%,
+    var(--color-primary, #da0038) 100%
+  );
+  position: relative;
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 6px;
+}
+
+.anniversary-progress__fill--celebrate {
+  background: linear-gradient(
+    90deg,
+    #e3a3b4 0%,
+    var(--color-primary, #da0038) 100%
+  );
+}
+
+.anniversary-progress__marker {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.anniversary-progress__caption-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.anniversary-progress__caption {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.anniversary-progress__percent {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anniversary-progress__fill {
+    transition: none;
+  }
+}
+
+/* Dark theme */
+[data-theme='dark'] .anniversary-progress__track {
+  background: rgba(255, 255, 255, 0.08);
+}

@@ -1,0 +1,173 @@
+/* ==========================================================================
+   LOVIA — AvatarCropModal (Circular Stencil Avatar Cropper)
+   ========================================================================== */
+
+.avatar-cropper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+.avatar-cropper__hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.4;
+  margin: 0;
+  max-width: 320px;
+}
+
+.avatar-cropper__canvas-wrap {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #0f0f0f;
+  box-shadow: inset 0 0 0 1px var(--border-subtle), var(--shadow-sm);
+  touch-action: none;
+  user-select: none;
+}
+
+@media (max-width: 340px) {
+  .avatar-cropper__canvas-wrap {
+    width: 270px;
+    height: 270px;
+  }
+}
+
+.avatar-cropper__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.avatar-cropper__canvas--dragging {
+  cursor: grabbing;
+}
+
+.avatar-cropper__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.avatar-cropper__zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.avatar-cropper__zoom-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 56px;
+}
+
+.avatar-cropper__slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-pressed, #e0e0e0);
+  outline: none;
+  cursor: pointer;
+}
+
+[data-theme='dark'] .avatar-cropper__slider {
+  background: var(--bg-surface-elevated, #262626);
+}
+
+.avatar-cropper__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(218, 0, 56, 0.4);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  transition: transform var(--duration-fast) ease;
+}
+
+.avatar-cropper__slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.avatar-cropper__slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(218, 0, 56, 0.4);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+}
+
+.avatar-cropper__zoom-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.avatar-cropper__btn-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.avatar-cropper__tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease, transform var(--duration-fast) var(--ease-spring);
+}
+
+.avatar-cropper__tool-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-medium);
+}
+
+.avatar-cropper__tool-btn:active {
+  transform: scale(0.97);
+}
+
+.avatar-cropper__tool-btn--reset {
+  color: var(--text-secondary);
+}
+
+.avatar-cropper__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}

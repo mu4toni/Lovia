@@ -1,0 +1,65 @@
+.edit-start-date-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-start-date-form__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.edit-start-date-form__note-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.edit-start-date-form__note-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.edit-start-date-form__error {
+  padding: 10px 14px;
+  background: var(--color-danger-soft, #fde8e8);
+  border: 1px solid rgba(229, 62, 62, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-danger, #e53e3e);
+  font-weight: 500;
+}
+
+.edit-start-date-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-start-date-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.edit-start-date-form__actions button {
+  min-height: 44px;
+}
+
+/* Dark theme */
+[data-theme='dark'] .edit-start-date-form__note {
+  background: rgba(200, 54, 73, 0.16);
+}
+
+[data-theme='dark'] .edit-start-date-form__error {
+  background: rgba(229, 62, 62, 0.18);
+  border-color: rgba(229, 62, 62, 0.3);
+}

@@ -1,0 +1,158 @@
+/* ==========================================================================
+   LOVIA — Unified Input Field System (Single Contour, No Double Borders)
+   ========================================================================== */
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+
+.input-field__label {
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  color: var(--text-secondary);
+  user-select: none;
+  letter-spacing: 0.1px;
+}
+
+.input-field__container {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-sm, 12px);
+  min-height: 44px; /* Accessible touch target */
+  transition: border-color var(--duration-fast) var(--ease-smooth),
+              background var(--duration-fast) var(--ease-smooth);
+  box-sizing: border-box;
+}
+
+/* Hover state: slight contrast enhancement without jump */
+.input-field__container:hover:not(:focus-within) {
+  border-color: var(--border-medium);
+}
+
+/* Clean single focus outline: exactly 1 brand red border, no double outlines, no spread glow */
+.input-field__container:focus-within {
+  border-color: var(--color-primary);
+  background: var(--bg-surface);
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Error state: single clean red border, no secondary glow */
+.input-field__container--error {
+  border-color: var(--color-primary) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.input-field__container--textarea {
+  min-height: auto;
+  padding: var(--space-xs, 8px) var(--space-sm, 12px);
+  align-items: flex-start;
+}
+
+.input-field__control {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm, 14px);
+  width: 100%;
+  padding: 10px 0;
+  font-family: var(--font-family);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-field__control:focus,
+.input-field__control:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.input-field__control::placeholder {
+  color: var(--text-tertiary, var(--text-muted));
+  opacity: 0.7;
+}
+
+/* Date picker controls */
+.input-field__control[type="date"] {
+  min-height: 24px;
+}
+
+.input-field__control[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: invert(var(--calendar-invert, 0));
+  transition: opacity var(--duration-fast) ease;
+}
+
+.input-field__control[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.input-field__control--textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.input-field__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary, var(--text-muted));
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.input-field__icon--left {
+  margin-right: var(--space-xs, 8px);
+}
+
+.input-field__icon--right {
+  margin-left: var(--space-xs, 8px);
+}
+
+.input-field__error {
+  font-size: var(--font-size-2xs, 11px);
+  color: var(--color-primary);
+  font-weight: 500;
+  padding-left: var(--space-2xs, 4px);
+  margin-top: 2px;
+}
+
+.input-field__helper {
+  font-size: var(--font-size-2xs, 11px);
+  color: var(--text-tertiary, var(--text-muted));
+  padding-left: var(--space-2xs, 4px);
+  margin-top: 2px;
+}
+
+.input-field--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-field--disabled .input-field__container {
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.03));
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+}
+
+.input-field--disabled .input-field__control {
+  cursor: not-allowed;
+}
+
+/* Dark theme specific variables */
+[data-theme='dark'] .input-field__control[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

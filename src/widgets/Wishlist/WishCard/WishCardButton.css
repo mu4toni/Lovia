@@ -1,0 +1,212 @@
+/* ==========================================================================
+   LOVIA — WishCardButton Component Design Tokens & States
+   ========================================================================== */
+
+.wish-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  position: relative;
+  transition: transform var(--motion-micro) var(--motion-ease-spring),
+              background-color var(--motion-micro) ease,
+              border-color var(--motion-micro) ease,
+              box-shadow var(--motion-micro) ease,
+              color var(--motion-micro) ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Accessible Hit Target (WCAG 44x44px minimum bounds) */
+.wish-btn::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: -2px;
+  right: -2px;
+  min-height: 44px;
+  pointer-events: none;
+}
+
+/* Icon Container */
+.wish-btn__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  line-height: 1;
+}
+
+/* Text Container */
+.wish-btn__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1.15;
+  text-align: left;
+  overflow: hidden;
+}
+
+.wish-btn__line {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.wish-btn__line--2 {
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: 0.92;
+}
+
+/* ==========================================================================
+   Button Variants
+   ========================================================================== */
+
+/* 1. Variant Secondary: «Где купить» */
+.wish-btn--secondary {
+  background: var(--bg-surface-subtle);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.wish-btn--secondary:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.wish-btn--secondary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.wish-btn--secondary:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
+}
+
+/* 2. Variant Primary: «Я подарю это!» (Idle) */
+.wish-btn--primary {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-subtle-border);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(200, 54, 73, 0.08);
+}
+
+.wish-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-tint-hover);
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(200, 54, 73, 0.16);
+}
+
+.wish-btn--primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.wish-btn--primary:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
+}
+
+/* 3. Variant Reserved: «Вы дарите это 🤫» (Active Secret Reservation) */
+.wish-btn--reserved {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(200, 54, 73, 0.28);
+}
+
+.wish-btn--reserved:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(200, 54, 73, 0.38);
+}
+
+.wish-btn--reserved:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.wish-btn--reserved:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* 4. Variant Disabled: «Без ссылки» или недоступное действие */
+.wish-btn--disabled,
+.wish-btn:disabled {
+  background: var(--bg-surface-subtle);
+  border-color: var(--border-subtle);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.65;
+  box-shadow: none;
+}
+
+.wish-btn--disabled:hover,
+.wish-btn:disabled:hover {
+  transform: none;
+  background: var(--bg-surface-subtle);
+  border-color: var(--border-subtle);
+  color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   Dark Mode Adjustments
+   ========================================================================== */
+
+[data-theme='dark'] .wish-btn--secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .wish-btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme='dark'] .wish-btn--primary {
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary-subtle-border);
+  color: var(--color-accent-muted, #e3a3b4);
+}
+
+[data-theme='dark'] .wish-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-tint-hover);
+  border-color: var(--color-accent-muted, #e3a3b4);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .wish-btn--reserved {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}

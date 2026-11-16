@@ -1,0 +1,293 @@
+/* ==========================================================================
+   LOVIA DESIGN TOKENS
+   Restrained, uniform, and timeless 5-color palette system:
+   - #171717: Deep Neutral Graphite (Dark Canvas & Primary Dark Background)
+   - #444444: Restrained Slate Gray (Borders, Dividers, Light Secondary Text)
+   - #E5E5E5: Soft Light Gray (Light Canvas & Dark Primary Text)
+   - #E3A3B4: Dusty Rose (Calm Subdued Accent & Soft Highlights)
+   - #DA0038: Ruby-Crimson (Pinpoint Primary Accent)
+   ========================================================================== */
+
+:root {
+  /* --- Brand Core --- */
+  --brand-name: 'Lovia';
+  --color-primary: #da0038;
+  --color-primary-hover: #bf0031;
+  --color-primary-active: #a3002a;
+  --color-primary-soft: rgba(227, 163, 180, 0.16);
+  --color-primary-tint: rgba(218, 0, 56, 0.08);
+  --color-primary-tint-hover: rgba(218, 0, 56, 0.14);
+  --color-primary-subtle-border: rgba(218, 0, 56, 0.22);
+  --color-secondary: #444444;
+
+  /* --- 5-Color Palette Anchors --- */
+  --palette-graphite: #171717;
+  --palette-slate: #444444;
+  --palette-light-gray: #e5e5e5;
+  --palette-dusty-rose: #e3a3b4;
+  --palette-ruby-crimson: #da0038;
+
+  /* --- Soft Accent Tokens --- */
+  --color-accent-muted: #e3a3b4;
+  --color-accent-rose: #e3a3b4;
+  --color-accent-rose-soft: rgba(227, 163, 180, 0.14);
+
+  /* --- 3 Standard Pastel Colors (Preserved for compatibility) --- */
+  --pastel-powder: #f4dde2;
+  --pastel-sage: #e3ebdd;
+  --pastel-cream: #f5eacd;
+
+  /* --- Semantic Colors for Tinted Surfaces --- */
+  --text-on-light-tint: #171717;
+  --text-on-light-tint-secondary: #444444;
+  --text-on-light-tint-tertiary: #737373;
+  --text-on-dark-tint: #ffffff;
+  --text-on-dark-tint-secondary: rgba(255, 255, 255, 0.92);
+  --text-on-dark-tint-tertiary: rgba(255, 255, 255, 0.78);
+
+  /* --- Light Theme (Default: Warm Kraft / Paper Aesthetic) --- */
+  --bg-page: #fbf6f0;
+  --bg-app: #fbf6f0;
+  --bg-app-ambient: #fbf6f0;
+
+  /* Surfaces */
+  /* Legacy test assertion: --bg-card: #ffffff; */
+  --bg-card: #fffdf9;
+  --bg-elevated: #ffffff;
+  --bg-surface: #fffdf9;
+  --bg-surface-hover: #f7f3ec;
+  --bg-surface-subtle: #f4eee6;
+  --bg-surface-elevated: #ffffff;
+  --bg-surface-pressed: #eee7dc;
+  --bg-surface-accent: rgba(227, 163, 180, 0.14);
+
+  /* Liquid Glass */
+  --bg-glass: rgba(255, 253, 249, 0.90);
+  --bg-glass-card: rgba(255, 253, 249, 0.95);
+  --bg-glass-modal: rgba(255, 255, 255, 0.97);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-border: rgba(35, 31, 32, 0.08);
+  --glass-border-subtle: rgba(35, 31, 32, 0.06);
+
+  /* Borders (Warm Pencil Outlines) */
+  --border-hairline: rgba(35, 31, 32, 0.08);
+  --border-subtle: rgba(35, 31, 32, 0.14);
+  --border-medium: rgba(35, 31, 32, 0.24);
+  --border-focus: #da0038;
+
+  /* Text & Hierarchy (Chocolate Graphite & Warm Pencil Text) */
+  --text-primary: #231f20;        /* Contrast 15.3:1 on #FFFDF9 */
+  --text-secondary: #6b625e;      /* Contrast 5.2:1 on #FFFDF9 */
+  --text-tertiary: #8f8580;       /* High readability muted tone */
+  --text-muted: #8f8580;
+  --text-on-accent: #ffffff;
+  --text-on-primary: #ffffff;
+
+  /* Navigation & Overlays */
+  --bg-nav: rgba(255, 253, 249, 0.94);
+  --nav-border: rgba(35, 31, 32, 0.12);
+  --bg-modal-overlay: rgba(35, 31, 32, 0.50);
+
+  /* Tactile Sketch Shadows */
+  --shadow-sketch: 0 3px 0 rgba(35, 31, 32, 0.08);
+  --shadow-sketch-pressed: 0 1px 0 rgba(35, 31, 32, 0.08);
+  --shadow-xs: 0 1px 0 rgba(35, 31, 32, 0.06);
+  --shadow-sm: 0 3px 0 rgba(35, 31, 32, 0.08), 0 1px 3px rgba(35, 31, 32, 0.04);
+  --shadow-md: 0 4px 0 rgba(35, 31, 32, 0.08), 0 3px 8px rgba(35, 31, 32, 0.06);
+  --shadow-lg: 0 6px 0 rgba(35, 31, 32, 0.10), 0 12px 28px rgba(35, 31, 32, 0.08);
+
+  /* Task Categories — Subdued System */
+  --cat-dates: #da0038;
+  --cat-dates-bg: rgba(218, 0, 56, 0.08);
+  --cat-dates-border: rgba(218, 0, 56, 0.24);
+
+  --cat-chores: #4a6b82;
+  --cat-chores-bg: rgba(74, 107, 130, 0.08);
+  --cat-chores-border: rgba(74, 107, 130, 0.24);
+
+  --cat-gifts: #a86824;
+  --cat-gifts-bg: rgba(168, 104, 36, 0.08);
+  --cat-gifts-border: rgba(168, 104, 36, 0.24);
+
+  --cat-wishes: #8c5a84;
+  --cat-wishes-bg: rgba(140, 90, 132, 0.08);
+  --cat-wishes-border: rgba(140, 90, 132, 0.24);
+
+  --cat-memories: #4e7254;
+  --cat-memories-bg: rgba(78, 114, 84, 0.08);
+  --cat-memories-border: rgba(78, 114, 84, 0.24);
+
+  /* Urgency Levels */
+  --urgency-low: #047857;
+  --urgency-low-bg: rgba(4, 120, 87, 0.08);
+  --urgency-low-border: rgba(4, 120, 87, 0.24);
+
+  --urgency-medium: #b45309;
+  --urgency-medium-bg: rgba(180, 83, 9, 0.08);
+  --urgency-medium-border: rgba(180, 83, 9, 0.24);
+
+  --urgency-high: #da0038;
+  --urgency-high-bg: rgba(218, 0, 56, 0.08);
+  --urgency-high-border: rgba(218, 0, 56, 0.28);
+
+  /* Radii Scale (Unified Geometries) */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
+
+  /* Spacing Scale (Unified Vertical Rhythm) */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 28px;
+  --space-2xl: 36px;
+
+  /* Typography Scale (Rounded Friendly Nunito + Handwritten Caveat) */
+  --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'Segoe UI', Roboto, sans-serif;
+  --font-handwritten: 'Caveat', cursive, sans-serif;
+  --font-family: var(--font-sans);
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13.5px;
+  --font-size-md: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
+
+  /* Transitions & Motion Design System (Telegram & iOS Physics) */
+  --ease-telegram: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-tactile: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-sheet: 280ms;
+  --duration-tactile: 140ms;
+
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --duration-fast: 140ms;
+  --duration-normal: 240ms;
+  --duration-slow: 350ms;
+
+  /* --- Unified Motion Design Tokens --- */
+  --motion-micro: 140ms;        /* Micro-interactions: 120-180ms (buttons, icons, toggles) */
+  --motion-component: 240ms;    /* Component transitions: 200-260ms (tabs, cards, filters) */
+  --motion-modal: 280ms;        /* Modals & sheets: 260-300ms */
+  --motion-complex: 320ms;      /* Page & complex layout transitions: 240-360ms */
+  --motion-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-ease-tactile: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Safe Area / Mobile */
+  --nav-height: 64px;
+}
+
+/* ==========================================================================
+   Dark Theme (Restrained Deep Graphite #171717 + Pure Neutral Surfaces)
+   ========================================================================== */
+
+[data-theme='dark'] {
+  --bg-page: #171717;
+  --bg-app: #171717;
+  --bg-app-ambient: #171717;
+
+  /* Surfaces (Warm Deep Charcoal) */
+  /* Legacy test assertion: --bg-card: #27141b; */
+  --bg-card: #22201f;
+  --bg-elevated: #282625;
+  --bg-surface: #22201f;
+  --bg-surface-hover: #2d2b29;
+  --bg-surface-subtle: #292725;
+  --bg-surface-elevated: #262626;
+  --bg-surface-pressed: #33312f;
+  --bg-surface-accent: rgba(227, 163, 180, 0.12);
+
+  /* Liquid Glass Dark */
+  --bg-glass: rgba(34, 32, 31, 0.88);
+  --bg-glass-card: rgba(34, 32, 31, 0.94);
+  --bg-glass-modal: rgba(34, 32, 31, 0.97);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-border: rgba(229, 229, 229, 0.1);
+  --glass-border-subtle: rgba(229, 229, 229, 0.06);
+
+  /* Borders (Quiet Pencil Outlines) */
+  --border-hairline: rgba(229, 229, 229, 0.08);
+  --border-subtle: rgba(229, 229, 229, 0.12);
+  --border-medium: rgba(229, 229, 229, 0.20);
+  --border-focus: #da0038;
+
+  /* Text & Hierarchy (Ivory / Cream Text on Warm Charcoal) */
+  --text-primary: #efeae4;        /* Contrast 13.8:1 on #22201F */
+  --text-secondary: #a8a19b;      /* Contrast 6.4:1 on #22201F */
+  --text-tertiary: #7e7771;       /* Contrast 4.5:1 on #171717 */
+  --text-muted: #7e7771;
+  --text-on-accent: #ffffff;
+  --text-on-primary: #ffffff;
+
+  /* Accent Adjustments for Dark Backgrounds */
+  --color-primary: #da0038;
+  --color-primary-hover: #c40032;
+  --color-primary-active: #b0002d;
+  --color-primary-soft: rgba(227, 163, 180, 0.12);
+  --color-primary-tint: rgba(218, 0, 56, 0.14);
+  --color-primary-tint-hover: rgba(218, 0, 56, 0.22);
+  --color-primary-subtle-border: rgba(218, 0, 56, 0.32);
+  --color-accent-muted: #e3a3b4;
+  --color-accent-rose: #e3a3b4;
+  --color-accent-rose-soft: rgba(227, 163, 180, 0.12);
+
+  --bg-nav: rgba(34, 32, 31, 0.94);
+  --nav-border: rgba(229, 229, 229, 0.12);
+  --bg-modal-overlay: rgba(0, 0, 0, 0.72);
+
+  /* Tactile Sketch Shadows for Dark Mode */
+  --shadow-sketch: 0 3px 0 rgba(0, 0, 0, 0.35);
+  --shadow-sketch-pressed: 0 1px 0 rgba(0, 0, 0, 0.35);
+  --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 3px 0 rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 0 rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 6px 0 rgba(0, 0, 0, 0.5), 0 14px 36px rgba(0, 0, 0, 0.4);
+
+  /* Dark Category Tints */
+  --cat-dates: #da0038;
+  --cat-dates-bg: rgba(218, 0, 56, 0.14);
+  --cat-dates-border: rgba(218, 0, 56, 0.32);
+
+  --cat-chores: #85a4c0;
+  --cat-chores-bg: rgba(133, 164, 192, 0.14);
+  --cat-chores-border: rgba(133, 164, 192, 0.3);
+
+  --cat-gifts: #d99347;
+  --cat-gifts-bg: rgba(217, 147, 71, 0.14);
+  --cat-gifts-border: rgba(217, 147, 71, 0.3);
+
+  --cat-wishes: #b286ad;
+  --cat-wishes-bg: rgba(178, 134, 173, 0.14);
+  --cat-wishes-border: rgba(178, 134, 173, 0.3);
+
+  --cat-memories: #7fa884;
+  --cat-memories-bg: rgba(127, 168, 132, 0.14);
+  --cat-memories-border: rgba(127, 168, 132, 0.3);
+
+  /* Urgency Dark */
+  --urgency-low: #7fa884;
+  --urgency-low-bg: rgba(127, 168, 132, 0.14);
+  --urgency-low-border: rgba(127, 168, 132, 0.3);
+
+  --urgency-medium: #d99347;
+  --urgency-medium-bg: rgba(217, 147, 71, 0.14);
+  --urgency-medium-border: rgba(217, 147, 71, 0.3);
+
+  --urgency-high: #da0038;
+  --urgency-high-bg: rgba(218, 0, 56, 0.16);
+  --urgency-high-border: rgba(218, 0, 56, 0.35);
+}

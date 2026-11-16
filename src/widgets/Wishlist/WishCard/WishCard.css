@@ -1,0 +1,281 @@
+/* ==========================================================================
+   LOVIA — Streamlined WishCard Design (Consistent Baseline & Geometry)
+   ========================================================================== */
+
+.wish-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform var(--motion-micro) var(--motion-ease-spring),
+              box-shadow var(--motion-component) var(--motion-ease-smooth),
+              border-color var(--motion-micro) ease;
+  position: relative;
+  box-shadow: var(--shadow-xs);
+  container-type: inline-size;
+}
+
+.wish-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.wish-card:active {
+  transform: scale(0.975);
+  transition: transform 100ms var(--ease-tactile);
+}
+
+/* 1. Photo Container (Hero Element) */
+.wish-card__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--bg-surface-subtle);
+  overflow: hidden;
+}
+
+.wish-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--motion-component) var(--motion-ease-smooth);
+}
+
+.wish-card:hover .wish-card__image {
+  transform: scale(1.03);
+}
+
+/* Minimalist Lovia Porcelain Fallback Placeholder */
+.wish-card__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(145deg, var(--bg-surface-subtle) 0%, var(--bg-surface-hover) 100%);
+  color: var(--text-tertiary);
+}
+
+.wish-card__placeholder-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-primary);
+}
+
+/* Owner Action Buttons */
+.wish-card__actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.wish-card__action-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--motion-micro) ease;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Touch target expansion for WCAG 44x44px */
+.wish-card__action-btn::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: -5px;
+  right: -5px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.wish-card__action-btn:hover {
+  background: #ffffff;
+  color: var(--text-primary);
+  transform: scale(1.08);
+}
+
+.wish-card__action-btn--delete:hover {
+  background: var(--color-danger);
+  color: #ffffff;
+  border-color: var(--color-danger);
+}
+
+/* 2. Card Body */
+.wish-card__body {
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Predictable Title Block: Consistent 2-line height eliminates card height jumps */
+.wish-card__title-row {
+  min-height: 38px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.wish-card__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+.wish-card__desc,
+.wish-card__comment,
+.wish-card__info {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+/* Price Row */
+.wish-card__price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.wish-card__price {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+}
+
+.wish-card__price--empty {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+/* 3. Footer Action Buttons Grid */
+.wish-card__footer {
+  margin-top: auto; /* Pushes buttons strictly to the bottom of the card! */
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* Full width modifier (e.g. for own wishlist) */
+.wish-btn--full {
+  grid-column: 1 / -1;
+}
+
+/* On mobile screens (< 430px) stack buttons vertically to prevent text clipping */
+@media (max-width: 430px) {
+  .wish-card__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .wish-card__footer .wish-btn {
+    width: 100%;
+    min-height: 38px;
+    height: auto;
+    padding: 6px 10px;
+  }
+
+  .wish-card__footer .wish-btn__text {
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+  }
+}
+
+/* If card container is narrow (< 190px), stack buttons vertically to prevent clipping */
+@container (max-width: 190px) {
+  .wish-card__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .wish-card__footer .wish-btn {
+    width: 100%;
+    min-height: 38px;
+    height: auto;
+    padding: 6px 10px;
+  }
+
+  .wish-card__footer .wish-btn__text {
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+  }
+}
+
+/* If card is wide (>= 280px), allow button text to display in one horizontal line */
+@container (min-width: 280px) {
+  .wish-btn__text {
+    flex-direction: row;
+    gap: 4px;
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .wish-card__action-btn {
+  background: rgba(30, 20, 25, 0.88);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .wish-card__action-btn:hover {
+  background: var(--bg-surface);
+  color: #ffffff;
+}

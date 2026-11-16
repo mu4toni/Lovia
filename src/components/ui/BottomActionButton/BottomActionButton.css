@@ -1,0 +1,157 @@
+/* ==========================================================================
+   LOVIA — Dedicated Bottom Action Button Component
+   Unified standard for inline and floating bottom actions
+   ========================================================================== */
+
+.bottom-action-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-xs);
+  padding: 0 4px;
+  transition: opacity var(--motion-component) var(--motion-ease-smooth),
+              transform var(--motion-component) var(--motion-ease-smooth);
+}
+
+/* Floating Mode: Placed directly above the BottomNav dock */
+.bottom-action-wrapper--floating {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 14px);
+  /* 14px clearance (12-16px) above the elevated center button (94px) of BottomNav */
+  bottom: calc(108px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  z-index: 95;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  animation: floating-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes floating-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Hidden state when forms, modals or keyboards are active */
+.bottom-action-wrapper--hidden {
+  opacity: 0;
+  pointer-events: none !important;
+  transform: translateY(16px) scale(0.92);
+}
+
+.bottom-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 440px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(218, 0, 56, 0.24);
+  transition: transform var(--motion-micro) var(--motion-ease-spring),
+              background-color var(--motion-micro) ease,
+              box-shadow var(--motion-micro) ease,
+              opacity var(--motion-micro) ease;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  position: relative;
+}
+
+/* Floating button style: compact, pill-shaped, premium (48-52px height) */
+.bottom-action-btn--floating {
+  width: auto;
+  max-width: fit-content;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 6px 22px rgba(218, 0, 56, 0.3), 0 2px 6px rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Touch Target Minimum Bounds (WCAG 44x44px) */
+.bottom-action-btn::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: -2px;
+  right: -2px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.bottom-action-btn:hover {
+  background: var(--color-primary-hover, #bf0031);
+  box-shadow: 0 6px 24px rgba(218, 0, 56, 0.32);
+}
+
+.bottom-action-btn:active {
+  transform: scale(0.93);
+  transition: transform 100ms var(--ease-tactile);
+  box-shadow: 0 2px 8px rgba(218, 0, 56, 0.2);
+}
+
+.bottom-action-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(200, 54, 73, 0.4);
+}
+
+.bottom-action-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bottom-action-btn__label {
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-action-wrapper,
+  .bottom-action-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Dark theme */
+[data-theme='dark'] .bottom-action-btn {
+  background: var(--color-primary);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme='dark'] .bottom-action-btn--floating {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(218, 0, 56, 0.25);
+}
+
+[data-theme='dark'] .bottom-action-btn:hover {
+  background: var(--color-primary-hover, #bf0031);
+}

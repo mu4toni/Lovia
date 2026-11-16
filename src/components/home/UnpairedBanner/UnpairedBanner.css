@@ -1,0 +1,73 @@
+.unpaired-banner {
+  text-align: center;
+  padding: var(--space-lg) var(--space-md);
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  animation: fadeIn var(--duration-normal) ease;
+}
+
+.unpaired-banner__icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-sm);
+}
+
+.unpaired-banner__icon {
+  color: var(--color-primary);
+}
+
+.unpaired-banner__title {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.unpaired-banner__desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 380px;
+  margin: 0 auto var(--space-md);
+}
+
+.unpaired-banner__code-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px dashed var(--color-primary);
+  margin-bottom: var(--space-md);
+}
+
+.unpaired-banner__code-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.unpaired-banner__code {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.5px;
+  font-family: monospace;
+}
+
+.unpaired-banner__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.unpaired-banner__sim-btn {
+  font-size: 12.5px;
+}

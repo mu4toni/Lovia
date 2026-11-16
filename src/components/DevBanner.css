@@ -1,0 +1,25 @@
+.dev-banner {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: center;
+  padding: 8px var(--space-md, 16px);
+  margin-bottom: var(--space-md, 16px);
+  font-size: 11.5px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dev-banner__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}

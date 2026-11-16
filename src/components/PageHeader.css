@@ -1,0 +1,33 @@
+.page-header {
+  text-align: center;
+  padding: var(--space-md) 0 var(--space-sm);
+  position: relative;
+}
+
+.page-header__icon-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-sm);
+  border: 1px solid rgba(200, 54, 73, 0.2);
+}
+
+.page-header__title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.page-header__subtitle {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
+}

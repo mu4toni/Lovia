@@ -1,0 +1,294 @@
+/* ==========================================================================
+   LOVIA — Redesigned Dates Section Header
+   Emotional, minimal, compact clickable statistics pills & controls
+   ========================================================================== */
+
+.dates-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl, 24px);
+  width: 100%;
+}
+
+@media (max-width: 380px) {
+  .dates-header {
+    gap: var(--space-lg, 20px);
+  }
+}
+
+.dates-header__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.dates-header__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.dates-header__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+}
+
+.dates-header__kicker-icon {
+  color: var(--color-primary);
+}
+
+.dates-header__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.dates-header__subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Compact Unified Stat Bar with Divider (Single card, no individual borders) */
+.dates-header__stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.dates-header__stats-card {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-surface-subtle);
+  border-radius: var(--radius-pill);
+  padding: 0 4px;
+  border: none;
+  box-shadow: none;
+}
+
+.dates-header__stat-pill {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-family: inherit;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background-color var(--duration-fast) ease,
+              opacity var(--duration-fast) ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dates-header__stat-pill:hover {
+  background: var(--bg-card-hover);
+}
+
+.dates-header__stat-pill:active {
+  transform: scale(0.96);
+  opacity: 0.8;
+  transition: transform 100ms var(--ease-tactile);
+}
+
+.dates-header__stat-pill:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.dates-header__stat-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.dates-header__stat-pill-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.dates-header__stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.dates-header__stat-txt {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.dates-header__stat-bg-icon {
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  transform: translateY(-50%) rotate(-6deg);
+  height: 105%;
+  width: auto;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(2px);
+  opacity: 0.12;
+  color: var(--text-primary);
+  transition: opacity var(--duration-fast) ease;
+}
+
+.dates-header__stat-pill:hover .dates-header__stat-bg-icon {
+  opacity: 0.2;
+}
+
+/* Controls Bar: Year Filters & Sort */
+.dates-header__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.dates-header__years-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 0;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-width: 0;
+}
+
+.dates-header__years-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.dates-header__year-pill {
+  min-height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast) ease;
+}
+
+.dates-header__year-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.dates-header__year-pill:active {
+  transform: scale(0.93);
+  transition: transform 100ms var(--ease-tactile);
+}
+
+.dates-header__year-pill--active {
+  color: #ffffff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px var(--color-primary-glow);
+}
+
+.dates-header__sort-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--duration-fast) ease;
+}
+
+.dates-header__sort-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.dates-header__sort-btn:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 380px) {
+  .dates-header__stat-pill {
+    padding: 0 10px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .dates-header__stat-val {
+    font-size: 13px;
+  }
+  .dates-header__stat-txt {
+    font-size: 12px;
+  }
+  .dates-header__year-pill {
+    padding: 0 12px;
+    font-size: 12.5px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .dates-header__sort-btn {
+    padding: 0 10px;
+    font-size: 12px;
+    height: 44px;
+    min-height: 44px;
+  }
+}

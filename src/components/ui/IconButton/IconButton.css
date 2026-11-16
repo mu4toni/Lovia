@@ -1,0 +1,96 @@
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background var(--duration-normal) var(--ease-smooth),
+              border-color var(--duration-normal) var(--ease-smooth);
+}
+
+.icon-btn:active:not(:disabled) {
+  transform: scale(0.93);
+  transition: transform 100ms var(--ease-tactile);
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Sizing — min 44px on md/lg, sm has expanded hit area */
+.icon-btn--sm {
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  position: relative;
+}
+
+.icon-btn--sm::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: -4px;
+  right: -4px;
+}
+
+.icon-btn--md {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
+.icon-btn--lg {
+  width: 50px;
+  height: 50px;
+  font-size: 22px;
+}
+
+/* Variants */
+.icon-btn--glass,
+.icon-btn--secondary {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.icon-btn--glass:hover:not(:disabled),
+.icon-btn--secondary:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+.icon-btn--primary {
+  background: var(--color-primary);
+  color: var(--text-on-accent);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.icon-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.icon-btn--ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+}
+
+.icon-btn--ghost:hover:not(:disabled) {
+  background: var(--bg-surface-subtle);
+  color: var(--text-primary);
+}
+
+.icon-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}

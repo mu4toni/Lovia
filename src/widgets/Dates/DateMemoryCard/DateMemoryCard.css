@@ -1,0 +1,374 @@
+/* ==========================================================================
+   LOVIA — Redesigned Date Memory Card
+   Hero photograph with bottom soft fade mask, sleek meta line & 3-dots menu
+   ========================================================================== */
+
+.date-memory-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color var(--motion-micro) ease,
+              box-shadow var(--motion-micro) ease,
+              transform var(--motion-micro) ease;
+}
+
+.date-memory-card:hover {
+  border-color: rgba(218, 0, 56, 0.35);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.date-memory-card:active {
+  transform: scale(0.975);
+  transition: transform 100ms var(--ease-tactile);
+}
+
+.date-memory-card:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft, #f4dde2);
+}
+
+/* 1. Hero Photo Header with smooth bottom fade */
+.date-memory-card__hero-photo-wrap {
+  position: relative;
+  width: 100%;
+  height: 235px;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0) 100%);
+  background: var(--bg-surface-subtle);
+}
+
+.date-memory-card__hero-img,
+.date-memory-card__photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  aspect-ratio: 16 / 9;
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.date-memory-card:hover .date-memory-card__hero-img {
+  transform: scale(1.03);
+}
+
+/* Photo count badge in top-left */
+.date-memory-card__photo-count-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(23, 23, 23, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+/* When card has NO photos: Large blurred background icon */
+.date-memory-card--no-photo {
+  min-height: 140px;
+}
+
+.date-memory-card__stat-bg-icon {
+  position: absolute;
+  top: 50%;
+  right: -10px;
+  transform: translateY(-50%) rotate(-6deg);
+  height: 115%;
+  width: auto;
+  min-width: 95px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(2.5px);
+  opacity: 0.10;
+  color: var(--text-primary);
+  transition: opacity var(--duration-fast) ease, transform var(--duration-fast) var(--ease-spring);
+}
+
+.date-memory-card:hover .date-memory-card__stat-bg-icon {
+  opacity: 0.16;
+  transform: translateY(-50%) rotate(-3deg) scale(1.05);
+}
+
+/* Three-Dots Actions Menu in top-right */
+.date-memory-card__actions-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.date-memory-card__menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  background: rgba(23, 23, 23, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.date-memory-card__menu-btn:hover {
+  background: rgba(23, 23, 23, 0.85);
+  color: #ffffff;
+  transform: scale(1.06);
+}
+
+.date-memory-card--no-photo .date-memory-card__menu-btn {
+  background: var(--bg-surface-subtle);
+  border-color: var(--border-subtle);
+  color: var(--text-tertiary);
+}
+
+.date-memory-card--no-photo .date-memory-card__menu-btn:hover {
+  color: var(--text-primary);
+  background: var(--border-subtle);
+}
+
+.date-memory-card__popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  min-width: 144px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeIn var(--duration-fast) ease;
+}
+
+.date-memory-card__popover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-micro) ease;
+}
+
+.date-memory-card__popover-item:hover {
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.05));
+}
+
+.date-memory-card__popover-item--delete {
+  color: var(--color-danger, #e53e3e);
+}
+
+.date-memory-card__popover-item--delete:hover {
+  background: var(--color-danger-soft, rgba(229, 62, 62, 0.08));
+}
+
+/* 2. Text Content */
+.date-memory-card__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px 20px 20px;
+  min-width: 0;
+}
+
+.date-memory-card--with-photo .date-memory-card__content {
+  margin-top: -36px; /* Smooth overlap with the bottom dissolved photo fade */
+}
+
+.date-memory-card--no-photo .date-memory-card__content {
+  padding: 22px 20px 20px 20px;
+}
+
+@media (max-width: 380px) {
+  .date-memory-card__content {
+    padding: 0 16px 16px 16px;
+  }
+  .date-memory-card--no-photo .date-memory-card__content {
+    padding: 18px 16px 16px 16px;
+  }
+}
+
+/* Clean compact meta line */
+.date-memory-card__meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  line-height: 1.4;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.date-memory-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.date-meta-icon {
+  color: var(--color-primary);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.date-memory-card__meta-sep {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.date-place-text {
+  max-width: 180px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* Title */
+.date-memory-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+/* Story */
+.date-memory-card__story-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.date-memory-card__story {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+.date-memory-card__expand-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  outline: none;
+  min-height: 24px;
+}
+
+.date-memory-card__expand-btn:hover {
+  text-decoration: underline;
+}
+
+/* Footer: Подробнее > */
+.date-memory-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-top: 2px;
+  transition: transform var(--duration-fast) ease;
+}
+
+.date-memory-card:hover .date-memory-card__footer {
+  transform: translateX(3px);
+}
+
+.date-memory-card__hint-text {
+  color: var(--color-primary);
+}
+
+.date-memory-card__hint-icon {
+  color: var(--color-primary);
+  transition: transform var(--motion-micro) ease;
+}
+
+/* Dark Theme */
+[data-theme='dark'] .date-memory-card {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .date-memory-card__title {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .date-memory-card__popover {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-memory-card,
+  .date-memory-card__hero-img,
+  .date-memory-card__hint-icon,
+  .date-memory-card__footer {
+    transition: none;
+    transform: none;
+  }
+}

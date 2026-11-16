@@ -1,0 +1,117 @@
+.color-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.color-selector__main-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Swatches */
+.color-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  outline: none;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              box-shadow var(--duration-fast) var(--ease-spring);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.color-swatch:hover {
+  transform: scale(1.08);
+}
+
+.color-swatch:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-rose), 0 0 0 5px var(--bg-card);
+}
+
+.color-swatch--selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 4px 10px rgba(0, 0, 0, 0.16);
+  transform: scale(1.08);
+}
+
+/* Neutral / None Swatch */
+.color-swatch--none {
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border-medium);
+  box-shadow: none;
+}
+
+.color-swatch--none.color-swatch--selected {
+  border-color: var(--color-primary);
+  border-style: solid;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 2px 8px rgba(200, 54, 73, 0.2);
+}
+
+.color-swatch__slash {
+  width: 18px;
+  height: 2px;
+  background: var(--text-tertiary);
+  transform: rotate(-45deg);
+  border-radius: 2px;
+}
+
+.color-swatch__check {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* Toggle button for 15 colors */
+.color-selector__toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+
+.color-selector__toggle-btn:hover {
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.color-selector__toggle-btn--active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.color-selector__toggle-chevron {
+  transition: transform var(--duration-fast) ease;
+}
+
+/* Extended drawer */
+.color-selector__extended-drawer {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  animation: fadeIn var(--duration-normal) var(--ease-smooth);
+}
+
+.color-selector__extended-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

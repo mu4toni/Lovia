@@ -1,0 +1,148 @@
+/* ==========================================================================
+   LOVIA — Category Delete Confirmation Dialog Styles
+   ========================================================================== */
+
+.category-delete-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.category-delete-dialog__simple-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+}
+
+.category-delete-dialog__simple-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.category-delete-dialog__zero-hint {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.category-delete-dialog__warning-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft, rgba(229, 62, 62, 0.08));
+  border: 1px solid rgba(229, 62, 62, 0.2);
+}
+
+.category-delete-warning-icon {
+  color: var(--color-danger, #e53e3e);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.category-delete-dialog__warning-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.category-delete-dialog__options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-delete-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.category-delete-option:hover {
+  border-color: var(--border-medium);
+}
+
+.category-delete-option--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft, rgba(200, 54, 73, 0.04));
+}
+
+.category-delete-radio {
+  margin-top: 3px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.category-delete-option__content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.category-delete-option__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.category-delete-option__desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.category-delete-reassign-select-wrap {
+  margin-top: 8px;
+}
+
+.category-delete-select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.category-delete-select:focus {
+  border-color: var(--color-primary);
+}
+
+.category-delete-dialog__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Dark Theme */
+[data-theme='dark'] .category-delete-option {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .category-delete-select {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+}

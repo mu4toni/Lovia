@@ -1,0 +1,44 @@
+.memorable-date-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.memorable-date-form__error {
+  padding: 10px 14px;
+  background: var(--color-danger-soft, #fde8e8);
+  border: 1px solid rgba(229, 62, 62, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-danger, #e53e3e);
+  font-weight: 500;
+}
+
+.memorable-date-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.memorable-date-form__switch-wrap {
+  padding: 4px 0;
+}
+
+.memorable-date-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Ensure 44x44px touch targets on buttons */
+.memorable-date-form__actions button {
+  min-height: 44px;
+}
+
+/* Dark theme */
+[data-theme='dark'] .memorable-date-form__error {
+  background: rgba(229, 62, 62, 0.18);
+  border-color: rgba(229, 62, 62, 0.3);
+}

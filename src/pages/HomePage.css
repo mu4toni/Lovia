@@ -1,0 +1,56 @@
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl, 24px);
+  padding-bottom: calc(116px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  animation: pageEntrance var(--duration-normal) var(--ease-telegram) backwards;
+}
+
+@media (max-width: 380px) {
+  .home-page {
+    gap: var(--space-lg, 20px);
+  }
+}
+
+.home-loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home-error-card {
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+  margin-top: var(--space-md);
+  border: 1px solid rgba(200, 54, 73, 0.3);
+}
+
+.home-error-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-sm);
+}
+
+.home-error-icon {
+  color: var(--color-primary);
+}
+
+.home-error-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.home-error-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}

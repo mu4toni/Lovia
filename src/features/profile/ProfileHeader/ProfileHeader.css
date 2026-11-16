@@ -1,0 +1,329 @@
+/* ==========================================================================
+   LOVIA — Profile Header Component Styles (Mobile Telegram Profile Style)
+   ========================================================================== */
+
+.profile-hero-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 16px 6px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.profile-hero-card__glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 54, 73, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-hero-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+/* Telegram-style 96px Round Avatar */
+.profile-hero-card__avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.profile-hero-card__avatar-frame {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  padding: 3px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  transition: transform var(--motion-micro) var(--ease-telegram), border-color var(--duration-fast) ease;
+}
+
+.profile-hero-card__avatar-frame:active {
+  transform: scale(0.97);
+}
+
+.profile-hero-card__avatar-frame:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(200, 54, 73, 0.2));
+}
+
+.profile-hero-avatar {
+  width: 96px !important;
+  height: 96px !important;
+  min-width: 96px !important;
+  min-height: 96px !important;
+  font-size: 34px !important;
+  border-radius: 50% !important;
+}
+
+.profile-hero-card__avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  background: var(--color-primary);
+  color: #ffffff;
+  border: 2.5px solid var(--bg-app);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(200, 54, 73, 0.4);
+  transition: transform var(--motion-micro) var(--ease-telegram), background-color var(--motion-micro) ease;
+  z-index: 2;
+}
+
+.profile-hero-card__avatar-btn:hover {
+  background: var(--color-primary-hover, #bf0031);
+}
+
+.profile-hero-card__avatar-btn:active {
+  transform: scale(0.92);
+}
+
+/* User Info Section (Centered) */
+.profile-hero-card__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.profile-hero-card__name-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.profile-hero-card__name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-align: center;
+  word-break: break-word;
+}
+
+.profile-hero-card__edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: color var(--motion-micro) ease, transform var(--motion-micro) ease;
+}
+
+.profile-hero-card__edit-btn:hover {
+  color: var(--color-primary);
+}
+
+.profile-hero-card__edit-btn:active {
+  transform: scale(0.92);
+}
+
+/* Centered Inline Edit Form */
+.profile-hero-card__inline-form {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.profile-hero-card__inline-input {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-md, 10px);
+  padding: 6px 12px;
+  outline: none;
+  max-width: 220px;
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(200, 54, 73, 0.15));
+}
+
+.profile-hero-card__inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-hero-card__inline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--motion-micro) ease, background-color var(--motion-micro) ease;
+}
+
+.profile-hero-card__inline-btn--save {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.profile-hero-card__inline-btn--save:hover {
+  background: var(--color-primary-hover, #bf0031);
+}
+
+.profile-hero-card__inline-btn--cancel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.profile-hero-card__inline-btn--cancel:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.profile-hero-card__inline-btn:active {
+  transform: scale(0.92);
+}
+
+/* Centered Pill Badge for Couple Connection */
+.profile-hero-card__status-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.profile-hero-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.profile-hero-card__badge--connected {
+  background: var(--color-primary-soft, rgba(200, 54, 73, 0.08));
+  border-color: rgba(200, 54, 73, 0.22);
+  color: var(--color-primary);
+  cursor: pointer;
+  outline: none;
+  transition: transform var(--motion-micro) var(--ease-telegram), border-color var(--duration-fast) ease;
+}
+
+.profile-hero-card__badge--connected:hover {
+  border-color: var(--color-primary);
+}
+
+.profile-hero-card__badge--connected:active {
+  transform: scale(0.96);
+}
+
+.profile-hero-chevron {
+  opacity: 0.6;
+  margin-left: -2px;
+}
+
+.profile-hero-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.profile-hero-dot--offline {
+  background: #9ca3af;
+}
+
+.profile-hero-heart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+/* Centered Registration Date */
+.profile-hero-card__joined {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Dark Theme */
+[data-theme='dark'] .profile-hero-card__avatar-frame {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .profile-hero-card__avatar-btn {
+  border-color: var(--bg-app);
+}
+
+[data-theme='dark'] .profile-hero-card__badge--connected {
+  background: rgba(216, 71, 92, 0.16);
+  border-color: rgba(216, 71, 92, 0.32);
+}
+
+[data-theme='dark'] .profile-hero-card__badge--unpaired {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .profile-hero-card__inline-btn--cancel {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}

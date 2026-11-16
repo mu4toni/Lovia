@@ -1,0 +1,126 @@
+/* DateBadge */
+.glass-date-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+
+.glass-date-badge__month {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.glass-date-badge__day {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.glass-date-badge--highlight {
+  background: var(--color-primary-soft);
+  border-color: rgba(255, 51, 102, 0.35);
+}
+
+.glass-date-badge--highlight .glass-date-badge__month,
+.glass-date-badge--highlight .glass-date-badge__day {
+  color: var(--color-primary);
+}
+
+/* CalendarStrip */
+.calendar-strip {
+  width: 100%;
+  overflow: hidden;
+}
+
+.calendar-strip__scroll {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: none; /* Hide scrollbar for clean iOS feel */
+}
+
+.calendar-strip__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 4px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background var(--duration-normal) var(--ease-smooth),
+              border-color var(--duration-normal) var(--ease-smooth);
+}
+
+.calendar-day:active {
+  transform: scale(0.94);
+}
+
+.calendar-day__weekday {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.calendar-day__number {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.calendar-day__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: 3px;
+}
+
+.calendar-day--today {
+  border-color: rgba(255, 51, 102, 0.4);
+}
+
+.calendar-day--selected {
+  background: var(--color-primary-gradient) !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 18px -2px rgba(255, 51, 102, 0.45);
+}
+
+.calendar-day--selected .calendar-day__weekday,
+.calendar-day--selected .calendar-day__number {
+  color: #ffffff !important;
+}
+
+.calendar-day--selected .calendar-day__dot {
+  background: #ffffff !important;
+}

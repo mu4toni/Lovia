@@ -1,0 +1,65 @@
+.glass-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: var(--shadow-sketch, var(--shadow-sm));
+  transition: transform var(--duration-fast) var(--ease-spring),
+              box-shadow var(--duration-normal) var(--ease-smooth),
+              background var(--duration-normal) var(--ease-smooth),
+              border-color var(--duration-normal) var(--ease-smooth);
+}
+
+/* Paddings */
+.glass-card--pad-none {
+  padding: 0;
+}
+.glass-card--pad-sm {
+  padding: var(--space-sm, 12px);
+}
+.glass-card--pad-md {
+  padding: var(--space-lg, 20px);
+}
+.glass-card--pad-lg {
+  padding: 24px;
+}
+
+/* Default / Solid Clean Card */
+.glass-card--glass,
+.glass-card--solid {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Subtle Accent Highlight Card (Warm cream/sand with delicate ruby border) */
+.glass-card--highlight {
+  background: var(--bg-surface-accent);
+  border: 1px solid rgba(200, 54, 73, 0.18);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='dark'] .glass-card--highlight {
+  background: var(--bg-surface-accent);
+  border: 1px solid rgba(216, 71, 92, 0.28);
+}
+
+/* Interactive Card */
+.glass-card--interactive {
+  cursor: pointer;
+  user-select: none;
+}
+
+.glass-card--interactive:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.glass-card--interactive:active {
+  transform: translateY(1.5px) scale(0.975);
+  box-shadow: var(--shadow-sketch-pressed, var(--shadow-xs));
+  transition: transform 100ms var(--ease-tactile);
+  background: var(--bg-surface-pressed);
+}

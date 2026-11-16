@@ -1,0 +1,136 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  font-family: var(--font-family);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background var(--duration-normal) var(--ease-smooth),
+              border-color var(--duration-normal) var(--ease-smooth),
+              box-shadow var(--duration-normal) var(--ease-smooth),
+              opacity var(--duration-fast) ease;
+  min-height: 44px; /* Accessible tap target */
+  min-width: 44px;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1.5px) scale(0.93);
+  box-shadow: var(--shadow-sketch-pressed, var(--shadow-xs));
+  transition: transform 100ms var(--ease-tactile);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Sizing */
+.btn--sm {
+  padding: 6px 14px;
+  font-size: var(--font-size-xs);
+  min-height: 38px;
+  border-radius: var(--radius-sm);
+}
+
+.btn--md {
+  padding: 9px 18px;
+  font-size: var(--font-size-sm);
+  min-height: 44px;
+  border-radius: var(--radius-md);
+}
+
+.btn--lg {
+  padding: 13px 24px;
+  font-size: var(--font-size-md);
+  min-height: 50px;
+  border-radius: var(--radius-lg);
+}
+
+.btn--full-width {
+  width: 100%;
+}
+
+/* Variants — Tactile Warm Sketch Buttons */
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--text-on-accent);
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-sketch, var(--shadow-sm));
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn--primary:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.btn--secondary {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: var(--shadow-sketch, var(--shadow-sm));
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+.btn--outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-medium);
+  box-shadow: var(--shadow-sketch, var(--shadow-sm));
+}
+
+.btn--outline:hover:not(:disabled) {
+  background: var(--bg-surface-subtle);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--bg-surface-subtle);
+  color: var(--text-primary);
+}
+
+.btn--danger {
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-subtle-border);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--color-primary-tint-hover);
+}
+
+/* Loading spinner */
+.btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  display: inline-block;
+}
+
+.btn__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1.1em;
+  line-height: 1;
+}
