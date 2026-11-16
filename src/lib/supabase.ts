@@ -279,6 +279,18 @@ export interface Database {
         };
       };
     };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
 }
 
@@ -293,7 +305,7 @@ export function isSupabaseConfigured(): boolean {
 const effectiveUrl = supabaseUrl || 'https://placeholder-project.supabase.co';
 const effectiveKey = supabaseAnonKey || 'placeholder-anon-key';
 
-export const supabase: SupabaseClient<Database> = createClient<Database>(
+export const supabase: SupabaseClient<any> = createClient(
   effectiveUrl,
   effectiveKey,
   {

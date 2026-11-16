@@ -6,6 +6,13 @@ import { dateMemoryService } from './dateMemoryService';
 import { telegramService } from './telegramService';
 import { clearCelebrationHistory } from './celebrationService';
 import { isLocalDevHost } from '../utils/env';
+import {
+  supabase,
+  isSupabaseConfigured,
+  ensureUserInSupabase,
+  fetchUserById,
+  updateUserCoupleId,
+} from './api';
 
 export interface RegisteredUser {
   id: string;
@@ -347,6 +354,156 @@ class CoupleService {
   }
 
   /**
+   * Гарантирует наличие записи пользователя в public.users перед операциями с public.couples.
+   */
+  async ensureUserInSupabase(user?: RegisteredUser): Promise<void> {
+    const targetUser = user || this.getActiveUser();
+    await ensureUserInSupabase(targetUser);
+  }
+
+  /**
+   * Подписка на Realtime-изменения статуса пары в Supabase
+   */
+  private subscribeToCoupleUpdates(coupleId: string): void {
+    if (!isSupabaseConfigured() || coupleId === 'couple-1') return;
+
+    try {
+      supabase
+        .channel(`couple_${coupleId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'couples',
+            filter: `id=eq.${coupleId}`,
+          },
+          async () => {
+            await this.syncCoupleFromSupabase(coupleId);
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('[coupleService] Realtime subscription error:', e);
+    }
+  }
+
+  /**
+   * Синхронизация данных пары из Supabase с локальным состоянием
+   */
+  async syncCoupleFromSupabase(coupleIdToSync?: string): Promise<CoupleSpace | null> {
+    if (!isSupabaseConfigured()) return null;
+
+    const user = this.getActiveUser();
+    const targetId = coupleIdToSync || user.coupleId;
+    if (!targetId || targetId === 'couple-1') return null;
+
+    try {
+      const { data: coupleRow, error } = await supabase
+        .from('couples')
+        .select('*')
+        .eq('id', targetId)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('[coupleService] syncCoupleFromSupabase error:', error.message);
+        return null;
+      }
+
+      if (!coupleRow) {
+        if (this.couples[targetId]) {
+          delete this.couples[targetId];
+          this.users[user.id].coupleId = null;
+          this.saveToStorage();
+          this.notify();
+        }
+        return null;
+      }
+
+      const user1Data = await fetchUserById(coupleRow.user1_id);
+      let user2Data: any = null;
+      if (coupleRow.user2_id) {
+        user2Data = await fetchUserById(coupleRow.user2_id);
+      }
+
+      const wasWaiting = this.couples[targetId]?.status === 'waiting_partner';
+
+      const syncedCouple: CoupleSpace = {
+        id: coupleRow.id,
+        inviteCode: coupleRow.invite_code,
+        codeExpiresAt: coupleRow.code_expires_at,
+        codeStatus: coupleRow.code_status as 'active' | 'used' | 'expired',
+        user1: {
+          id: coupleRow.user1_id,
+          name: user1Data?.name || 'Пользователь',
+          gender: (user1Data?.gender as 'male' | 'female') || undefined,
+          avatarUrl: user1Data?.avatar_url || undefined,
+        },
+        user2: coupleRow.user2_id
+          ? {
+              id: coupleRow.user2_id,
+              name: user2Data?.name || 'Партнёр',
+              gender: (user2Data?.gender as 'male' | 'female') || undefined,
+              avatarUrl: user2Data?.avatar_url || undefined,
+            }
+          : undefined,
+        status: coupleRow.status as 'waiting_partner' | 'connected' | 'dissolved',
+        startDate: coupleRow.start_date || undefined,
+        createdAt: coupleRow.created_at,
+        dissolvedAt: coupleRow.dissolved_at || undefined,
+      };
+
+      this.couples[targetId] = syncedCouple;
+      this.users[user.id].coupleId = targetId;
+
+      if (user1Data) {
+        this.users[user1Data.id] = {
+          id: user1Data.id,
+          name: user1Data.name,
+          gender: (user1Data.gender as 'male' | 'female') || undefined,
+          avatarUrl: user1Data.avatar_url || undefined,
+          joinedDate: user1Data.joined_date || new Date().toISOString().split('T')[0],
+          coupleId: targetId,
+        };
+      }
+
+      if (user2Data) {
+        this.users[user2Data.id] = {
+          id: user2Data.id,
+          name: user2Data.name,
+          gender: (user2Data.gender as 'male' | 'female') || undefined,
+          avatarUrl: user2Data.avatar_url || undefined,
+          joinedDate: user2Data.joined_date || new Date().toISOString().split('T')[0],
+          coupleId: targetId,
+        };
+      }
+
+      this.saveToStorage();
+
+      if (wasWaiting && syncedCouple.status === 'connected' && syncedCouple.user2) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('lovia_couple_connected'));
+        }
+      }
+
+      return syncedCouple;
+    } catch (e: any) {
+      console.warn('[coupleService] Failed syncCoupleFromSupabase:', e?.message || e);
+      return null;
+    }
+  }
+
+  /**
+   * Проверка подключения партнёра (для поллинга в ожидании подключения)
+   */
+  async checkPartnerConnected(): Promise<boolean> {
+    const couple = this.getCurrentCouple();
+    if (!couple || couple.status !== 'waiting_partner') return false;
+    const synced = await this.syncCoupleFromSupabase(couple.id);
+    return Boolean(synced && synced.status === 'connected' && synced.user2);
+  }
+
+  /**
    * 1. CREATE A NEW COUPLE
    */
   async createCouple(input: {
@@ -358,6 +515,11 @@ class CoupleService {
     const cleanName = input.name.trim();
     if (!cleanName) {
       throw new Error('Имя обязательно для создания пары.');
+    }
+
+    // Если приложение запущено НЕ на localhost и Supabase не настроен — сразу выбрасываем ошибку
+    if (!isLocalDevHost() && !isSupabaseConfigured()) {
+      throw new Error('Не настроены ключи Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
     }
 
     // Update active user profile
@@ -380,13 +542,42 @@ class CoupleService {
       }
     }
 
+    // 1. Обязательно гарантируем наличие пользователя в public.users перед записью в public.couples
+    await this.ensureUserInSupabase(user);
+
     const coupleId = `couple-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const inviteCode = this.generateUniqueInviteCode();
+    const inviteCode = this.generateUniqueInviteCode().toUpperCase();
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const effectiveStartDate = input.startDate || todayStr;
     // 7 days expiration
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 2. Запись в Supabase при наличии подключения
+    if (isSupabaseConfigured()) {
+      const { error: insertError } = await supabase
+        .from('couples')
+        .insert({
+          id: coupleId,
+          invite_code: inviteCode,
+          code_expires_at: expiresAt,
+          code_status: 'active',
+          user1_id: user.id,
+          status: 'waiting_partner',
+          start_date: effectiveStartDate,
+        });
+
+      if (insertError) {
+        console.error('[coupleService] Failed to create couple in Supabase:', insertError);
+        throw new Error('Ошибка БД: ' + insertError.message);
+      }
+
+      // Обновляем couple_id у user1 в public.users
+      await updateUserCoupleId(user.id, coupleId);
+
+      // Запускаем подписку на Realtime-обновления
+      this.subscribeToCoupleUpdates(coupleId);
+    }
 
     const newCouple: CoupleSpace = {
       id: coupleId,
@@ -434,6 +625,11 @@ class CoupleService {
       throw new Error('Введите код пары.');
     }
 
+    // Если приложение запущено НЕ на localhost и Supabase не настроен — сразу выбрасываем ошибку
+    if (!isLocalDevHost() && !isSupabaseConfigured()) {
+      throw new Error('Не настроены ключи Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
+    }
+
     // Update active user profile
     this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
     const user = this.getActiveUser();
@@ -444,51 +640,156 @@ class CoupleService {
       throw new Error('Вы уже состоите в активной паре. Сначала разорвите текущую связь.');
     }
 
-    // Find couple by code
-    const targetCouple = Object.values(this.couples).find(
-      (c) => c.inviteCode.toUpperCase() === cleanCode
-    );
+    let targetCoupleId = '';
+    let targetCoupleCode = cleanCode;
+    let effectiveStartDate = new Date().toISOString().split('T')[0];
+    let user1Info: CoupleSpace['user1'] = {
+      id: '',
+      name: 'Партнёр',
+      gender: undefined,
+      avatarUrl: undefined,
+    };
+    let createdAt = new Date().toISOString();
 
-    if (!targetCouple) {
-      throw new Error('Код пары не найден. Проверьте правильность ввода.');
-    }
+    if (isSupabaseConfigured()) {
+      // 1. Строгий прямой запрос в Supabase: НЕ ищем в локальном массиве!
+      const { data: targetCouple, error } = await supabase
+        .from('couples')
+        .select('*')
+        .ilike('invite_code', cleanCode)
+        .maybeSingle();
 
-    if (targetCouple.status === 'dissolved') {
-      throw new Error('Это совместное пространство было расформировано.');
-    }
+      if (error) {
+        console.error('[coupleService] Supabase query error for invite_code:', error);
+        throw new Error('Ошибка БД: ' + error.message);
+      }
 
-    if (new Date(targetCouple.codeExpiresAt).getTime() < Date.now()) {
-      targetCouple.codeStatus = 'expired';
-      this.saveToStorage();
-      throw new Error('Срок действия этого кода истёк. Попросите партнёра создать новый код.');
-    }
+      if (!targetCouple) {
+        throw new Error('Код пары не найден. Проверьте правильность ввода.');
+      }
 
-    if (targetCouple.user1.id === user.id) {
-      throw new Error('Вы не можете подключиться к собственному коду. Отправьте его партнёру.');
-    }
+      if (targetCouple.status === 'dissolved') {
+        throw new Error('Это совместное пространство было расформировано.');
+      }
 
-    if (targetCouple.user2 && targetCouple.user2.id !== user.id) {
-      throw new Error('К этой паре уже подключены два участника. Подключение невозможно.');
+      if (new Date(targetCouple.code_expires_at).getTime() < Date.now()) {
+        throw new Error('Срок действия этого кода истёк. Попросите партнёра создать новый код.');
+      }
+
+      if (targetCouple.user1_id === user.id) {
+        throw new Error('Вы не можете подключиться к собственному коду. Отправьте его партнёру.');
+      }
+
+      if (targetCouple.user2_id && targetCouple.user2_id !== user.id) {
+        throw new Error('К этой паре уже подключены два участника. Подключение невозможно.');
+      }
+
+      // 2. Гарантируем запись второго пользователя в public.users перед подключением к паре
+      await this.ensureUserInSupabase(user);
+
+      // 3. Обновляем пару в Supabase
+      const { error: updateError } = await supabase
+        .from('couples')
+        .update({
+          user2_id: user.id,
+          status: 'connected',
+          code_status: 'used',
+        })
+        .eq('id', targetCouple.id);
+
+      if (updateError) {
+        console.error('[coupleService] Failed to link user2 in Supabase couple:', updateError);
+        throw new Error('Ошибка БД: ' + updateError.message);
+      }
+
+      // 4. Обновляем couple_id у обоих пользователей
+      await updateUserCoupleId(user.id, targetCouple.id);
+      await updateUserCoupleId(targetCouple.user1_id, targetCouple.id);
+
+      // 5. Загружаем данные первого партнёра из public.users
+      const user1Data = await fetchUserById(targetCouple.user1_id);
+      if (user1Data) {
+        user1Info = {
+          id: user1Data.id,
+          name: user1Data.name,
+          gender: (user1Data.gender as 'male' | 'female') || undefined,
+          avatarUrl: user1Data.avatar_url || undefined,
+        };
+      } else {
+        user1Info.id = targetCouple.user1_id;
+      }
+
+      targetCoupleId = targetCouple.id;
+      targetCoupleCode = targetCouple.invite_code;
+      effectiveStartDate = targetCouple.start_date || effectiveStartDate;
+      createdAt = targetCouple.created_at;
+    } else {
+      if (!isLocalDevHost()) {
+        throw new Error('Не настроены ключи Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
+      }
+      // Локальный фолбэк для оффлайн/тестового режима (ТОЛЬКО на localhost)
+      const targetCouple = Object.values(this.couples).find(
+        (c) => c.inviteCode.toUpperCase() === cleanCode
+      );
+
+      if (!targetCouple) {
+        throw new Error('Код пары не найден. Проверьте правильность ввода.');
+      }
+
+      if (targetCouple.status === 'dissolved') {
+        throw new Error('Это совместное пространство было расформировано.');
+      }
+
+      if (new Date(targetCouple.codeExpiresAt).getTime() < Date.now()) {
+        targetCouple.codeStatus = 'expired';
+        this.saveToStorage();
+        throw new Error('Срок действия этого кода истёк. Попросите партнёра создать новый код.');
+      }
+
+      if (targetCouple.user1.id === user.id) {
+        throw new Error('Вы не можете подключиться к собственному коду. Отправьте его партнёру.');
+      }
+
+      if (targetCouple.user2 && targetCouple.user2.id !== user.id) {
+        throw new Error('К этой паре уже подключены два участника. Подключение невозможно.');
+      }
+
+      targetCoupleId = targetCouple.id;
+      targetCoupleCode = targetCouple.inviteCode;
+      user1Info = { ...targetCouple.user1 };
+      effectiveStartDate = targetCouple.startDate || effectiveStartDate;
+      createdAt = targetCouple.createdAt;
     }
 
     // Successfully link user as user2!
-    targetCouple.user2 = {
-      id: user.id,
-      name: user.name,
-      gender: user.gender,
-      avatarUrl: user.avatarUrl,
+    const connectedCouple: CoupleSpace = {
+      id: targetCoupleId,
+      inviteCode: targetCoupleCode,
+      codeExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      codeStatus: 'used',
+      user1: user1Info,
+      user2: {
+        id: user.id,
+        name: user.name,
+        gender: user.gender,
+        avatarUrl: user.avatarUrl,
+      },
+      status: 'connected',
+      startDate: effectiveStartDate,
+      createdAt,
     };
-    targetCouple.status = 'connected';
-    targetCouple.codeStatus = 'used';
 
-    // Inherit already set startDate from targetCouple, or default to today
-    const effectiveStartDate = targetCouple.startDate || new Date().toISOString().split('T')[0];
-    targetCouple.startDate = effectiveStartDate;
-
-    // Link both users to coupleId
-    this.users[user.id].coupleId = targetCouple.id;
-    if (this.users[targetCouple.user1.id]) {
-      this.users[targetCouple.user1.id].coupleId = targetCouple.id;
+    this.couples[targetCoupleId] = connectedCouple;
+    this.users[user.id].coupleId = targetCoupleId;
+    if (user1Info.id) {
+      this.users[user1Info.id] = {
+        id: user1Info.id,
+        name: user1Info.name,
+        gender: user1Info.gender,
+        avatarUrl: user1Info.avatarUrl,
+        joinedDate: new Date().toISOString().split('T')[0],
+        coupleId: targetCoupleId,
+      };
     }
 
     // Initialize fresh shared space data for new couple
@@ -501,18 +802,29 @@ class CoupleService {
       window.dispatchEvent(new CustomEvent('lovia_couple_connected'));
     }
 
-    return { ...targetCouple };
+    return { ...connectedCouple };
   }
 
   /**
    * Updates relationship start date in couple space and relationship service
    */
-  updateStartDate(newStartDate: string): void {
+  async updateStartDate(newStartDate: string): Promise<void> {
     this.init();
     const user = this.users[this.activeUserId];
     if (user && user.coupleId && this.couples[user.coupleId]) {
       this.couples[user.coupleId].startDate = newStartDate;
       this.saveToStorage();
+
+      if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
+        try {
+          await supabase
+            .from('couples')
+            .update({ start_date: newStartDate })
+            .eq('id', user.coupleId);
+        } catch (e) {
+          console.warn('[coupleService] Failed to update start_date in Supabase:', e);
+        }
+      }
     }
     relationshipService.setStartDate(newStartDate);
     this.notify();
@@ -533,6 +845,28 @@ class CoupleService {
       }
 
       const couple = this.couples[coupleId];
+
+      if (isSupabaseConfigured() && coupleId !== 'couple-1') {
+        const { error: dissolveError } = await supabase
+          .from('couples')
+          .update({
+            status: 'dissolved',
+            code_status: 'expired',
+            dissolved_at: new Date().toISOString(),
+          })
+          .eq('id', coupleId);
+
+        if (dissolveError) {
+          console.error('[coupleService] Failed to dissolve couple in Supabase:', dissolveError);
+          throw new Error(`Ошибка разрыва связи в базе данных: ${dissolveError.message}`);
+        }
+
+        // Unlink users in Supabase
+        await updateUserCoupleId(couple.user1.id, null);
+        if (couple.user2) {
+          await updateUserCoupleId(couple.user2.id, null);
+        }
+      }
 
       // 1. Transactionally wipe all joint data
       await this.resetAllSharedSpaces();
@@ -570,12 +904,20 @@ class CoupleService {
   /**
    * Cancel waiting couple code (if user created a code but wants to join partner's instead)
    */
-  cancelWaitingCouple(): void {
+  async cancelWaitingCouple(): Promise<void> {
     this.init();
     const user = this.getActiveUser();
     if (user.coupleId && this.couples[user.coupleId]) {
       const c = this.couples[user.coupleId];
       if (c.status === 'waiting_partner') {
+        if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
+          try {
+            await supabase.from('couples').delete().eq('id', user.coupleId);
+            await updateUserCoupleId(user.id, null);
+          } catch (e) {
+            console.warn('[coupleService] Failed to delete waiting couple from Supabase:', e);
+          }
+        }
         delete this.couples[user.coupleId];
       }
     }

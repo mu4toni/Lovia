@@ -91,6 +91,17 @@ export function OnboardingPage() {
     }
   }, [navigate]);
 
+  // Auto-poll for partner connection when waiting in couple space
+  useEffect(() => {
+    if (currentCouple?.status !== 'waiting_partner') return;
+
+    const intervalId = setInterval(async () => {
+      await coupleService.checkPartnerConnected();
+    }, 2500);
+
+    return () => clearInterval(intervalId);
+  }, [currentCouple?.status]);
+
   const validateName = (): string | null => {
     const clean = name.trim();
     if (!clean) {
@@ -129,6 +140,11 @@ export function OnboardingPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Не удалось создать пару';
       setCreateError(msg);
+      showToast({
+        title: 'Ошибка создания пары',
+        message: msg,
+        type: 'info',
+      });
     } finally {
       setIsCreating(false);
     }
@@ -192,6 +208,11 @@ export function OnboardingPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Ошибка подключения по коду';
       setJoinError(msg);
+      showToast({
+        title: 'Ошибка подключения',
+        message: msg,
+        type: 'info',
+      });
     } finally {
       setIsJoining(false);
     }
