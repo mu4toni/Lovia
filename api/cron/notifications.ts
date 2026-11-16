@@ -105,12 +105,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // 2. Инициализация клиента Supabase
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  // 2. Инициализация прямого подключения к Supabase (без прокси)
+  let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+  if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+    supabaseUrl = 'https://uwbdtisxjzmnzkodiexo.supabase.co';
+  }
   const supabaseKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
     '';
 
   if (!supabaseUrl || !supabaseKey) {
@@ -148,7 +151,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!couples || couples.length === 0) {
-      return res.status(200).json({ success: true, message: 'No active connected couples found', stats });
+      return res.status(200).json({
+        ok: true,
+        success: true,
+        checked: 0,
+        sent: 0,
+        message: 'No active connected couples found',
+        stats,
+      });
     }
 
     stats.connectedCouples = couples.length;
@@ -553,7 +563,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(200).json({
+      ok: true,
       success: true,
+      checked: stats.remindersChecked + stats.anniversariesChecked,
+      sent: stats.remindersSent + stats.anniversariesSent + stats.memorableDatesSent,
       stats,
     });
   } catch (err: any) {

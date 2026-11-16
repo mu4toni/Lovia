@@ -1,6 +1,6 @@
 .toast-container {
   position: fixed;
-  top: env(safe-area-inset-top, 16px);
+  top: calc(12px + var(--tg-total-top-inset, env(safe-area-inset-top, 0px)));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);

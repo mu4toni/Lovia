@@ -5,6 +5,7 @@ import type {
 } from '../types/relationship';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
+import { sendPartnerNotification } from './notificationService';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_START_DATE_KEY = 'lovia_relationship_start_date_v1';
@@ -164,6 +165,8 @@ class RelationshipService {
             console.error('[relationshipService] Failed to update start_date in Supabase:', error);
           }
         });
+
+      sendPartnerNotification('start_date_updated', { date: newDate });
     }
 
     this.notify();
@@ -281,6 +284,12 @@ class RelationshipService {
       console.warn('Failed to save memorable date:', e);
     }
     this.notify();
+
+    sendPartnerNotification('memorable_date_added', {
+      title: newEntry.title,
+      date: newEntry.date,
+    });
+
     return newEntry;
   }
 

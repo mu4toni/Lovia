@@ -6,6 +6,7 @@ import { dateMemoryService } from './dateMemoryService';
 import { telegramService } from './telegramService';
 import { clearCelebrationHistory } from './celebrationService';
 import { isLocalDevHost } from '../utils/env';
+import { sendPartnerNotification } from './notificationService';
 import {
   supabase,
   isSupabaseConfigured,
@@ -212,6 +213,15 @@ class CoupleService {
 
         this.activeUserId = tgId;
         localStorage.setItem(STORAGE_ACTIVE_USER_ID_KEY, this.activeUserId);
+
+        // Гарантируем сохранение/обновление пользователя в public.users с telegram_id при запуске в Telegram
+        if (isSupabaseConfigured()) {
+          setTimeout(() => {
+            this.ensureUserInSupabase(this.users[tgId]).catch((err) => {
+              console.warn('[coupleService] Initial Telegram user upsert skipped/failed:', err?.message || err);
+            });
+          }, 50);
+        }
       } else {
         const storedActiveId = localStorage.getItem(STORAGE_ACTIVE_USER_ID_KEY);
         if (storedActiveId && this.users[storedActiveId]) {
@@ -570,22 +580,12 @@ class CoupleService {
       }
     }
 
-    // Автоматическая синхронизация часового пояса браузера в public.users
+    // Автоматическая синхронизация пользователя (telegram_id, timezone, etc.) в public.users
     const effectiveUserId = user.id && user.id !== 'user-marsel' && !user.id.startsWith('guest') ? user.id : null;
     if (effectiveUserId) {
-      const timezoneOffset = -new Date().getTimezoneOffset();
-      supabase
-        .from('users')
-        .update({
-          timezone_offset: timezoneOffset,
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq('id', effectiveUserId)
-        .then(({ error }) => {
-          if (error) {
-            console.warn('[coupleService] Failed to sync timezone_offset to Supabase:', error.message);
-          }
-        });
+      this.ensureUserInSupabase(user).catch((err) => {
+        console.warn('[coupleService] Failed to auto-ensure user in Supabase during sync:', err?.message || err);
+      });
     }
 
     // 2. Если coupleId есть, подтягиваем актуальные данные из public.couples
@@ -922,6 +922,8 @@ class CoupleService {
       window.dispatchEvent(new CustomEvent('lovia_couple_connected'));
     }
 
+    sendPartnerNotification('couple_connected');
+
     return { ...connectedCouple };
   }
 
@@ -965,6 +967,8 @@ class CoupleService {
       }
 
       const couple = this.couples[coupleId];
+      // Запоминаем ID партнёра ДО обнуления пары в базе и локальном хранилище!
+      const partnerId = couple.user1.id === user.id ? couple.user2?.id : couple.user1.id;
 
       if (isSupabaseConfigured() && coupleId !== 'couple-1') {
         const { error: dissolveError } = await supabase
@@ -1011,6 +1015,10 @@ class CoupleService {
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('lovia_couple_dissolved'));
+      }
+
+      if (partnerId) {
+        sendPartnerNotification('couple_dissolved', { partnerId, coupleId });
       }
 
       return { success: true };

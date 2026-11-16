@@ -2,6 +2,7 @@ import { WishItem, CreateWishInput, UpdateWishInput, WISHLIST_CATEGORIES } from 
 import { initialWishlistItems } from './mockWishlistData';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
+import { sendPartnerNotification } from './notificationService';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_KEY = 'lovia_wishlist_items_v1';
@@ -235,6 +236,12 @@ class WishlistService {
     all.unshift(newItem);
     this.saveToStorage(all);
     this.notify();
+
+    sendPartnerNotification('wishlist_added', {
+      title: newItem.title,
+      price: newItem.estimatedPrice,
+    });
+
     return newItem;
   }
 

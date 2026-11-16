@@ -31,7 +31,13 @@ export async function ensureUserInSupabase(user: UserRecord): Promise<void> {
   }
 
   const tgUser = telegramService.getTelegramUser();
-  const telegramId = tgUser?.id ? Number(tgUser.id) : null;
+  let telegramId = tgUser?.id ? Number(tgUser.id) : null;
+  if (!telegramId && user.id && user.id.startsWith('tg_')) {
+    const parsedTg = Number(user.id.replace('tg_', ''));
+    if (!isNaN(parsedTg) && parsedTg > 0) {
+      telegramId = parsedTg;
+    }
+  }
   const timezoneOffset =
     typeof user.timezoneOffset === 'number'
       ? user.timezoneOffset

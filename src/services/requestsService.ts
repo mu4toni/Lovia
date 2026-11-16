@@ -12,6 +12,7 @@ import {
 import { profileService } from './profileService';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
+import { sendPartnerNotification } from './notificationService';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_REMINDERS_KEY = 'lovia_reminders';
@@ -291,6 +292,20 @@ class RemindersService {
     this.reminders.unshift(newReminder);
     this.saveLocal();
     this.notify();
+
+    // Мгновенное Telegram-уведомление партнёру (только если задача не создана чисто для себя)
+    if (newReminder.targetId !== 'user-self' && newReminder.targetId !== activeUser.id) {
+      sendPartnerNotification('reminder_created', {
+        title: newReminder.title,
+        dueLabel: newReminder.dueLabel,
+        dueTime: newReminder.dueTime,
+        isCommon:
+          newReminder.targetId === 'all' ||
+          newReminder.targetId === 'both' ||
+          newReminder.targetId === 'common',
+      });
+    }
+
     return newReminder;
   }
 
@@ -374,6 +389,13 @@ class RemindersService {
     rem.status = newStatus;
     this.saveLocal();
     this.notify();
+
+    if (newStatus === 'completed') {
+      sendPartnerNotification('reminder_completed', {
+        title: rem.title,
+      });
+    }
+
     return { ...rem };
   }
 

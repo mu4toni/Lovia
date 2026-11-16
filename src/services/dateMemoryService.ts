@@ -6,6 +6,7 @@ import type {
 import { isFutureDate } from '../utils/dateCalculations';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
+import { sendPartnerNotification } from './notificationService';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_DATE_MEMORIES_KEY = 'lovia_date_memories_v1';
@@ -367,6 +368,11 @@ class DateMemoryService {
       console.warn('Failed to save date memory:', e);
     }
     this.notify();
+
+    sendPartnerNotification('date_memory_added', {
+      title: newEntry.title,
+    });
+
     return newEntry;
   }
 
