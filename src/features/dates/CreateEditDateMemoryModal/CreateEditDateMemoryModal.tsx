@@ -9,6 +9,7 @@ import { Icon } from '../../../components/ui/Icon/Icon';
 import { PlaceCard } from '../PlaceCard/PlaceCard';
 import { PlacePickerModal } from '../PlacePickerModal/PlacePickerModal';
 import { getTodayDateString, isFutureDate } from '../../../utils/dateCalculations';
+import { compressImageFile } from '../../../utils/imageCompressor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './CreateEditDateMemoryModal.css';
 
@@ -18,8 +19,6 @@ export interface CreateEditDateMemoryModalProps {
   onSubmit: (input: CreateDateMemoryInput) => void;
   initialMemory?: DateMemory | null;
 }
-
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps> = ({
   isOpen,
@@ -71,7 +70,7 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
     }
   }, [initialMemory, isOpen]);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -79,49 +78,31 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
     setIsReadingFiles(true);
 
     const fileList = Array.from(files);
-    let loadedCount = 0;
-    const newPhotos: string[] = [];
-    let hasSizeError = false;
 
-    fileList.forEach((file) => {
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        hasSizeError = true;
-        loadedCount++;
-        if (loadedCount === fileList.length) {
-          setIsReadingFiles(false);
-          if (newPhotos.length > 0) {
-            setPhotos((prev) => [...prev, ...newPhotos]);
+    try {
+      const compressedDataUrls = await Promise.all(
+        fileList.map(async (file) => {
+          try {
+            // Сжатие через <canvas> до 1280px (image/jpeg, качество 0.82)
+            return await compressImageFile(file, 1280, 1280, 0.82);
+          } catch {
+            return null;
           }
-          setError('Некоторые файлы превышают допустимый размер 5 МБ и не были добавлены');
-        }
-        return;
+        })
+      );
+
+      const validPhotos = compressedDataUrls.filter(Boolean) as string[];
+      if (validPhotos.length > 0) {
+        setPhotos((prev) => [...prev, ...validPhotos]);
+      } else {
+        setError('Не удалось обработать выбранные изображения');
       }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          newPhotos.push(reader.result);
-        }
-        loadedCount++;
-        if (loadedCount === fileList.length) {
-          setIsReadingFiles(false);
-          setPhotos((prev) => [...prev, ...newPhotos]);
-          if (hasSizeError) {
-            setError('Некоторые файлы превышают 5 МБ и не были загружены');
-          }
-        }
-      };
-      reader.onerror = () => {
-        loadedCount++;
-        if (loadedCount === fileList.length) {
-          setIsReadingFiles(false);
-        }
-        setError('Произошла ошибка при чтении изображения');
-      };
-      reader.readAsDataURL(file);
-    });
-
-    e.target.value = '';
+    } catch {
+      setError('Произошла ошибка при обработке изображений');
+    } finally {
+      setIsReadingFiles(false);
+      e.target.value = '';
+    }
   };
 
   const handleRemovePhoto = (index: number) => {

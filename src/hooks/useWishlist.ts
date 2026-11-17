@@ -24,7 +24,9 @@ export function useWishlist() {
 
   // Load profile and wishlist items
   const loadData = useCallback(async () => {
-    setIsLoading(true);
+    if (!wishlistService.hasCachedData() && !profile) {
+      setIsLoading(true);
+    }
     try {
       const [profData, wishlistData] = await Promise.all([
         requestsService.getProfile(),
@@ -37,7 +39,7 @@ export function useWishlist() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
     loadData();
@@ -51,17 +53,17 @@ export function useWishlist() {
     window.addEventListener('lovia_couple_updated', loadData);
 
     const onVisibility = () => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         loadData();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
 
     const intervalId = setInterval(() => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         wishlistService.getWishlist().then((data) => setItems(data)).catch(() => {});
       }
-    }, 5000);
+    }, 18000);
 
     return () => {
       window.removeEventListener('lovia_wishlist_updated', handleUpdate);

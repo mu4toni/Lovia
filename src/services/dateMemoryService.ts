@@ -7,6 +7,7 @@ import { isFutureDate } from '../utils/dateCalculations';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
+import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_DATE_MEMORIES_KEY = 'lovia_date_memories_v1';
@@ -219,12 +220,30 @@ class DateMemoryService {
     }
   }
 
+  private isRevalidating = false;
+
+  hasCachedData(): boolean {
+    return this.getDateMemories().length > 0;
+  }
+
+  private saveDateMemoriesToStorage(memories: DateMemory[], coupleId?: string): void {
+    try {
+      localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(memories));
+      const targetCoupleId = coupleId || coupleService.getCurrentCouple()?.id;
+      if (targetCoupleId && targetCoupleId !== 'couple-1') {
+        updateSwrCache(targetCoupleId, 'memories', memories);
+      }
+    } catch (e) {
+      console.warn('Failed to cache date memories:', e);
+    }
+  }
+
   getDateMemories(): DateMemory[] {
     try {
       const stored = localStorage.getItem(STORAGE_DATE_MEMORIES_KEY);
       if (!stored) {
         if (isLocalDevHost() && coupleService.isDemoCouple()) {
-          localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(initialDateMemories));
+          this.saveDateMemoriesToStorage(initialDateMemories);
           return [...initialDateMemories];
         }
         return [];
@@ -232,6 +251,49 @@ class DateMemoryService {
       return JSON.parse(stored);
     } catch {
       return isLocalDevHost() && coupleService.isDemoCouple() ? [...initialDateMemories] : [];
+    }
+  }
+
+  private async revalidateMemoriesInBackground(coupleId: string): Promise<void> {
+    if (this.isRevalidating) return;
+    this.isRevalidating = true;
+    try {
+      const { data, error } = await supabase
+        .from('date_memories')
+        .select('*')
+        .eq('couple_id', coupleId)
+        .order('date', { ascending: false });
+
+      if (!error && data) {
+        const mapped: DateMemory[] = data.map((row: any) => {
+          let rawLoc = row.location_data ?? row.location;
+          if (typeof rawLoc === 'string') {
+            try {
+              rawLoc = JSON.parse(rawLoc);
+            } catch {
+              rawLoc = undefined;
+            }
+          }
+
+          return {
+            id: row.id,
+            title: row.title,
+            date: row.date,
+            place: row.place || undefined,
+            location: rawLoc && typeof rawLoc === 'object' ? rawLoc : undefined,
+            story: row.story || undefined,
+            photos: Array.isArray(row.photos) ? row.photos : [],
+            createdAt: row.created_at,
+          };
+        });
+
+        this.saveDateMemoriesToStorage(mapped, coupleId);
+        this.notify();
+      }
+    } catch (e) {
+      console.warn('[dateMemoryService] SWR background revalidation failed:', e);
+    } finally {
+      this.isRevalidating = false;
     }
   }
 
@@ -248,6 +310,23 @@ class DateMemoryService {
       }
 
       this.subscribeToRealtime();
+
+      // Проверяем локальное хранилище и SWR-кэш
+      let cached = this.getDateMemories();
+      if (cached.length === 0) {
+        const swrCached = getSwrCacheSection(couple.id, 'memories') as DateMemory[] | undefined;
+        if (Array.isArray(swrCached) && swrCached.length > 0) {
+          cached = swrCached;
+          this.saveDateMemoriesToStorage(cached, couple.id);
+        }
+      }
+
+      // Если в кэше уже есть данные, возвращаем их мгновенно (0 мс),
+      // а свежие данные из Supabase тихо обновляем в фоне
+      if (cached.length > 0) {
+        this.revalidateMemoriesInBackground(couple.id);
+        return cached;
+      }
 
       const { data, error } = await supabase
         .from('date_memories')
@@ -282,12 +361,7 @@ class DateMemoryService {
         };
       });
 
-      try {
-        localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(mapped));
-      } catch (e) {
-        console.warn('Failed to cache date memories:', e);
-      }
-
+      this.saveDateMemoriesToStorage(mapped, couple.id);
       return mapped;
     }
 
@@ -362,11 +436,7 @@ class DateMemoryService {
     }
 
     const updated = [newEntry, ...list];
-    try {
-      localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.warn('Failed to save date memory:', e);
-    }
+    this.saveDateMemoriesToStorage(updated, couple?.id);
     this.notify();
 
     sendPartnerNotification('date_memory_added', {
@@ -437,11 +507,7 @@ class DateMemoryService {
     };
 
     list[index] = updatedEntry;
-    try {
-      localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(list));
-    } catch (e) {
-      console.warn('Failed to update date memory:', e);
-    }
+    this.saveDateMemoriesToStorage(list, couple?.id);
     this.notify();
     return updatedEntry;
   }
@@ -466,11 +532,7 @@ class DateMemoryService {
     const filtered = list.filter((m) => m.id !== id);
     if (filtered.length === list.length) return false;
 
-    try {
-      localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify(filtered));
-    } catch (e) {
-      console.warn('Failed to delete date memory:', e);
-    }
+    this.saveDateMemoriesToStorage(filtered, couple?.id);
     this.notify();
     return true;
   }
@@ -481,7 +543,7 @@ class DateMemoryService {
 
   clearSharedData(): void {
     try {
-      localStorage.setItem(STORAGE_DATE_MEMORIES_KEY, JSON.stringify([]));
+      this.saveDateMemoriesToStorage([]);
     } catch (e) {
       console.warn('Failed to clear date memories from localStorage:', e);
     }

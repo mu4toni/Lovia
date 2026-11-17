@@ -33,17 +33,17 @@ export function useDateMemories() {
     window.addEventListener('lovia_couple_updated', handleUpdate);
 
     const onVisibility = () => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         refreshMemories();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
 
     const intervalId = setInterval(() => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         refreshMemories();
       }
-    }, 5000);
+    }, 18000);
 
     return () => {
       window.removeEventListener('lovia_dates_updated', handleUpdate);

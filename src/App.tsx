@@ -1,17 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
-import { WishlistPage } from './pages/WishlistPage';
-import { RelationshipPage } from './pages/RelationshipPage';
-import { DatesPage } from './pages/DatesPage';
-import { ProfilePage } from './pages/ProfilePage';
 import { OnboardingPage } from './pages/OnboardingPage';
-import { DesignSystemPage } from './pages/DesignSystemPage';
 import { DevBanner } from './components/DevBanner';
-import { ToastProvider } from './components/ui';
+import { ToastProvider, PageSkeleton } from './components/ui';
 import { coupleService } from './services/coupleService';
 import { telegramService } from './services/telegramService';
+
+// Code Splitting: второстепенные страницы подгружаются по требованию
+const WishlistPage = lazy(() =>
+  import('./pages/WishlistPage').then((m) => ({ default: m.WishlistPage }))
+);
+const RelationshipPage = lazy(() =>
+  import('./pages/RelationshipPage').then((m) => ({ default: m.RelationshipPage }))
+);
+const DatesPage = lazy(() =>
+  import('./pages/DatesPage').then((m) => ({ default: m.DatesPage }))
+);
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
+const DesignSystemPage = lazy(() =>
+  import('./pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage }))
+);
 
 function ProtectedCoupleRoute() {
   const [isConnected, setIsConnected] = useState(() => coupleService.isConnected());
@@ -92,16 +104,58 @@ export function App() {
         <Route element={<ProtectedCoupleRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/wishlist" element={<WishlistPage />} />
-            <Route path="/relationship" element={<RelationshipPage />} />
-            <Route path="/dates" element={<DatesPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/calendar" element={<DatesPage />} />
+            <Route
+              path="/wishlist"
+              element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <WishlistPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/relationship"
+              element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <RelationshipPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/dates"
+              element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <DatesPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <ProfilePage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <DatesPage />
+                </Suspense>
+              }
+            />
           </Route>
         </Route>
 
         {/* Design System & Showcase (Accessible anytime) */}
-        <Route path="/design" element={<DesignSystemPage />} />
+        <Route
+          path="/design"
+          element={
+            <Suspense fallback={<PageSkeleton />}>
+              <DesignSystemPage />
+            </Suspense>
+          }
+        />
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

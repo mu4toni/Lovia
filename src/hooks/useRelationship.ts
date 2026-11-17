@@ -44,7 +44,9 @@ export function useRelationship() {
   useEffect(() => {
     let isMounted = true;
     async function init() {
-      setIsLoading(true);
+      if (!relationshipService.hasCachedData() && !profile) {
+        setIsLoading(true);
+      }
       try {
         const prof = await requestsService.getProfile();
         if (isMounted) {
@@ -66,17 +68,17 @@ export function useRelationship() {
     window.addEventListener('lovia_couple_updated', handleRelUpdate);
 
     const onVisibility = () => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         refreshData();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
 
     const intervalId = setInterval(() => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         refreshData();
       }
-    }, 5000);
+    }, 18000);
 
     return () => {
       isMounted = false;

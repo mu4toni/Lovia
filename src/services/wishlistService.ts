@@ -3,6 +3,7 @@ import { initialWishlistItems } from './mockWishlistData';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
+import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_KEY = 'lovia_wishlist_items_v1';
@@ -92,9 +93,19 @@ class WishlistService {
     }
   }
 
+  private isRevalidating = false;
+
+  hasCachedData(): boolean {
+    return this.loadFromStorage().length > 0;
+  }
+
   private saveToStorage(items: WishItem[]) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      const couple = coupleService.getCurrentCouple();
+      if (couple && couple.id && couple.id !== 'couple-1') {
+        updateSwrCache(couple.id, 'wishlist', items);
+      }
     } catch (e) {
       console.error('Failed to save wishlist items to localStorage', e);
     }
@@ -103,6 +114,56 @@ class WishlistService {
   private notify() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('lovia_wishlist_updated'));
+    }
+  }
+
+  private async fetchWishlistFromSupabase(coupleId: string): Promise<WishItem[]> {
+    const { data, error } = await supabase
+      .from('wishlist_items')
+      .select('*')
+      .eq('couple_id', coupleId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[wishlistService] Failed to load wishlist from Supabase:', error);
+      throw new Error('Ошибка БД: ' + error.message);
+    }
+
+    const mapped: WishItem[] = (data || []).map((row: any) => {
+      const catInfo = this.getCategoryDetails(row.category_id || 'gifts');
+      return {
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        description: row.description || undefined,
+        imageUrl: row.image_url || undefined,
+        linkUrl: row.link_url || undefined,
+        estimatedPrice: row.price ? Number(row.price) : undefined,
+        currency: '₽',
+        categoryId: row.category_id || 'gifts',
+        categoryLabel: catInfo.categoryLabel,
+        categoryColor: catInfo.categoryColor,
+        isReserved: Boolean(row.is_booked),
+        reservedByUserId: row.booked_by_user_id || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.created_at,
+      };
+    });
+
+    this.saveToStorage(mapped);
+    return mapped;
+  }
+
+  private async revalidateInBackground(coupleId: string): Promise<void> {
+    if (this.isRevalidating) return;
+    this.isRevalidating = true;
+    try {
+      await this.fetchWishlistFromSupabase(coupleId);
+      this.notify();
+    } catch (e) {
+      console.warn('[wishlistService] SWR background revalidation failed:', e);
+    } finally {
+      this.isRevalidating = false;
     }
   }
 
@@ -123,44 +184,31 @@ class WishlistService {
 
       this.subscribeToRealtime();
 
-      const { data, error } = await supabase
-        .from('wishlist_items')
-        .select('*')
-        .eq('couple_id', couple.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[wishlistService] Failed to load wishlist from Supabase:', error);
-        throw new Error('Ошибка БД: ' + error.message);
+      // Проверяем локальное хранилище и SWR-кэш
+      let cached = this.loadFromStorage();
+      if (cached.length === 0) {
+        const swrCached = getSwrCacheSection(couple.id, 'wishlist') as WishItem[] | undefined;
+        if (Array.isArray(swrCached) && swrCached.length > 0) {
+          cached = swrCached;
+          this.saveToStorage(cached);
+        }
       }
 
-      const mapped: WishItem[] = (data || []).map((row: any) => {
-        const catInfo = this.getCategoryDetails(row.category_id || 'gifts');
-        return {
-          id: row.id,
-          userId: row.user_id,
-          title: row.title,
-          description: row.description || undefined,
-          imageUrl: row.image_url || undefined,
-          linkUrl: row.link_url || undefined,
-          estimatedPrice: row.price ? Number(row.price) : undefined,
-          currency: '₽',
-          categoryId: row.category_id || 'gifts',
-          categoryLabel: catInfo.categoryLabel,
-          categoryColor: catInfo.categoryColor,
-          isReserved: Boolean(row.is_booked),
-          reservedByUserId: row.booked_by_user_id || undefined,
-          createdAt: row.created_at,
-          updatedAt: row.created_at,
-        };
-      });
+      // Если в кэше уже есть данные, возвращаем их мгновенно (0 мс),
+      // а свежие данные из Supabase тихо обновляем в фоне
+      if (cached.length > 0) {
+        this.revalidateInBackground(couple.id);
+        if (userId) {
+          return cached.filter((item) => item.userId === userId);
+        }
+        return cached;
+      }
 
-      this.saveToStorage(mapped);
-
+      const fresh = await this.fetchWishlistFromSupabase(couple.id);
       if (userId) {
-        return mapped.filter((item) => item.userId === userId);
+        return fresh.filter((item) => item.userId === userId);
       }
-      return mapped;
+      return fresh;
     }
 
     const all = this.loadFromStorage();

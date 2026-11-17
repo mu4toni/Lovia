@@ -7,6 +7,7 @@ import { telegramService } from './telegramService';
 import { clearCelebrationHistory } from './celebrationService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
+import { getSwrCacheSection, updateSwrCache, clearSwrCache } from './swrCache';
 import {
   supabase,
   isSupabaseConfigured,
@@ -440,6 +441,15 @@ class CoupleService {
     const targetId = coupleIdToSync || user.coupleId;
     if (!targetId || targetId === 'couple-1') return null;
 
+    // Мгновенное восстановление из локального SWR-кэша, если ещё нет в памяти
+    if (!this.couples[targetId]) {
+      const cached = getSwrCacheSection(targetId, 'couple') as CoupleSpace | undefined;
+      if (cached) {
+        this.couples[targetId] = cached;
+        this.users[user.id].coupleId = targetId;
+      }
+    }
+
     try {
       const { data: coupleRow, error } = await supabase
         .from('couples')
@@ -462,11 +472,11 @@ class CoupleService {
         return null;
       }
 
-      const user1Data = await fetchUserById(coupleRow.user1_id);
-      let user2Data: any = null;
-      if (coupleRow.user2_id) {
-        user2Data = await fetchUserById(coupleRow.user2_id);
-      }
+      // Параллельный запрос данных участников (убираем водопад)
+      const [user1Data, user2Data] = await Promise.all([
+        fetchUserById(coupleRow.user1_id),
+        coupleRow.user2_id ? fetchUserById(coupleRow.user2_id) : Promise.resolve(null),
+      ]);
 
       const wasWaiting = this.couples[targetId]?.status === 'waiting_partner';
 
@@ -498,6 +508,8 @@ class CoupleService {
 
       this.couples[targetId] = syncedCouple;
       this.users[user.id].coupleId = targetId;
+      // Сохраняем в SWR-кэш для мгновенного старта
+      updateSwrCache(targetId, 'couple', syncedCouple);
 
       if (user1Data) {
         this.users[user1Data.id] = {
@@ -528,6 +540,11 @@ class CoupleService {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('lovia_couple_connected'));
         }
+      }
+
+      // Параллельная загрузка данных всех сервисов без блокировки рендера
+      if (syncedCouple.status === 'connected') {
+        this.preloadAllCoupleData(syncedCouple.id);
       }
 
       return syncedCouple;
@@ -609,6 +626,22 @@ class CoupleService {
     if (!couple || couple.status !== 'waiting_partner') return false;
     const synced = await this.syncCoupleFromSupabase(couple.id);
     return Boolean(synced && synced.status === 'connected' && synced.user2);
+  }
+
+  /**
+   * Параллельная предзагрузка всех активных сервисов пары (Promise.all).
+   * Устраняет водопад запросов и прогревает локальный SWR-кэш.
+   */
+  preloadAllCoupleData(coupleId: string): void {
+    if (!coupleId || coupleId === 'couple-1') return;
+    Promise.all([
+      requestsService.getRequests(false),
+      wishlistService.getWishlist(),
+      relationshipService.fetchMemorableDates(),
+      dateMemoryService.fetchDateMemories(),
+    ]).catch((err) => {
+      console.warn('[coupleService] Background parallel preload error:', err);
+    });
   }
 
   /**
@@ -1020,6 +1053,9 @@ class CoupleService {
       if (partnerId) {
         sendPartnerNotification('couple_dissolved', { partnerId, coupleId });
       }
+
+      // Удаляем локальный SWR-кэш при разрыве пары
+      clearSwrCache(coupleId);
 
       return { success: true };
     } catch (err: unknown) {

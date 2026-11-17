@@ -26,7 +26,9 @@ export function useHomeData() {
   const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
-    setIsLoading(true);
+    if (!requestsService.hasCachedData() && !profile) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const [profData, reqsData, evsData] = await Promise.all([
@@ -137,20 +139,20 @@ export function useHomeData() {
 
     // Visibility change (returning to Telegram from background)
     const onVisibility = () => {
-      if (!document.hidden) {
+      if (document.visibilityState === 'visible' && !document.hidden) {
         loadData();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
 
-    // Silent background poll every 5 seconds so partner sees new reminders
+    // Silent background poll every 18 seconds so partner sees new reminders
     const intervalId = setInterval(() => {
-      if (!document.hidden && demoMode === 'normal') {
+      if (document.visibilityState === 'visible' && !document.hidden && demoMode === 'normal') {
         requestsService.getRequests(false).then((list) => {
           setRequests(list);
         }).catch(() => {});
       }
-    }, 5000);
+    }, 18000);
 
     return () => {
       window.removeEventListener('lovia_categories_updated', onCatsUpdated);

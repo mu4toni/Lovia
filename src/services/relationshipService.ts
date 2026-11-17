@@ -6,6 +6,7 @@ import type {
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
+import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_START_DATE_KEY = 'lovia_relationship_start_date_v1';
@@ -173,12 +174,30 @@ class RelationshipService {
     return newDate;
   }
 
+  private isRevalidating = false;
+
+  hasCachedData(): boolean {
+    return this.getMemorableDates().length > 0;
+  }
+
+  private saveMemorableDatesToStorage(dates: MemorableDate[], coupleId?: string): void {
+    try {
+      localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(dates));
+      const targetCoupleId = coupleId || coupleService.getCurrentCouple()?.id;
+      if (targetCoupleId && targetCoupleId !== 'couple-1') {
+        updateSwrCache(targetCoupleId, 'dates', dates);
+      }
+    } catch (e) {
+      console.warn('Failed to cache memorable dates:', e);
+    }
+  }
+
   getMemorableDates(): MemorableDate[] {
     try {
       const stored = localStorage.getItem(STORAGE_MEMORABLE_DATES_KEY);
       if (!stored) {
         if (isLocalDevHost() && coupleService.isDemoCouple()) {
-          localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(initialMemorableDates));
+          this.saveMemorableDatesToStorage(initialMemorableDates);
           return [...initialMemorableDates];
         }
         return [];
@@ -186,6 +205,35 @@ class RelationshipService {
       return JSON.parse(stored);
     } catch {
       return isLocalDevHost() && coupleService.isDemoCouple() ? [...initialMemorableDates] : [];
+    }
+  }
+
+  private async revalidateDatesInBackground(coupleId: string): Promise<void> {
+    if (this.isRevalidating) return;
+    this.isRevalidating = true;
+    try {
+      const { data, error } = await supabase
+        .from('memorable_dates')
+        .select('*')
+        .eq('couple_id', coupleId)
+        .order('date', { ascending: true });
+
+      if (!error && data) {
+        const mapped: MemorableDate[] = data.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          date: row.date,
+          description: row.description || undefined,
+          isAnnual: Boolean(row.is_annual),
+          createdAt: row.created_at,
+        }));
+        this.saveMemorableDatesToStorage(mapped, coupleId);
+        this.notify();
+      }
+    } catch (e) {
+      console.warn('[relationshipService] SWR background revalidation failed:', e);
+    } finally {
+      this.isRevalidating = false;
     }
   }
 
@@ -202,6 +250,23 @@ class RelationshipService {
       }
 
       this.subscribeToRealtime();
+
+      // Проверяем локальное хранилище и SWR-кэш
+      let cached = this.getMemorableDates();
+      if (cached.length === 0) {
+        const swrCached = getSwrCacheSection(couple.id, 'dates') as MemorableDate[] | undefined;
+        if (Array.isArray(swrCached) && swrCached.length > 0) {
+          cached = swrCached;
+          this.saveMemorableDatesToStorage(cached, couple.id);
+        }
+      }
+
+      // Если в кэше уже есть данные, возвращаем их мгновенно (0 мс),
+      // а свежие данные из Supabase тихо обновляем в фоне
+      if (cached.length > 0) {
+        this.revalidateDatesInBackground(couple.id);
+        return cached;
+      }
 
       const { data, error } = await supabase
         .from('memorable_dates')
@@ -223,12 +288,7 @@ class RelationshipService {
         createdAt: row.created_at,
       }));
 
-      try {
-        localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(mapped));
-      } catch (e) {
-        console.warn('Failed to cache memorable dates:', e);
-      }
-
+      this.saveMemorableDatesToStorage(mapped, couple.id);
       return mapped;
     }
 
@@ -278,11 +338,7 @@ class RelationshipService {
     }
 
     const updated = [newEntry, ...dates];
-    try {
-      localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.warn('Failed to save memorable date:', e);
-    }
+    this.saveMemorableDatesToStorage(updated, couple?.id);
     this.notify();
 
     sendPartnerNotification('memorable_date_added', {
@@ -330,11 +386,7 @@ class RelationshipService {
     };
 
     dates[index] = updatedEntry;
-    try {
-      localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(dates));
-    } catch (e) {
-      console.warn('Failed to update memorable date:', e);
-    }
+    this.saveMemorableDatesToStorage(dates, couple?.id);
     this.notify();
     return updatedEntry;
   }
@@ -359,18 +411,14 @@ class RelationshipService {
     const filtered = dates.filter((d) => d.id !== id);
     if (filtered.length === dates.length) return false;
 
-    try {
-      localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify(filtered));
-    } catch (e) {
-      console.warn('Failed to delete memorable date:', e);
-    }
+    this.saveMemorableDatesToStorage(filtered, couple?.id);
     this.notify();
     return true;
   }
 
   clearSharedData(): void {
     try {
-      localStorage.setItem(STORAGE_MEMORABLE_DATES_KEY, JSON.stringify([]));
+      this.saveMemorableDatesToStorage([]);
       const todayStr = new Date().toISOString().split('T')[0];
       localStorage.setItem(STORAGE_START_DATE_KEY, todayStr);
     } catch (e) {

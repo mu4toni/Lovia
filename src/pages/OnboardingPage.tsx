@@ -97,8 +97,10 @@ export function OnboardingPage() {
     if (currentCouple?.status !== 'waiting_partner') return;
 
     const intervalId = setInterval(async () => {
-      await coupleService.checkPartnerConnected();
-    }, 2500);
+      if (document.visibilityState === 'visible' && !document.hidden) {
+        await coupleService.checkPartnerConnected();
+      }
+    }, 4000);
 
     return () => clearInterval(intervalId);
   }, [currentCouple?.status]);

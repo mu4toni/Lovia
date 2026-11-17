@@ -13,6 +13,7 @@ import { profileService } from './profileService';
 import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
+import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured } from './api';
 
 const STORAGE_REMINDERS_KEY = 'lovia_reminders';
@@ -115,9 +116,20 @@ class RemindersService {
     this.initialized = true;
   }
 
+  private isRevalidating = false;
+
+  hasCachedData(): boolean {
+    this.initLocal();
+    return this.reminders.length > 0;
+  }
+
   private saveLocal() {
     try {
       localStorage.setItem(STORAGE_REMINDERS_KEY, JSON.stringify(this.reminders));
+      const couple = coupleService.getCurrentCouple();
+      if (couple && couple.id && couple.id !== 'couple-1') {
+        updateSwrCache(couple.id, 'reminders', this.reminders);
+      }
     } catch (e) {
       console.warn('Failed to save reminders to localStorage:', e);
     }
@@ -201,7 +213,21 @@ class RemindersService {
 
     this.reminders = mapped;
     this.saveLocal();
+    updateSwrCache(coupleId, 'reminders', mapped);
     return mapped;
+  }
+
+  private async revalidateInBackground(coupleId: string): Promise<void> {
+    if (this.isRevalidating) return;
+    this.isRevalidating = true;
+    try {
+      await this.fetchFromSupabase(coupleId);
+      this.notify();
+    } catch (e) {
+      console.warn('[requestsService] SWR background revalidation failed:', e);
+    } finally {
+      this.isRevalidating = false;
+    }
   }
 
   async getRequests(includeOverdue = false): Promise<CoupleReminder[]> {
@@ -219,6 +245,26 @@ class RemindersService {
       }
 
       this.subscribeToRealtime();
+
+      // Проверяем SWR-кэш, если в памяти список пуст
+      if (this.reminders.length === 0) {
+        const cached = getSwrCacheSection(couple.id, 'reminders') as CoupleReminder[] | undefined;
+        if (Array.isArray(cached) && cached.length > 0) {
+          this.reminders = cached;
+        }
+      }
+
+      // Если в кэше уже есть данные, возвращаем их мгновенно (0 мс),
+      // а свежие данные из Supabase тихо обновляем в фоне
+      if (this.reminders.length > 0) {
+        this.revalidateInBackground(couple.id);
+        const list = [...this.reminders];
+        if (includeOverdue && !list.some((r) => r.id === overdueRequest.id)) {
+          list.unshift(overdueRequest);
+        }
+        return list;
+      }
+
       return await this.fetchFromSupabase(couple.id);
     }
 

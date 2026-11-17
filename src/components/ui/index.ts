@@ -21,3 +21,4 @@ export * from './Category/CategoryMarker';
 export * from './BottomActionButton/BottomActionButton';
 export * from './FireworksOverlay/FireworksOverlay';
 export * from './Mascot/Mascot';
+export * from './PageSkeleton/PageSkeleton';
