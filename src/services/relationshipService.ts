@@ -295,12 +295,12 @@ class RelationshipService {
       }
 
       if (shouldUseServerDb()) {
+        if (coupleService.isFresh() && this.getMemorableDates().length > 0) {
+          return this.getMemorableDates();
+        }
         try {
-          const bundle = await callServerDb<any>('get_bundle');
-          if (bundle && Array.isArray(bundle.memorableDates)) {
-            this.hydrateFromBundle(bundle.memorableDates, couple.id);
-            return this.getMemorableDates();
-          }
+          await coupleService.syncCoupleFromSupabase();
+          return this.getMemorableDates();
         } catch (e) {
           console.warn('[relationshipService] get_bundle error via /api/db:', e);
         }

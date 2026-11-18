@@ -11,6 +11,9 @@ interface TelegramAuthUser {
   photo_url?: string;
 }
 
+// In-memory fallback на случай задержки применения миграции delete_code в PostgreSQL
+const memoryDeletionCodes = new Map<string, { code: string; expiresAt: string }>();
+
 /**
  * Валидация цифровой подписи Telegram WebApp initData:
  * 1. Извлекается hash
@@ -303,9 +306,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ДЕЙСТВИЕ 1: get_bundle
     // -------------------------------------------------------------
     if (action === 'get_bundle') {
-      // Жёсткая проверка подписки на обязательный канал:
-      // если пользователь не подписан, данные пары не возвращаются!
-      const { subscribed, error } = await checkChannelSubscription(tgUser.id);
+      // Параллельный запуск проверки подписки и основных запросов к БД
+      const [subResult, coupleRes, userRes] = await Promise.all([
+        checkChannelSubscription(tgUser.id),
+        supabase
+          .from('couples')
+          .select('*')
+          .or(`user1_id.eq.${actorId},user2_id.eq.${actorId}`)
+          .neq('status', 'dissolved')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', actorId)
+          .maybeSingle(),
+      ]);
+
+      const { subscribed, error } = subResult;
       if (!subscribed) {
         return res.status(200).json({
           ok: true,
@@ -317,20 +336,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const { data: coupleRow } = await supabase
-        .from('couples')
-        .select('*')
-        .or(`user1_id.eq.${actorId},user2_id.eq.${actorId}`)
-        .neq('status', 'dissolved')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', actorId)
-        .maybeSingle();
+      const coupleRow = coupleRes.data;
+      const userRow = userRes.data;
 
       if (!coupleRow) {
         return res.status(200).json({
@@ -561,26 +568,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: couple } = await supabase
         .from('couples')
-        .select('user1_id, user2_id')
+        .select('id, user1_id, user2_id')
         .eq('id', coupleId)
         .maybeSingle();
 
+      const userIds = [couple?.user1_id, couple?.user2_id].filter(Boolean) as string[];
+
+      // 1) Удаляем связанные записи
       await Promise.all([
         supabase.from('reminders').delete().eq('couple_id', coupleId),
         supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
         supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
         supabase.from('date_memories').delete().eq('couple_id', coupleId),
-        supabase
+        supabase.from('notification_logs').delete().eq('couple_id', coupleId),
+      ]);
+
+      // 2) Сбрасываем couple_id для обоих пользователей
+      if (userIds.length > 0) {
+        await supabase
+          .from('users')
+          .update({ couple_id: null })
+          .in('id', userIds);
+      }
+
+      // 3) Удаляем саму запись пары (с fallback на update, если FK блокирует)
+      const { error: delError } = await supabase
+        .from('couples')
+        .delete()
+        .eq('id', coupleId);
+
+      if (delError) {
+        console.warn('[dissolve_couple] Failed to delete couple row, falling back to update status:', delError.message);
+        await supabase
           .from('couples')
           .update({ status: 'dissolved', dissolved_at: new Date().toISOString() })
-          .eq('id', coupleId),
-        couple
-          ? supabase
-              .from('users')
-              .update({ couple_id: null })
-              .in('id', [couple.user1_id, couple.user2_id].filter(Boolean) as string[])
-          : Promise.resolve(),
-      ]);
+          .eq('id', coupleId);
+      }
+
+      // 4) Уведомление партнёру в Telegram
+      const partnerId = userIds.find((id) => id !== actorId);
+      if (partnerId) {
+        const { data: partnerUser } = await supabase
+          .from('users')
+          .select('telegram_id')
+          .eq('id', partnerId)
+          .maybeSingle();
+
+        const partnerTgId = partnerUser?.telegram_id || (partnerId.startsWith('tg-') ? partnerId.replace('tg-', '') : null);
+        if (partnerTgId) {
+          const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          if (botToken) {
+            const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'LoviaStory_bot';
+            const partnerNotice =
+              `💔 <b>Ваша пара в Lovia была расформирована партнёром.</b>\n\n` +
+              `Вы можете создать новую пару или присоединиться по коду приглашения в @${botUsername}.`;
+
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: partnerTgId,
+                text: partnerNotice,
+                parse_mode: 'HTML',
+              }),
+            }).catch((e) => {
+              console.warn('[dissolve_couple] Failed to notify partner:', e);
+            });
+          }
+        }
+      }
 
       return res.status(200).json({ ok: true });
     }
@@ -1092,6 +1148,200 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           publicUrl: urlData?.publicUrl || '',
         },
       });
+    }
+
+    // -------------------------------------------------------------
+    // ДЕЙСТВИЕ 12: request_account_deletion
+    // -------------------------------------------------------------
+    if (action === 'request_account_deletion') {
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+      // Сохраняем в in-memory fallback
+      memoryDeletionCodes.set(actorId, { code, expiresAt });
+
+      // Записываем код и срок в public.users
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          delete_code: code,
+          delete_code_expires_at: expiresAt,
+        })
+        .eq('id', actorId);
+
+      if (updateError) {
+        console.warn('[request_account_deletion] Note on users.delete_code update:', updateError.message);
+      }
+
+      // Отправляем код в Telegram
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (!botToken) {
+        return res.status(500).json({ ok: false, error: 'TELEGRAM_BOT_TOKEN не настроен на сервере' });
+      }
+
+      const text =
+        `⚠️ <b>Запрос на удаление аккаунта Lovia</b>\n\n` +
+        `Ваш код подтверждения: <code>${code}</code>\n` +
+        `Код действует 5 минут.\n\n` +
+        `Если вы не запрашивали удаление, просто проигнорируйте это сообщение.`;
+
+      try {
+        const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: tgUser.id,
+            text,
+            parse_mode: 'HTML',
+          }),
+        });
+
+        const tgData = (await tgRes.json()) as { ok: boolean; error_code?: number; description?: string };
+
+        if (!tgData.ok) {
+          console.warn('[request_account_deletion] Telegram error:', tgData);
+          if (
+            tgRes.status === 403 ||
+            tgData.error_code === 403 ||
+            (tgData.description &&
+              (tgData.description.toLowerCase().includes('blocked') ||
+                tgData.description.toLowerCase().includes('chat not found') ||
+                tgData.description.toLowerCase().includes('not started') ||
+                tgData.description.toLowerCase().includes("can't initiate") ||
+                tgData.description.toLowerCase().includes('bot was blocked')))
+          ) {
+            return res.status(400).json({
+              ok: false,
+              error: 'Сначала нажмите /start в боте Lovia, чтобы бот мог отправить вам код подтверждения',
+            });
+          }
+          return res.status(500).json({
+            ok: false,
+            error: tgData.description || 'Не удалось отправить код в Telegram',
+          });
+        }
+
+        return res.status(200).json({ ok: true, data: { sent: true } });
+      } catch (err: any) {
+        console.error('[request_account_deletion] Network error:', err);
+        return res.status(500).json({ ok: false, error: 'Ошибка отправки сообщения через Telegram API' });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // ДЕЙСТВИЕ 13: confirm_account_deletion
+    // -------------------------------------------------------------
+    if (action === 'confirm_account_deletion') {
+      const codeInput = String(payload?.code || '').trim();
+      if (!codeInput || codeInput.length !== 6) {
+        return res.status(400).json({ ok: false, error: 'Введите корректный 6-значный код' });
+      }
+
+      // Читаем delete_code и delete_code_expires_at из public.users для actorId
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', actorId)
+        .maybeSingle();
+
+      const memoryEntry = memoryDeletionCodes.get(actorId);
+      const storedCode = userRow?.delete_code || memoryEntry?.code;
+      const expiresAtStr = userRow?.delete_code_expires_at || memoryEntry?.expiresAt;
+
+      const isExpired = !expiresAtStr || new Date(expiresAtStr) <= new Date();
+      if (!storedCode || storedCode !== codeInput || isExpired) {
+        return res.status(400).json({ ok: false, error: 'Неверный или просроченный код подтверждения' });
+      }
+
+      // Код подтверждён — удаляем из memory
+      memoryDeletionCodes.delete(actorId);
+
+      // 1) Если пользователь состоит в активной паре (couple_id), аккуратно расформировываем её
+      let coupleId = userRow?.couple_id;
+      if (!coupleId) {
+        const { data: coupleRow } = await supabase
+          .from('couples')
+          .select('id')
+          .or(`user1_id.eq.${actorId},user2_id.eq.${actorId}`)
+          .neq('status', 'dissolved')
+          .maybeSingle();
+        coupleId = coupleRow?.id;
+      }
+
+      if (coupleId) {
+        const { data: couple } = await supabase
+          .from('couples')
+          .select('user1_id, user2_id')
+          .eq('id', coupleId)
+          .maybeSingle();
+
+        const partnerId =
+          couple?.user1_id === actorId ? couple?.user2_id : couple?.user1_id;
+
+        // Удаляем данные пары и растворяем пару
+        await Promise.all([
+          supabase.from('reminders').delete().eq('couple_id', coupleId),
+          supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
+          supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
+          supabase.from('date_memories').delete().eq('couple_id', coupleId),
+          supabase
+            .from('couples')
+            .update({ status: 'dissolved', dissolved_at: new Date().toISOString() })
+            .eq('id', coupleId),
+        ]);
+
+        // Обнуляем couple_id у второго участника (партнёра)
+        if (partnerId) {
+          await supabase.from('users').update({ couple_id: null }).eq('id', partnerId);
+
+          // Отправляем второму участнику уведомление в Telegram
+          const { data: partnerUser } = await supabase
+            .from('users')
+            .select('telegram_id')
+            .eq('id', partnerId)
+            .maybeSingle();
+
+          if (partnerUser?.telegram_id) {
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            if (botToken) {
+              const partnerNotice =
+                `💔 <b>Совместное пространство Lovia закрыто</b>\n\n` +
+                `Ваш партнёр удалил свой аккаунт. Совместные напоминания, вишлисты и воспоминания были удалены.\n\n` +
+                `Вы можете создать новую пару или подключиться к новому пространству в любой момент.`;
+
+              fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: partnerUser.telegram_id,
+                  text: partnerNotice,
+                  parse_mode: 'HTML',
+                }),
+              }).catch((e) => {
+                console.warn('[confirm_account_deletion] Failed to notify partner:', e);
+              });
+            }
+          }
+        }
+      }
+
+      // 2) Удаляем строку пользователя из public.users
+      const { error: deleteUserError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', actorId);
+
+      if (deleteUserError) {
+        // Если foreign key на couples помешал удалению (например, старые нерастворённые пары)
+        await supabase
+          .from('couples')
+          .delete()
+          .or(`user1_id.eq.${actorId},user2_id.eq.${actorId}`);
+        await supabase.from('users').delete().eq('id', actorId);
+      }
+
+      // 3) Возвращает { ok: true, data: { deleted: true } }
+      return res.status(200).json({ ok: true, data: { deleted: true } });
     }
 
     return res.status(400).json({ ok: false, error: `Unknown action: ${action}` });

@@ -11,6 +11,7 @@ import { coupleService } from '../../../services/coupleService';
 import { telegramService } from '../../../services/telegramService';
 import { useToast } from '../../../components/ui/Toast/ToastContext';
 import { copyTextToClipboard } from '../../../utils/clipboard';
+import { getTelegramInviteLink } from '../../../utils/env';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './SharedSpaceSettings.css';
 
@@ -38,13 +39,14 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
 
   const handleCopyCode = async () => {
     if (!partner.inviteCode) return;
-    const ok = await copyTextToClipboard(partner.inviteCode);
+    const link = getTelegramInviteLink(partner.inviteCode);
+    const ok = await copyTextToClipboard(link);
     if (ok) {
       telegramService.hapticNotification('success');
       setCopied(true);
       showToast({
-        title: 'Код скопирован!',
-        message: 'Код совместного доступа скопирован в буфер обмена',
+        title: 'Ссылка скопирована!',
+        message: 'Прямая ссылка для подключения в Telegram скопирована',
         type: 'love',
       });
       setTimeout(() => setCopied(false), 2500);
@@ -143,9 +145,9 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
               size="sm"
               onClick={handleCopyCode}
               className="shared-space-row__btn"
-              aria-label={isFriendship ? 'Скопировать код дружбы' : 'Скопировать код совместного доступа'}
+              aria-label={isFriendship ? 'Скопировать ссылку для дружбы' : 'Скопировать ссылку для пары'}
             >
-              {copied ? 'Скопировано' : 'Скопировать'}
+              {copied ? 'Скопировано' : 'Скопировать ссылку'}
             </Button>
           )}
         </div>

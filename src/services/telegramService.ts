@@ -289,10 +289,20 @@ class TelegramService {
   }
 
   /**
-   * Deep-link parameter (e.g. from t.me/bot/app?startapp=CODE)
+   * Deep-link parameter (e.g. from t.me/LoviaStory_bot?startapp=CODE)
    */
   getStartParam(): string | null {
-    return this.webApp?.initDataUnsafe?.start_param || null;
+    const tgParam = this.webApp?.initDataUnsafe?.start_param;
+    if (tgParam) return tgParam;
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryParam =
+        urlParams.get('startapp') ||
+        urlParams.get('tgWebAppStartParam') ||
+        urlParams.get('start_param');
+      if (queryParam) return queryParam;
+    }
+    return null;
   }
 
   /**

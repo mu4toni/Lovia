@@ -212,12 +212,12 @@ class RemindersService {
 
   private async fetchFromSupabase(coupleId: string): Promise<CoupleReminder[]> {
     if (shouldUseServerDb()) {
+      if (coupleService.isFresh() && this.reminders.length > 0) {
+        return [...this.reminders];
+      }
       try {
-        const bundle = await callServerDb<any>('get_bundle');
-        if (bundle && Array.isArray(bundle.reminders)) {
-          this.hydrateFromBundle(bundle.reminders);
-          return [...this.reminders];
-        }
+        await coupleService.syncCoupleFromSupabase();
+        return [...this.reminders];
       } catch (e) {
         console.warn('[requestsService] get_bundle error via /api/db:', e);
       }
@@ -318,7 +318,33 @@ class RemindersService {
     }
 
     if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
-      const serverRow = await callServerDb<any>('reminders_create', {
+      const reminderId = `reminder-${crypto.randomUUID()}`;
+      const optimisticReminder: CoupleReminder = {
+        id: reminderId,
+        title: input.title.trim(),
+        description: input.description?.trim(),
+        authorId: activeUser.id,
+        authorName: activeUser.name,
+        targetId: input.targetId,
+        targetName: input.targetName,
+        dueDate: input.dueDate,
+        dueLabel: input.dueLabel,
+        dueTime: input.dueTime,
+        remindBeforeMinutes: input.remindBeforeMinutes ?? 60,
+        urgency: input.urgency || 'medium',
+        categoryId: input.categoryId || input.category,
+        rewardNote: input.rewardNote?.trim(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+
+      // 0ms Optimistic UI update
+      this.reminders.unshift(optimisticReminder);
+      this.saveLocal();
+      this.notify();
+
+      callServerDb<any>('reminders_create', {
+        id: reminderId,
         couple_id: couple.id,
         title: input.title.trim(),
         description: input.description?.trim(),
@@ -329,25 +355,34 @@ class RemindersService {
         priority: input.urgency || 'medium',
         category_id: input.categoryId || input.category || null,
         reward_note: input.rewardNote?.trim() || null,
+      }).then((serverRow) => {
+        if (serverRow) {
+          const updated = this.mapReminderRow(serverRow, couple);
+          const idx = this.reminders.findIndex((r) => r.id === reminderId);
+          if (idx !== -1) {
+            this.reminders[idx] = updated;
+            this.saveLocal();
+          }
+        }
+      }).catch((err) => {
+        console.error('[requestsService] Failed to create reminder on server, rolling back:', err);
+        this.reminders = this.reminders.filter((r) => r.id !== reminderId);
+        this.saveLocal();
+        this.notify();
       });
 
-      const newReminder = this.mapReminderRow(serverRow, couple);
-      this.reminders.unshift(newReminder);
-      this.saveLocal();
-      this.notify();
-
-      if (newReminder.targetId !== 'user-self' && newReminder.targetId !== activeUser.id) {
+      if (optimisticReminder.targetId !== 'user-self' && optimisticReminder.targetId !== activeUser.id) {
         sendPartnerNotification('reminder_created', {
-          title: newReminder.title,
-          dueLabel: newReminder.dueLabel,
-          dueTime: newReminder.dueTime,
+          title: optimisticReminder.title,
+          dueLabel: optimisticReminder.dueLabel,
+          dueTime: optimisticReminder.dueTime,
           isCommon:
-            newReminder.targetId === 'all' ||
-            newReminder.targetId === 'both' ||
-            newReminder.targetId === 'common',
+            optimisticReminder.targetId === 'all' ||
+            optimisticReminder.targetId === 'both' ||
+            optimisticReminder.targetId === 'common',
         });
       }
-      return newReminder;
+      return optimisticReminder;
     }
 
     const newReminder: CoupleReminder = {
@@ -500,24 +535,37 @@ class RemindersService {
     const rem = this.reminders.find((r) => r.id === id);
     if (!rem) return undefined;
 
-    const newStatus = rem.status === 'completed' ? 'pending' : 'completed';
+    const oldStatus = rem.status;
+    const newStatus = oldStatus === 'completed' ? 'pending' : 'completed';
     const couple = coupleService.getCurrentCouple();
 
+    // 0ms Optimistic UI update
+    rem.status = newStatus;
+    this.saveLocal();
+    this.notify();
+
+    if (newStatus === 'completed') {
+      sendPartnerNotification('reminder_completed', {
+        title: rem.title,
+      });
+    }
+
     if (shouldUseServerDb()) {
-      const serverRow = await callServerDb<any>('reminders_toggle', {
+      callServerDb<any>('reminders_toggle', {
         id,
         status: newStatus,
+      }).then((serverRow) => {
+        if (serverRow) {
+          const updated = this.mapReminderRow(serverRow, coupleService.getCurrentCouple());
+          rem.status = updated.status;
+          this.saveLocal();
+        }
+      }).catch((err) => {
+        console.error('[requestsService] Failed to toggle reminder status on server, rolling back:', err);
+        rem.status = oldStatus;
+        this.saveLocal();
+        this.notify();
       });
-      const updated = this.mapReminderRow(serverRow, coupleService.getCurrentCouple());
-      rem.status = updated.status;
-      this.saveLocal();
-      this.notify();
-
-      if (newStatus === 'completed') {
-        sendPartnerNotification('reminder_completed', {
-          title: rem.title,
-        });
-      }
 
       return { ...rem };
     }
@@ -534,18 +582,11 @@ class RemindersService {
 
       if (error) {
         console.error('[requestsService] Failed to toggle reminder status in Supabase:', error);
+        rem.status = oldStatus;
+        this.saveLocal();
+        this.notify();
         throw new Error('Ошибка БД: ' + error.message);
       }
-    }
-
-    rem.status = newStatus;
-    this.saveLocal();
-    this.notify();
-
-    if (newStatus === 'completed') {
-      sendPartnerNotification('reminder_completed', {
-        title: rem.title,
-      });
     }
 
     return { ...rem };
@@ -554,12 +595,22 @@ class RemindersService {
   async deleteRequest(id: string): Promise<boolean> {
     this.initLocal();
     const couple = coupleService.getCurrentCouple();
+    const prevIndex = this.reminders.findIndex((r) => r.id === id);
+    if (prevIndex === -1) return true;
+    const deletedItem = this.reminders[prevIndex];
+
+    // 0ms Optimistic UI update
+    this.reminders = this.reminders.filter((r) => r.id !== id);
+    this.saveLocal();
+    this.notify();
 
     if (shouldUseServerDb()) {
-      await callServerDb('reminders_delete', { id });
-      this.reminders = this.reminders.filter((r) => r.id !== id);
-      this.saveLocal();
-      this.notify();
+      callServerDb('reminders_delete', { id }).catch((err) => {
+        console.error('[requestsService] Failed to delete reminder on server, rolling back:', err);
+        this.reminders.splice(prevIndex, 0, deletedItem);
+        this.saveLocal();
+        this.notify();
+      });
       return true;
     }
 

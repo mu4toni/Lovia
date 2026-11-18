@@ -150,12 +150,12 @@ class WishlistService {
 
   private async fetchWishlistFromSupabase(coupleId: string): Promise<WishItem[]> {
     if (shouldUseServerDb()) {
+      if (coupleService.isFresh() && this.loadFromStorage().length > 0) {
+        return this.loadFromStorage();
+      }
       try {
-        const bundle = await callServerDb<any>('get_bundle');
-        if (bundle && Array.isArray(bundle.wishlist)) {
-          this.hydrateFromBundle(bundle.wishlist, coupleId);
-          return this.loadFromStorage();
-        }
+        await coupleService.syncCoupleFromSupabase();
+        return this.loadFromStorage();
       } catch (e) {
         console.warn('[wishlistService] get_bundle error via /api/db:', e);
       }
@@ -482,13 +482,42 @@ class WishlistService {
     const newIsReserved = !item.isReserved;
     const newReservedBy = newIsReserved ? currentUserId : null;
 
+    const optimisticItem: WishItem = {
+      ...item,
+      isReserved: newIsReserved,
+      reservedByUserId: newReservedBy || undefined,
+      reservedAt: newIsReserved ? new Date().toISOString() : undefined,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 0ms Optimistic UI update
+    all[index] = optimisticItem;
+    this.saveToStorage(all);
+    this.notify();
+
     if (shouldUseServerDb()) {
-      const serverRow = await callServerDb<any>('wishlist_toggle_reserve', { id });
-      const updated = this.mapWishRow(serverRow);
-      all[index] = updated;
-      this.saveToStorage(all);
-      this.notify();
-      return updated;
+      callServerDb<any>('wishlist_toggle_reserve', { id }).then((serverRow) => {
+        if (serverRow) {
+          const updated = this.mapWishRow(serverRow);
+          const freshAll = this.loadFromStorage();
+          const freshIdx = freshAll.findIndex((i) => i.id === id);
+          if (freshIdx !== -1) {
+            freshAll[freshIdx] = updated;
+            this.saveToStorage(freshAll);
+          }
+        }
+      }).catch((err) => {
+        console.error('[wishlistService] Failed to toggle reservation on server, rolling back:', err);
+        const freshAll = this.loadFromStorage();
+        const freshIdx = freshAll.findIndex((i) => i.id === id);
+        if (freshIdx !== -1) {
+          freshAll[freshIdx] = item;
+          this.saveToStorage(freshAll);
+          this.notify();
+        }
+      });
+
+      return optimisticItem;
     }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {

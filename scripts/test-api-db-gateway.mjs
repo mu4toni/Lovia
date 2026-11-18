@@ -51,6 +51,8 @@ const requiredActions = [
   'date_memories_update',
   'date_memories_delete',
   'upload_media',
+  'request_account_deletion',
+  'confirm_account_deletion',
 ];
 
 for (const action of requiredActions) {
@@ -223,6 +225,14 @@ assert(coupleTs.includes("callServerDb<any>('create_couple'"), 'coupleService cr
 assert(coupleTs.includes("callServerDb<{ couple: any; partner: any }>('join_couple'"), 'coupleService joins couple via join_couple');
 assert(coupleTs.includes("callServerDb('dissolve_couple'"), 'coupleService dissolves couple via dissolve_couple');
 assert(coupleTs.includes("callServerDb('update_start_date'"), 'coupleService updates start date via update_start_date');
+assert(coupleTs.includes("callServerDb('request_account_deletion'"), 'coupleService supports requestAccountDeletion');
+assert(coupleTs.includes("callServerDb('confirm_account_deletion'"), 'coupleService supports confirmAccountDeletion');
+
+// src/features/profile/DangerZone/DangerZone.tsx
+const dangerZoneTs = fs.readFileSync('src/features/profile/DangerZone/DangerZone.tsx', 'utf8');
+assert(dangerZoneTs.includes('requestAccountDeletion'), 'DangerZone triggers requestAccountDeletion');
+assert(dangerZoneTs.includes('confirmAccountDeletion'), 'DangerZone triggers confirmAccountDeletion');
+assert(dangerZoneTs.includes('maxLength={6}'), 'DangerZone enforces 6-digit code');
 
 // src/services/profileService.ts
 const profileTs = fs.readFileSync('src/services/profileService.ts', 'utf8');

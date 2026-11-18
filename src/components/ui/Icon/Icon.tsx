@@ -52,7 +52,8 @@ export type IconName =
   | 'music'
   | 'star'
   | 'paw'
-  | 'plane';
+  | 'plane'
+  | 'mail';
 
 export interface IconProps extends React.SVGAttributes<SVGElement> {
   name: IconName;
@@ -454,6 +455,14 @@ export const Icon: React.FC<IconProps> = ({
       case 'plane':
         return (
           <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.7-.1-1.3.2-1.5.8l-.3.9 5.5 3.5-3.5 3.5-2.2-.4-.8.8 2.5 1.5 1.5 2.5.8-.8-.4-2.2 3.5-3.5 3.5 5.5.9-.3c.6-.2.9-.8.8-1.5z" />
+        );
+
+      case 'mail':
+        return (
+          <>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </>
         );
 
       default:

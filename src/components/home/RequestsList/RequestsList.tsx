@@ -17,8 +17,6 @@ export interface RequestsListProps {
   onDeleteRequest: (id: string) => void;
   onEditRequest?: (request: CoupleReminder) => void;
   onCreateClick: () => void;
-  onCreateCategoryClick?: () => void;
-  onManageCategoriesClick?: () => void;
   className?: string;
 }
 

@@ -22,11 +22,9 @@ export function useHomeData() {
   const [demoMode, setDemoMode] = useState<DemoStateMode>('normal');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [editingRequest, setEditingRequest] = useState<CoupleReminder | null>(null);
-  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState<boolean>(false);
-  const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState<boolean>(false);
 
-  const loadData = useCallback(async () => {
-    if (!requestsService.hasCachedData() && !profile) {
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent && !requestsService.hasCachedData() && !profile) {
       setIsLoading(true);
     }
     setError(null);
@@ -55,11 +53,13 @@ export function useHomeData() {
       setProfile(profData);
       setEvents(evsData);
     } catch {
-      setError('Не удалось загрузить данные пары. Проверьте соединение.');
+      if (!silent) {
+        setError('Не удалось загрузить данные пары. Проверьте соединение.');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [demoMode]);
+  }, [demoMode, profile]);
 
   useEffect(() => {
     if (demoMode === 'loading') {
@@ -128,7 +128,7 @@ export function useHomeData() {
   useEffect(() => {
     const onCatsUpdated = () => handleCategoriesChanged();
     const onRelUpdated = () => {
-      loadData();
+      loadData(true);
     };
     window.addEventListener('lovia_categories_updated', onCatsUpdated);
     window.addEventListener('lovia_relationship_updated', onRelUpdated);
@@ -136,14 +136,6 @@ export function useHomeData() {
     window.addEventListener('lovia_couple_connected', onRelUpdated);
     window.addEventListener('lovia_reminders_updated', onRelUpdated);
     window.addEventListener('lovia_profile_updated', onRelUpdated);
-
-    // Visibility change (returning to Telegram from background)
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && !document.hidden) {
-        loadData();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
 
     // Silent background poll every 18 seconds so partner sees new reminders
     const intervalId = setInterval(() => {
@@ -161,7 +153,6 @@ export function useHomeData() {
       window.removeEventListener('lovia_couple_connected', onRelUpdated);
       window.removeEventListener('lovia_reminders_updated', onRelUpdated);
       window.removeEventListener('lovia_profile_updated', onRelUpdated);
-      document.removeEventListener('visibilitychange', onVisibility);
       clearInterval(intervalId);
     };
   }, [loadData, handleCategoriesChanged, demoMode]);
@@ -181,16 +172,12 @@ export function useHomeData() {
     setIsCreateModalOpen,
     editingRequest,
     setEditingRequest,
-    isCreateCategoryModalOpen,
-    setIsCreateCategoryModalOpen,
-    isManageCategoriesModalOpen,
-    setIsManageCategoriesModalOpen,
     handleToggleStatus,
     handleCreateRequest,
     handleUpdateRequest,
     handleDeleteRequest,
     handleConnectPartnerSim,
     handleCategoriesChanged,
-    reload: loadData,
+    reload: () => loadData(false),
   };
 }

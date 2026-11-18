@@ -11,6 +11,15 @@ import { telegramService } from '../services/telegramService';
  * Во всех остальных случаях (заход с телефона по 192.168.x.x, деплой на Vercel/production,
  * открытие внутри Telegram) возвращает false.
  */
+export const TELEGRAM_BOT_USERNAME =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_TELEGRAM_BOT_USERNAME) ||
+  'LoviaStory_bot';
+
+export function getTelegramInviteLink(inviteCode: string): string {
+  const clean = (inviteCode || '').trim().replace(/_/g, '-').toUpperCase();
+  return `https://t.me/${TELEGRAM_BOT_USERNAME}?startapp=${clean}`;
+}
+
 export function isLocalDevHost(): boolean {
   if (typeof window === 'undefined') {
     return false;

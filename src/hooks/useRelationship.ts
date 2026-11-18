@@ -67,13 +67,6 @@ export function useRelationship() {
     window.addEventListener('lovia_couple_connected', handleRelUpdate);
     window.addEventListener('lovia_couple_updated', handleRelUpdate);
 
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && !document.hidden) {
-        refreshData();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
         refreshData();
@@ -86,7 +79,6 @@ export function useRelationship() {
       window.removeEventListener('lovia_dates_updated', handleDatesUpdate);
       window.removeEventListener('lovia_couple_connected', handleRelUpdate);
       window.removeEventListener('lovia_couple_updated', handleRelUpdate);
-      document.removeEventListener('visibilitychange', onVisibility);
       clearInterval(intervalId);
     };
   }, [refreshData]);

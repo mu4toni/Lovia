@@ -32,13 +32,6 @@ export function useDateMemories() {
     window.addEventListener('lovia_couple_connected', handleUpdate);
     window.addEventListener('lovia_couple_updated', handleUpdate);
 
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && !document.hidden) {
-        refreshMemories();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
         refreshMemories();
@@ -49,7 +42,6 @@ export function useDateMemories() {
       window.removeEventListener('lovia_dates_updated', handleUpdate);
       window.removeEventListener('lovia_couple_connected', handleUpdate);
       window.removeEventListener('lovia_couple_updated', handleUpdate);
-      document.removeEventListener('visibilitychange', onVisibility);
       clearInterval(intervalId);
     };
   }, [refreshMemories]);

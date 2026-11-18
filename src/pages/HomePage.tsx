@@ -1,10 +1,11 @@
+import { Navigate } from 'react-router-dom';
 import { useHomeData } from '../hooks';
 import { HomeHeader, HomeCalendar, RequestsList, UnpairedBanner } from '../widgets';
 import { CreateRequestModal } from '../features/create-reminder';
-import { CreateCategoryModal, ManageCategoriesModal } from '../features/manage-categories';
 import { DemoStateSwitcher } from '../features/demo-switcher';
 import { Card, Button, Skeleton, Icon, useToast, BottomActionButton } from '../shared';
 import { telegramService } from '../services/telegramService';
+import { coupleService } from '../services/coupleService';
 import { isLocalDevHost } from '../utils/env';
 import './HomePage.css';
 
@@ -24,10 +25,6 @@ export function HomePage() {
     setIsCreateModalOpen,
     editingRequest,
     setEditingRequest,
-    isCreateCategoryModalOpen,
-    setIsCreateCategoryModalOpen,
-    isManageCategoriesModalOpen,
-    setIsManageCategoriesModalOpen,
     handleToggleStatus,
     handleCreateRequest,
     handleUpdateRequest,
@@ -38,6 +35,10 @@ export function HomePage() {
   } = useHomeData();
 
   const { showToast } = useToast();
+
+  if (!coupleService.isConnected()) {
+    return <Navigate to="/connect" replace />;
+  }
 
   const handleToggleWithToast = async (id: string) => {
     const req = requests.find((r) => r.id === id);
@@ -183,8 +184,8 @@ export function HomePage() {
           {/* Header */}
           <HomeHeader profile={profile} />
 
-          {/* Unpaired state banner if partner is not connected */}
-          {!profile.isPartnerConnected && (
+          {/* Unpaired state banner if partner is not connected (ONLY in local dev simulation) */}
+          {!profile.isPartnerConnected && isLocalDevHost() && (
             <UnpairedBanner
               inviteCode={profile.inviteCode}
               onConnectPartnerSim={handleConnectPartnerSim}
@@ -215,14 +216,12 @@ export function HomePage() {
               setEditingRequest(null);
               setIsCreateModalOpen(true);
             }}
-            onCreateCategoryClick={() => setIsCreateCategoryModalOpen(true)}
-            onManageCategoriesClick={() => setIsManageCategoriesModalOpen(true)}
           />
 
           {/* Single Dedicated Floating Add Reminder Button */}
           <BottomActionButton
             variant="floating"
-            visible={!isCreateModalOpen && !isCreateCategoryModalOpen && !isManageCategoriesModalOpen}
+            visible={!isCreateModalOpen}
             label="Добавить напоминание"
             onClick={() => {
               setEditingRequest(null);
@@ -245,21 +244,6 @@ export function HomePage() {
             partnerName={profile.partner?.name || 'партнёра'}
             categories={categories}
             onCategoryCreated={handleCategoriesChanged}
-          />
-
-          {/* Standalone Create Category Modal */}
-          <CreateCategoryModal
-            isOpen={isCreateCategoryModalOpen}
-            onClose={() => setIsCreateCategoryModalOpen(false)}
-            onSaved={handleCategoriesChanged}
-          />
-
-          {/* Manage Categories Modal */}
-          <ManageCategoriesModal
-            isOpen={isManageCategoriesModalOpen}
-            onClose={() => setIsManageCategoriesModalOpen(false)}
-            categories={categories}
-            onCategoriesChanged={handleCategoriesChanged}
           />
         </>
       )}

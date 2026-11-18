@@ -297,11 +297,11 @@ class DateMemoryService {
     this.isRevalidating = true;
     try {
       if (shouldUseServerDb()) {
-        const bundle = await callServerDb<any>('get_bundle');
-        if (bundle && Array.isArray(bundle.dateMemories)) {
-          this.hydrateFromBundle(bundle.dateMemories, coupleId);
+        if (coupleService.isFresh()) {
           return;
         }
+        await coupleService.syncCoupleFromSupabase();
+        return;
       }
 
       const { data, error } = await supabase
@@ -375,12 +375,12 @@ class DateMemoryService {
       }
 
       if (shouldUseServerDb()) {
+        if (coupleService.isFresh() && this.getDateMemories().length > 0) {
+          return this.getDateMemories();
+        }
         try {
-          const bundle = await callServerDb<any>('get_bundle');
-          if (bundle && Array.isArray(bundle.dateMemories)) {
-            this.hydrateFromBundle(bundle.dateMemories, couple.id);
-            return this.getDateMemories();
-          }
+          await coupleService.syncCoupleFromSupabase();
+          return this.getDateMemories();
         } catch (e) {
           console.warn('[dateMemoryService] get_bundle error via /api/db:', e);
         }

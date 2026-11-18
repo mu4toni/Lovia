@@ -106,6 +106,17 @@ class CoupleService {
   private initialized = false;
   private subscriptionRequired = false;
   private channelUrl = '';
+  private lastSyncAt = 0;
+  private hiddenAt = 0;
+  private inFlightBundlePromise: Promise<CoupleSpace | null> | null = null;
+
+  isFresh(maxAgeMs = 15000): boolean {
+    return this.lastSyncAt > 0 && Date.now() - this.lastSyncAt < maxAgeMs;
+  }
+
+  getLastSyncAt(): number {
+    return this.lastSyncAt;
+  }
 
   isSubscriptionRequired(): boolean {
     return this.subscriptionRequired;
@@ -199,15 +210,18 @@ class CoupleService {
         }
       });
 
-      // Background synchronization on tab visibility and focus
+      // Centralized silent background sync on tab visibility (throttled: >=10s away, >=15s since last sync)
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && (isSupabaseConfigured() || shouldUseServerDb())) {
-          this.syncCurrentCoupleFromSupabase();
+        if (document.hidden) {
+          this.hiddenAt = Date.now();
+          return;
         }
-      });
-      window.addEventListener('focus', () => {
-        if (isSupabaseConfigured() || shouldUseServerDb()) {
-          this.syncCurrentCoupleFromSupabase();
+        const now = Date.now();
+        const awayTime = this.hiddenAt > 0 ? now - this.hiddenAt : 0;
+        const timeSinceSync = now - this.lastSyncAt;
+
+        if (awayTime >= 10000 && timeSinceSync >= 15000 && (isSupabaseConfigured() || shouldUseServerDb())) {
+          this.syncCurrentCoupleFromSupabase(true);
         }
       });
 
@@ -505,6 +519,42 @@ class CoupleService {
   }
 
   /**
+   * Полная очистка локальных данных пары и кэшей
+   */
+  private clearLocalCoupleData(coupleId?: string): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const keysToRemove = [
+          'lovia_couples_registry_v1',
+          'lovia_reminders',
+          'lovia_events',
+          'lovia_wishlist_items_v1',
+          'lovia_relationship_start_date_v1',
+          'lovia_memorable_dates_v1',
+          'lovia_date_memories_v1',
+          'lovia_celebrated_events_v1',
+          'lovia_user_categories',
+        ];
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('lovia_swr_cache_')) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[coupleService] Failed to clear local couple storage:', e);
+    }
+
+    if (coupleId) {
+      clearSwrCache(coupleId);
+    }
+    clearSwrCache();
+  }
+
+  /**
    * Гарантирует наличие записи пользователя в public.users перед операциями с public.couples.
    */
   async ensureUserInSupabase(user?: RegisteredUser): Promise<void> {
@@ -561,13 +611,22 @@ class CoupleService {
       };
     }
 
-    if (!bundle.couple) {
-      if (this.users[active.id].coupleId) {
-        const oldId = this.users[active.id].coupleId!;
-        delete this.couples[oldId];
-        this.users[active.id].coupleId = null;
+    if (!bundle.couple || bundle.couple.status === 'dissolved') {
+      const oldId = this.users[active.id]?.coupleId;
+      if (oldId || Object.keys(this.couples).length > 0) {
+        this.couples = {};
+        if (this.users[active.id]) {
+          this.users[active.id].coupleId = null;
+        }
+        this.resetAllSharedSpaces().catch((err) =>
+          console.warn('[coupleService] Failed to reset shared spaces in applyBundle:', err)
+        );
+        this.clearLocalCoupleData(oldId || undefined);
         this.saveToStorage();
         this.notify();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('lovia_couple_dissolved'));
+        }
       }
       return null;
     }
@@ -647,21 +706,37 @@ class CoupleService {
   /**
    * Синхронизация данных пары из Supabase с локальным состоянием
    */
-  async syncCoupleFromSupabase(coupleIdToSync?: string): Promise<CoupleSpace | null> {
+  async syncCoupleFromSupabase(coupleIdToSync?: string, force = false): Promise<CoupleSpace | null> {
     if (shouldUseServerDb()) {
-      try {
-        const bundle = await callServerDb<any>('get_bundle');
-        if (bundle) {
-          if (bundle.subscriptionRequired) {
-            this.setSubscriptionRequired(true, bundle.channelUrl);
-            return null;
-          }
-          this.setSubscriptionRequired(false);
-          return this.applyBundle(bundle);
-        }
-      } catch (err: any) {
-        console.warn('[coupleService] get_bundle error via /api/db:', err?.message || err);
+      if (!force && this.isFresh() && this.getCurrentCouple()) {
+        return this.getCurrentCouple();
       }
+
+      if (this.inFlightBundlePromise) {
+        return this.inFlightBundlePromise;
+      }
+
+      this.inFlightBundlePromise = (async () => {
+        try {
+          const bundle = await callServerDb<any>('get_bundle');
+          if (bundle) {
+            if (bundle.subscriptionRequired) {
+              this.setSubscriptionRequired(true, bundle.channelUrl);
+              return null;
+            }
+            this.setSubscriptionRequired(false);
+            this.lastSyncAt = Date.now();
+            return this.applyBundle(bundle);
+          }
+        } catch (err: any) {
+          console.warn('[coupleService] get_bundle error via /api/db:', err?.message || err);
+        } finally {
+          this.inFlightBundlePromise = null;
+        }
+        return null;
+      })();
+
+      return this.inFlightBundlePromise;
     }
 
     if (!isSupabaseConfigured()) return null;
@@ -786,9 +861,9 @@ class CoupleService {
   /**
    * Подтягивает актуальную пару из Supabase при старте приложения и возвращении в Telegram
    */
-  async syncCurrentCoupleFromSupabase(): Promise<CoupleSpace | null> {
+  async syncCurrentCoupleFromSupabase(force = false): Promise<CoupleSpace | null> {
     if (shouldUseServerDb()) {
-      return this.syncCoupleFromSupabase();
+      return this.syncCoupleFromSupabase(undefined, force);
     }
     if (!isSupabaseConfigured()) return null;
     this.init();
@@ -1331,12 +1406,8 @@ class CoupleService {
       // 1. Transactionally wipe all joint data
       await this.resetAllSharedSpaces();
 
-      // 2. Mark couple dissolved
-      couple.status = 'dissolved';
-      couple.codeStatus = 'expired';
-      couple.dissolvedAt = new Date().toISOString();
-
-      // 3. Unlink BOTH participants from this couple
+      // 2. Clear couples and unlink both participants
+      this.couples = {};
       if (this.users[couple.user1.id]) {
         this.users[couple.user1.id].coupleId = null;
       }
@@ -1347,7 +1418,10 @@ class CoupleService {
         this.users[user.id].coupleId = null;
       }
 
+      // 3. Clear local storage and SWR caches
+      this.clearLocalCoupleData(coupleId);
       this.saveToStorage();
+      this.notify();
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('lovia_couple_dissolved'));
@@ -1356,9 +1430,6 @@ class CoupleService {
       if (partnerId) {
         sendPartnerNotification('couple_dissolved', { partnerId, coupleId });
       }
-
-      // Удаляем локальный SWR-кэш при разрыве пары
-      clearSwrCache(coupleId);
 
       return { success: true };
     } catch (err: unknown) {
@@ -1437,6 +1508,67 @@ class CoupleService {
       console.warn('Failed to clean demo storage keys:', e);
     }
     this.notify();
+  }
+
+  /**
+   * Запрос 6-значного кода подтверждения на удаление аккаунта в Telegram-бот
+   */
+  async requestAccountDeletion(): Promise<{ success: boolean; error?: string }> {
+    this.init();
+    try {
+      if (shouldUseServerDb()) {
+        await callServerDb('request_account_deletion', {});
+        return { success: true };
+      }
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Не удалось запросить код удаления аккаунта.';
+      console.error('[coupleService] requestAccountDeletion error:', err);
+      return { success: false, error: msg };
+    }
+  }
+
+  /**
+   * Полное подтверждённое удаление аккаунта и очистка всех локальных данных
+   */
+  async confirmAccountDeletion(code: string): Promise<{ success: boolean; error?: string }> {
+    this.init();
+    try {
+      if (shouldUseServerDb()) {
+        await callServerDb('confirm_account_deletion', { code: code.trim() });
+      }
+
+      // Полная очистка SWR-кэша и локального хранилища
+      clearSwrCache();
+      try {
+        if (typeof window !== 'undefined') {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('lovia_') || key.startsWith('telegram_') || key.startsWith('sb-'))) {
+              localStorage.removeItem(key);
+            }
+          }
+          localStorage.clear();
+        }
+      } catch (e) {
+        console.warn('[coupleService] Failed to clear localStorage:', e);
+      }
+
+      // Сброс локального состояния
+      this.couples = {};
+      this.activeUserId = 'user-marsel';
+      this.notify();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('lovia_account_deleted'));
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Не удалось подтвердить удаление аккаунта.';
+      console.error('[coupleService] confirmAccountDeletion error:', err);
+      return { success: false, error: msg };
+    }
   }
 }
 

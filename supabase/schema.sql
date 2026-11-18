@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS public.users (
 -- Migrations for existing users table
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS timezone_offset INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS delete_code TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS delete_code_expires_at TIMESTAMPTZ;
 
 -- Couples table
 CREATE TABLE IF NOT EXISTS public.couples (

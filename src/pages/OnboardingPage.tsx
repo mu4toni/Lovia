@@ -11,7 +11,7 @@ import { coupleService, CoupleSpace, RegisteredUser, SpaceType } from '../servic
 import { telegramService } from '../services/telegramService';
 import { getTodayDateString } from '../utils/dateCalculations';
 import { copyTextToClipboard } from '../utils/clipboard';
-import { isLocalDevHost } from '../utils/env';
+import { getTelegramInviteLink, isLocalDevHost } from '../utils/env';
 import './OnboardingPage.css';
 
 export function OnboardingPage() {
@@ -154,6 +154,23 @@ export function OnboardingPage() {
       });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // Handler: Copy direct Telegram invite link
+  const handleCopyLink = async () => {
+    if (!currentCouple?.inviteCode) return;
+    const link = getTelegramInviteLink(currentCouple.inviteCode);
+    const ok = await copyTextToClipboard(link);
+    if (ok) {
+      telegramService.hapticNotification('success');
+      showToast({
+        title: 'Ссылка скопирована!',
+        message: isFriendship
+          ? 'Отправьте её вашему другу в Telegram'
+          : 'Отправьте её вашему партнёру в Telegram',
+        type: 'love',
+      });
     }
   };
 
@@ -471,11 +488,21 @@ export function OnboardingPage() {
                   variant="primary"
                   fullWidth
                   size="md"
-                  onClick={handleCopyCode}
+                  onClick={handleCopyLink}
                   className="onboarding-copy-btn"
-                  leftIcon={<Icon name={copied ? 'check' : 'copy'} size={16} />}
+                  leftIcon={<Icon name="sparkles" size={16} />}
                 >
-                  {copied ? 'Код скопирован!' : 'Скопировать код'}
+                  {isFriendship ? 'Скопировать ссылку для друга' : 'Скопировать ссылку для партнёра'}
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  size="sm"
+                  onClick={handleCopyCode}
+                  leftIcon={<Icon name={copied ? 'check' : 'copy'} size={14} />}
+                >
+                  {copied ? 'Код скопирован!' : 'Скопировать только код'}
                 </Button>
 
                 <button

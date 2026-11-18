@@ -4,6 +4,7 @@ import { Button } from '../../ui/Button/Button';
 import { Icon } from '../../ui/Icon/Icon';
 import { useToast } from '../../ui/Toast/ToastContext';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
+import { getTelegramInviteLink, isLocalDevHost } from '../../../utils/env';
 import './UnpairedBanner.css';
 
 export interface UnpairedBannerProps {
@@ -21,7 +22,7 @@ export const UnpairedBanner: React.FC<UnpairedBannerProps> = ({
   const { isFriendship } = useSpaceMode();
 
   const handleCopyLink = () => {
-    const link = `https://t.me/lovia_bot?start=${inviteCode}`;
+    const link = getTelegramInviteLink(inviteCode);
     navigator.clipboard?.writeText(link);
     showToast({
       title: 'Ссылка скопирована',
@@ -66,15 +67,17 @@ export const UnpairedBanner: React.FC<UnpairedBannerProps> = ({
         >
           {isFriendship ? 'Скопировать ссылку для друга' : 'Скопировать ссылку для пары'}
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<Icon name="sparkles" size={14} />}
-          onClick={onConnectPartnerSim}
-          className="unpaired-banner__sim-btn"
-        >
-          Симулировать подключение Алисы
-        </Button>
+        {isLocalDevHost() && (
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Icon name="sparkles" size={14} />}
+            onClick={onConnectPartnerSim}
+            className="unpaired-banner__sim-btn"
+          >
+            Симулировать подключение Алисы
+          </Button>
+        )}
       </div>
     </Card>
   );

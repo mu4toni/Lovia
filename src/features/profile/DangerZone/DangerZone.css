@@ -143,6 +143,103 @@
   margin-top: 4px;
 }
 
+.danger-modal-actions--step2 {
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.danger-modal-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Error Box */
+.danger-modal-error-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(229, 62, 62, 0.12);
+  border: 1px solid rgba(229, 62, 62, 0.35);
+  color: var(--color-danger, #e53e3e);
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+/* Code Step Box */
+.danger-modal-code-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 6px 0;
+}
+
+.danger-modal-code-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 320px;
+}
+
+.danger-code-input-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 6px 0;
+}
+
+.danger-code-input {
+  width: 100%;
+  max-width: 240px;
+  height: 52px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  padding-left: 0.28em;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-medium);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.06);
+  transition: all var(--duration-fast) ease;
+}
+
+.danger-code-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(218, 0, 56, 0.15), 0 2px 0 rgba(35, 31, 32, 0.06);
+}
+
+.danger-resend-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: opacity var(--duration-fast) ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.danger-resend-btn:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+  text-decoration: none;
+}
+
 /* Sent Notice Box */
 .danger-modal-sent-box {
   display: flex;
@@ -204,6 +301,18 @@
 [data-theme='dark'] .danger-zone__card {
   background: var(--bg-card);
   border-color: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme='dark'] .danger-code-input {
+  background: var(--bg-surface-elevated, #262626);
+  border-color: var(--border-medium);
+  color: #ffffff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='dark'] .danger-modal-error-box {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 [data-theme='dark'] .danger-modal-server-notice {

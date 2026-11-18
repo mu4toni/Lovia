@@ -23,8 +23,8 @@ export function useWishlist() {
   const [deletingWish, setDeletingWish] = useState<WishItem | null>(null);
 
   // Load profile and wishlist items
-  const loadData = useCallback(async () => {
-    if (!wishlistService.hasCachedData() && !profile) {
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent && !wishlistService.hasCachedData() && !profile) {
       setIsLoading(true);
     }
     try {
@@ -48,16 +48,13 @@ export function useWishlist() {
       wishlistService.getWishlist().then((data) => setItems(data)).catch(() => {});
     };
 
-    window.addEventListener('lovia_wishlist_updated', handleUpdate);
-    window.addEventListener('lovia_couple_connected', loadData);
-    window.addEventListener('lovia_couple_updated', loadData);
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && !document.hidden) {
-        loadData();
-      }
+    const handleSilentReload = () => {
+      loadData(true);
     };
-    document.addEventListener('visibilitychange', onVisibility);
+
+    window.addEventListener('lovia_wishlist_updated', handleUpdate);
+    window.addEventListener('lovia_couple_connected', handleSilentReload);
+    window.addEventListener('lovia_couple_updated', handleSilentReload);
 
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
@@ -67,9 +64,8 @@ export function useWishlist() {
 
     return () => {
       window.removeEventListener('lovia_wishlist_updated', handleUpdate);
-      window.removeEventListener('lovia_couple_connected', loadData);
-      window.removeEventListener('lovia_couple_updated', loadData);
-      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('lovia_couple_connected', handleSilentReload);
+      window.removeEventListener('lovia_couple_updated', handleSilentReload);
       clearInterval(intervalId);
     };
   }, [loadData]);

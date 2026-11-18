@@ -13,8 +13,43 @@ export function shouldUseServerDb(): boolean {
   return telegramService.isTelegramEnv();
 }
 
+const NETWORK_ERROR_MSG = 'Нет соединения с сервером. Проверьте интернет и попробуйте ещё раз.';
+
+function isNetworkError(err: any): boolean {
+  if (!err) return false;
+  if (err.name === 'AbortError') return true;
+  const msg = String(err.message || err).toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network request failed') ||
+    msg.includes('load failed') ||
+    msg.includes('abort') ||
+    msg.includes('timeout')
+  );
+}
+
+async function doFetchAttempt(headers: Record<string, string>, body: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const response = await fetch('/api/db', {
+      method: 'POST',
+      headers,
+      body,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 /**
  * Единый защищённый клиентский метод вызова серверного шлюза /api/db с авторизацией через Telegram initData.
+ * Включает таймаут AbortController на 12 секунд, автоповтор (1 retry через 600 мс) при сетевых сбоях
+ * и понятное сообщение при обрыве связи.
  */
 export async function callServerDb<T>(action: string, payload?: any): Promise<T> {
   const initData = telegramService.getInitData();
@@ -24,12 +59,25 @@ export async function callServerDb<T>(action: string, payload?: any): Promise<T>
   if (initData) {
     headers['x-telegram-init-data'] = initData;
   }
+  const body = JSON.stringify({ action, payload });
 
-  const response = await fetch('/api/db', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ action, payload }),
-  });
+  let response: Response;
+  try {
+    response = await doFetchAttempt(headers, body);
+  } catch (err: any) {
+    if (isNetworkError(err)) {
+      // 1 автоматический повтор через 600 мс при сетевой ошибке / таймауте
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      try {
+        response = await doFetchAttempt(headers, body);
+      } catch (retryErr: any) {
+        console.warn('[callServerDb] Network error after retry:', retryErr?.message || retryErr);
+        throw new Error(NETWORK_ERROR_MSG);
+      }
+    } else {
+      throw err;
+    }
+  }
 
   if (!response.ok) {
     let errMsg = `Ошибка сервера (${response.status})`;
@@ -42,9 +90,15 @@ export async function callServerDb<T>(action: string, payload?: any): Promise<T>
     throw new Error(errMsg);
   }
 
-  const result = await response.json();
-  if (!result.ok) {
-    throw new Error(result.error || 'Запрос к серверу завершился с ошибкой');
+  let result: any;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error('Некорректный ответ от сервера');
+  }
+
+  if (!result || !result.ok) {
+    throw new Error(result?.error || 'Запрос к серверу завершился с ошибкой');
   }
 
   return result.data as T;
