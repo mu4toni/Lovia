@@ -104,6 +104,51 @@ class CoupleService {
   private couples: Record<string, CoupleSpace> = {};
   private activeUserId = 'user-marsel';
   private initialized = false;
+  private subscriptionRequired = false;
+  private channelUrl = '';
+
+  isSubscriptionRequired(): boolean {
+    return this.subscriptionRequired;
+  }
+
+  getRequiredChannelUrl(): string {
+    return this.channelUrl;
+  }
+
+  setSubscriptionRequired(required: boolean, channelUrl?: string): void {
+    const changed = this.subscriptionRequired !== required || (channelUrl && this.channelUrl !== channelUrl);
+    this.subscriptionRequired = required;
+    if (channelUrl) this.channelUrl = channelUrl;
+    if (changed && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent(required ? 'lovia_subscription_required' : 'lovia_subscription_resolved', {
+          detail: { channelUrl: this.channelUrl },
+        })
+      );
+    }
+  }
+
+  /**
+   * Проверить подписку на канал вручную с клиента (кнопка «Я подписался — проверить»)
+   */
+  async verifyChannelSubscription(): Promise<boolean> {
+    if (shouldUseServerDb()) {
+      try {
+        const res = await callServerDb<{ subscribed: boolean; subscriptionRequired: boolean; channelUrl?: string }>('check_subscription');
+        if (res && res.subscribed) {
+          this.setSubscriptionRequired(false);
+          await this.syncCoupleFromSupabase();
+          return true;
+        } else if (res && res.subscriptionRequired) {
+          this.setSubscriptionRequired(true, res.channelUrl);
+          return false;
+        }
+      } catch (e) {
+        console.warn('[coupleService] verifyChannelSubscription error:', e);
+      }
+    }
+    return false;
+  }
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -126,19 +171,19 @@ class CoupleService {
 
       // Background synchronization on tab visibility and focus
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && isSupabaseConfigured()) {
+        if (!document.hidden && (isSupabaseConfigured() || shouldUseServerDb())) {
           this.syncCurrentCoupleFromSupabase();
         }
       });
       window.addEventListener('focus', () => {
-        if (isSupabaseConfigured()) {
+        if (isSupabaseConfigured() || shouldUseServerDb()) {
           this.syncCurrentCoupleFromSupabase();
         }
       });
 
       // Initial background sync to restore couple session from Supabase
       setTimeout(() => {
-        if (isSupabaseConfigured()) {
+        if (isSupabaseConfigured() || shouldUseServerDb()) {
           this.syncCurrentCoupleFromSupabase();
         }
       }, 50);
@@ -577,6 +622,11 @@ class CoupleService {
       try {
         const bundle = await callServerDb<any>('get_bundle');
         if (bundle) {
+          if (bundle.subscriptionRequired) {
+            this.setSubscriptionRequired(true, bundle.channelUrl);
+            return null;
+          }
+          this.setSubscriptionRequired(false);
           return this.applyBundle(bundle);
         }
       } catch (err: any) {
@@ -707,6 +757,9 @@ class CoupleService {
    * Подтягивает актуальную пару из Supabase при старте приложения и возвращении в Telegram
    */
   async syncCurrentCoupleFromSupabase(): Promise<CoupleSpace | null> {
+    if (shouldUseServerDb()) {
+      return this.syncCoupleFromSupabase();
+    }
     if (!isSupabaseConfigured()) return null;
     this.init();
 

@@ -97,6 +97,93 @@ function generateInviteCode(): string {
   return `LOVIA-${part1}-${part2}`;
 }
 
+/**
+ * Извлечение чистого username/chat_id канала
+ * Поддерживает форматы: @channel, channel, -1001234567890, https://t.me/channel, t.me/channel
+ */
+function normalizeChannelChatId(raw: string): string {
+  let clean = raw.trim();
+  if (!clean) return '';
+  clean = clean.replace(/^(?:https?:\/\/)?t\.me\//i, '');
+  clean = clean.replace(/^\/+|\/+$/g, '');
+  if (clean.startsWith('@') || clean.startsWith('-')) {
+    return clean;
+  }
+  if (/^\d+$/.test(clean)) {
+    return `-100${clean}`;
+  }
+  return `@${clean}`;
+}
+
+/**
+ * Получение ссылки на канал для открытия пользователем
+ */
+function getChannelUrl(): string {
+  if (process.env.REQUIRED_CHANNEL_URL) {
+    return process.env.REQUIRED_CHANNEL_URL.trim();
+  }
+  const channelId = process.env.REQUIRED_CHANNEL_ID?.trim() || '';
+  if (!channelId) return 'https://t.me';
+  if (channelId.startsWith('http://') || channelId.startsWith('https://')) {
+    return channelId;
+  }
+  let clean = channelId.replace(/^(?:https?:\/\/)?t\.me\//i, '').replace(/^@/, '');
+  if (!clean.startsWith('-') && clean.length > 0) {
+    return `https://t.me/${clean}`;
+  }
+  return 'https://t.me';
+}
+
+/**
+ * Проверка членства пользователя в обязательном Telegram-канале.
+ * Если REQUIRED_CHANNEL_ID не задан — возвращает { subscribed: true }.
+ */
+async function checkChannelSubscription(
+  telegramUserId: number | string
+): Promise<{ subscribed: boolean; error?: string }> {
+  const channelRaw = process.env.REQUIRED_CHANNEL_ID?.trim();
+  if (!channelRaw) {
+    return { subscribed: true };
+  }
+
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    console.warn('[checkChannelSubscription] TELEGRAM_BOT_TOKEN not configured');
+    return { subscribed: true };
+  }
+
+  const chatId = normalizeChannelChatId(channelRaw);
+  if (!chatId) {
+    return { subscribed: true };
+  }
+
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(chatId)}&user_id=${telegramUserId}`;
+    const response = await fetch(url);
+    const data: any = await response.json();
+
+    if (!data || !data.ok) {
+      console.error(
+        `[checkChannelSubscription] Telegram getChatMember error for user ${telegramUserId} in chat ${chatId}:`,
+        data?.description || data
+      );
+      return { subscribed: false, error: data?.description || 'Telegram API error' };
+    }
+
+    const status = data.result?.status;
+    const isMember = status === 'restricted' ? Boolean(data.result?.is_member) : false;
+
+    if (['member', 'administrator', 'creator'].includes(status) || isMember) {
+      return { subscribed: true };
+    }
+
+    return { subscribed: false };
+  } catch (err: any) {
+    console.error('[checkChannelSubscription] Network or runtime exception:', err?.message || err);
+    return { subscribed: false, error: err?.message };
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -187,9 +274,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // -------------------------------------------------------------
+    // ДЕЙСТВИЕ 0: check_subscription
+    // -------------------------------------------------------------
+    if (action === 'check_subscription') {
+      const { subscribed } = await checkChannelSubscription(tgUser.id);
+      return res.status(200).json({
+        ok: true,
+        data: {
+          subscribed,
+          subscriptionRequired: !subscribed,
+          channelUrl: getChannelUrl(),
+        },
+      });
+    }
+
+    // -------------------------------------------------------------
     // ДЕЙСТВИЕ 1: get_bundle
     // -------------------------------------------------------------
     if (action === 'get_bundle') {
+      // Жёсткая проверка подписки на обязательный канал:
+      // если пользователь не подписан, данные пары не возвращаются!
+      const { subscribed } = await checkChannelSubscription(tgUser.id);
+      if (!subscribed) {
+        return res.status(200).json({
+          ok: true,
+          data: {
+            subscriptionRequired: true,
+            channelUrl: getChannelUrl(),
+          },
+        });
+      }
+
       const { data: coupleRow } = await supabase
         .from('couples')
         .select('*')

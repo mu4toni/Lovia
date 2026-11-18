@@ -1,13 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
- * Извлечение username канала для ссылки вида https://t.me/username
+ * Извлечение чистого username/chat_id канала
+ * Поддерживает форматы: @channel, channel, -1001234567890, https://t.me/channel, t.me/channel
  */
-function getChannelUsername(): string {
-  const channelId = process.env.REQUIRED_CHANNEL_ID?.trim() || '';
-  if (channelId.startsWith('@')) return channelId.slice(1);
-  if (!channelId.startsWith('-')) return channelId;
-  return '';
+function normalizeChannelChatId(raw: string): string {
+  let clean = raw.trim();
+  if (!clean) return '';
+  clean = clean.replace(/^(?:https?:\/\/)?t\.me\//i, '');
+  clean = clean.replace(/^\/+|\/+$/g, '');
+  if (clean.startsWith('@') || clean.startsWith('-')) {
+    return clean;
+  }
+  if (/^\d+$/.test(clean)) {
+    return `-100${clean}`;
+  }
+  return `@${clean}`;
 }
 
 /**
@@ -17,53 +25,74 @@ function getChannelUrl(): string {
   if (process.env.REQUIRED_CHANNEL_URL) {
     return process.env.REQUIRED_CHANNEL_URL.trim();
   }
-  const channelUsername = getChannelUsername();
-  return channelUsername ? `https://t.me/${channelUsername}` : 'https://t.me';
+  const channelId = process.env.REQUIRED_CHANNEL_ID?.trim() || '';
+  if (!channelId) return 'https://t.me';
+  if (channelId.startsWith('http://') || channelId.startsWith('https://')) {
+    return channelId;
+  }
+  let clean = channelId.replace(/^(?:https?:\/\/)?t\.me\//i, '').replace(/^@/, '');
+  if (!clean.startsWith('-') && clean.length > 0) {
+    return `https://t.me/${clean}`;
+  }
+  return 'https://t.me';
 }
 
 /**
- * Проверка подписки пользователя на обязательный Telegram-канал.
- * Если REQUIRED_CHANNEL_ID не задана — возвращает true (обратная совместимость).
+ * Проверка членства пользователя в обязательном Telegram-канале.
+ * Если REQUIRED_CHANNEL_ID не задан — возвращает { subscribed: true }.
  */
-export async function checkUserSubscription(userId: number): Promise<boolean> {
-  const channelId = process.env.REQUIRED_CHANNEL_ID?.trim();
-  if (!channelId) {
-    return true;
+export async function checkChannelSubscription(
+  telegramUserId: number | string
+): Promise<{ subscribed: boolean; error?: string }> {
+  const channelRaw = process.env.REQUIRED_CHANNEL_ID?.trim();
+  if (!channelRaw) {
+    return { subscribed: true };
   }
 
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
-    console.warn('[telegram/webhook] TELEGRAM_BOT_TOKEN not configured for subscription check');
-    return true;
+    console.warn('[checkChannelSubscription] TELEGRAM_BOT_TOKEN not configured');
+    return { subscribed: true };
   }
 
-  const formattedChatId =
-    channelId.startsWith('@') || channelId.startsWith('-')
-      ? channelId
-      : `@${channelId}`;
+  const chatId = normalizeChannelChatId(channelRaw);
+  if (!chatId) {
+    return { subscribed: true };
+  }
 
   try {
-    const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(formattedChatId)}&user_id=${userId}`;
+    const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(chatId)}&user_id=${telegramUserId}`;
     const response = await fetch(url);
     const data: any = await response.json();
 
     if (!data || !data.ok) {
-      console.warn('[telegram/webhook] getChatMember returned error:', data);
-      return false;
+      console.error(
+        `[checkChannelSubscription] Telegram getChatMember error for user ${telegramUserId} in chat ${chatId}:`,
+        data?.description || data
+      );
+      return { subscribed: false, error: data?.description || 'Telegram API error' };
     }
 
     const status = data.result?.status;
     const isMember = status === 'restricted' ? Boolean(data.result?.is_member) : false;
 
     if (['member', 'administrator', 'creator'].includes(status) || isMember) {
-      return true;
+      return { subscribed: true };
     }
 
-    return false;
-  } catch (err) {
-    console.error('[telegram/webhook] Failed to check user subscription:', err);
-    return false;
+    return { subscribed: false };
+  } catch (err: any) {
+    console.error('[checkChannelSubscription] Network or runtime exception:', err?.message || err);
+    return { subscribed: false, error: err?.message };
   }
+}
+
+/**
+ * Обратная совместимость для сигнатуры checkUserSubscription(userId: number)
+ */
+export async function checkUserSubscription(userId: number): Promise<boolean> {
+  const result = await checkChannelSubscription(userId);
+  return result.subscribed;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -102,9 +131,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const messageId = callbackQuery.message?.message_id;
 
         if (botToken && userId) {
-          const isSubscribed = await checkUserSubscription(userId);
+          const { subscribed } = await checkChannelSubscription(userId);
 
-          if (isSubscribed) {
+          if (subscribed) {
             // Всплывающее уведомление об успешной проверке
             await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
               method: 'POST',
@@ -220,10 +249,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Проверка обязательной подписки на канал
       const userId = fromUser?.id;
-      const isSubscribed = userId ? await checkUserSubscription(userId) : true;
+      const { subscribed } = userId ? await checkChannelSubscription(userId) : { subscribed: true };
 
-      if (isSubscribed) {
-        // Подписан — сразу приветствуем и отдаём кнопку WebApp
+      if (subscribed) {
+        // Подписан — сразу приветствуем и отдаём кнопку WebApp (никакой плашки подписки!)
         const replyText =
           `✨ <b>${greeting}Добро пожаловать в Lovia!</b>\n\n` +
           `Уютное пространство для двоих: совместные напоминания, список желаний, годовщины, памятные даты и фото-альбом свиданий.\n\n` +
@@ -255,8 +284,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `✨ <b>${greeting}Добро пожаловать в Lovia!</b>\n\n` +
           `Чтобы открыть Lovia, подпишитесь на наш канал — там публикуются обновления, идеи и новости приложения 👇`;
 
-        const channelUsername = getChannelUsername();
-        const channelUrl = process.env.REQUIRED_CHANNEL_URL || (channelUsername ? `https://t.me/${channelUsername}` : 'https://t.me');
+        const channelUrl = getChannelUrl();
         const callbackData =
           startParam && startParam.length <= 40
             ? `check_subscription:${startParam}`

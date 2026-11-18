@@ -348,6 +348,24 @@ class TelegramService {
       }
     }
   }
+
+  /**
+   * Открыть Telegram-ссылку внутри клиента Telegram (например, канал)
+   */
+  openTelegramLink(url: string): void {
+    const tg = this.webApp;
+    if (tg && typeof tg.openTelegramLink === 'function') {
+      try {
+        tg.openTelegramLink(url);
+        return;
+      } catch (e) {
+        console.warn('[TelegramService] openTelegramLink error:', e);
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
 }
 
 export const telegramService = new TelegramService();

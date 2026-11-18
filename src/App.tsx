@@ -4,7 +4,7 @@ import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { DevBanner } from './components/DevBanner';
-import { ToastProvider, PageSkeleton } from './components/ui';
+import { ToastProvider, PageSkeleton, SubscriptionGate } from './components/ui';
 import { coupleService } from './services/coupleService';
 import { telegramService } from './services/telegramService';
 
@@ -82,6 +82,13 @@ function TelegramBackButtonSync() {
 }
 
 export function App() {
+  const [subscriptionRequired, setSubscriptionRequired] = useState(() =>
+    coupleService.isSubscriptionRequired()
+  );
+  const [channelUrl, setChannelUrl] = useState(() =>
+    coupleService.getRequiredChannelUrl()
+  );
+
   useEffect(() => {
     const savedTheme = localStorage.getItem('lovia_theme') as 'light' | 'dark' | null;
     if (savedTheme) {
@@ -89,7 +96,37 @@ export function App() {
     }
     telegramService.init();
     telegramService.applyThemeColors();
+
+    const handleSubRequired = (e: any) => {
+      setSubscriptionRequired(true);
+      if (e?.detail?.channelUrl) {
+        setChannelUrl(e.detail.channelUrl);
+      }
+    };
+
+    const handleSubResolved = () => {
+      setSubscriptionRequired(false);
+    };
+
+    window.addEventListener('lovia_subscription_required', handleSubRequired);
+    window.addEventListener('lovia_subscription_resolved', handleSubResolved);
+
+    return () => {
+      window.removeEventListener('lovia_subscription_required', handleSubRequired);
+      window.removeEventListener('lovia_subscription_resolved', handleSubResolved);
+    };
   }, []);
+
+  if (subscriptionRequired) {
+    return (
+      <ToastProvider>
+        <SubscriptionGate
+          channelUrl={channelUrl}
+          onVerified={() => setSubscriptionRequired(false)}
+        />
+      </ToastProvider>
+    );
+  }
 
   return (
     <ToastProvider>
