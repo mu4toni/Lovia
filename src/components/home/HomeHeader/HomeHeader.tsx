@@ -17,6 +17,7 @@ import { AnniversaryProgressBar } from '../../ui/AnniversaryProgress/Anniversary
 import { PartnerQuickModal } from '../../partner/PartnerQuickModal';
 import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../ui/Mascot/Mascot';
+import { SketchUnderline, SketchDoodle } from '../../ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './HomeHeader.css';
 
@@ -113,12 +114,13 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         - Дублирующая точка онлайна у имени партнёра убрана (сохранена на самом круглом аватаре)
       */}
       <header className={`home-header ${className}`} aria-label="Пространство пары">
-        {/* 1. Date Row: Pure Typography */}
+        {/* 1. Date Row: Pure Typography with Sketch Sparkle */}
         <div className="home-header__date-row">
           <Icon name="calendar" size={14} className="home-header__date-icon" />
           <span className="home-header__date-text">
             {capitalizedWeekday}, {formattedDate}
           </span>
+          <SketchDoodle type="sparkle" size={13} className="home-header__date-doodle" />
         </div>
 
         {/* 2. Expressive Clean 3-Column Interactive Couple Card with Peeking Mascot */}
@@ -200,6 +202,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 {hasPartner ? profile.partner?.name : (isFriendship ? 'Друг' : 'Партнёр')}
               </span>
             </div>
+            <SketchUnderline width={68} variant="wave" className="home-header__names-underline" />
 
             {/* Anniversary Progress Bar & Year Labels */}
             {hasPartner ? (

@@ -10,6 +10,7 @@
   justify-content: center;
   animation: fadeIn 260ms var(--ease-telegram) forwards;
   will-change: opacity;
+  touch-action: none;
 }
 
 .modal-backdrop--closing {
@@ -91,7 +92,7 @@
   height: 56px;
   min-height: 56px;
   padding: 0 var(--space-lg, 20px);
-  border-bottom: 1px solid var(--border-hairline);
+  border-bottom: 1.5px dashed var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -122,6 +123,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
   padding: var(--space-md, 14px) var(--space-lg, 20px);
   font-size: 14.5px;
   color: var(--text-secondary);
@@ -136,7 +139,7 @@
   display: flex;
   gap: var(--space-sm, 8px);
   padding: 12px var(--space-lg, 20px) calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1.5px dashed var(--border-subtle);
   background: var(--bg-surface);
   flex-shrink: 0;
 }

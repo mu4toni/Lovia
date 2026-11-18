@@ -189,6 +189,7 @@ class RemindersService {
       dueDate: row.due_date || '',
       dueLabel,
       dueTime: row.due_time || undefined,
+      remindBeforeMinutes: row.remind_before_minutes ?? 60,
       urgency: (row.priority as 'low' | 'medium' | 'high') || 'medium',
       categoryId: row.category_id || undefined,
       category: row.category_id || undefined,
@@ -324,6 +325,7 @@ class RemindersService {
         for_user_id: input.targetId,
         due_date: input.dueDate || null,
         due_time: input.dueTime || null,
+        remind_before_minutes: input.remindBeforeMinutes ?? 60,
         priority: input.urgency || 'medium',
         category_id: input.categoryId || input.category || null,
         reward_note: input.rewardNote?.trim() || null,
@@ -359,6 +361,7 @@ class RemindersService {
       dueDate: input.dueDate,
       dueLabel: input.dueLabel,
       dueTime: input.dueTime,
+      remindBeforeMinutes: input.remindBeforeMinutes ?? 60,
       urgency: input.urgency,
       categoryId: input.categoryId,
       categoryName: input.categoryName,
@@ -382,6 +385,7 @@ class RemindersService {
         status: newReminder.status,
         due_date: newReminder.dueDate || null,
         due_time: newReminder.dueTime || null,
+        remind_before_minutes: newReminder.remindBeforeMinutes ?? 60,
         created_at: newReminder.createdAt,
       };
 
@@ -427,6 +431,7 @@ class RemindersService {
       }
       if (input.dueDate !== undefined) patch.due_date = input.dueDate || null;
       if (input.dueTime !== undefined) patch.due_time = input.dueTime || null;
+      if (input.remindBeforeMinutes !== undefined) patch.remind_before_minutes = input.remindBeforeMinutes;
       if (input.rewardNote !== undefined) patch.reward_note = input.rewardNote.trim() || null;
 
       const serverRow = await callServerDb<any>('reminders_update', { id, patch });
@@ -447,6 +452,7 @@ class RemindersService {
       if (input.targetId !== undefined) updateData.for_user_id = input.targetId;
       if (input.dueDate !== undefined) updateData.due_date = input.dueDate || null;
       if (input.dueTime !== undefined) updateData.due_time = input.dueTime || null;
+      if (input.remindBeforeMinutes !== undefined) updateData.remind_before_minutes = input.remindBeforeMinutes;
       if (input.categoryId !== undefined) updateData.category_id = input.categoryId || null;
 
       const { error } = await supabase

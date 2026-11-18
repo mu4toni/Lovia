@@ -10,6 +10,7 @@ export interface WishCardProps {
   onEdit: (item: WishItem) => void;
   onDelete: (item: WishItem) => void;
   onToggleReserve?: (id: string) => void;
+  onClick?: (item: WishItem) => void;
   className?: string;
 }
 
@@ -19,6 +20,7 @@ export const WishCard: React.FC<WishCardProps> = ({
   onEdit,
   onDelete,
   onToggleReserve,
+  onClick,
   className = '',
 }) => {
   const [imageError, setImageError] = useState(false);
@@ -38,8 +40,20 @@ export const WishCard: React.FC<WishCardProps> = ({
     : undefined;
 
   return (
-    <article className={`wish-card ${className}`} aria-labelledby={`wish-title-${item.id}`}>
-      {/* 1. Media container: Photo (Hero) or Minimalist Lovia Placeholder */}
+    <article
+      className={`wish-card ${onClick ? 'wish-card--clickable' : ''} ${className}`}
+      aria-labelledby={`wish-title-${item.id}`}
+      onClick={() => onClick?.(item)}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick(item);
+        }
+      }}
+    >
+      {/* 1. Media container: Photo (Hero) or Minimalist Lovia Mascot Placeholder */}
       <div className="wish-card__media">
         {item.imageUrl && !imageError ? (
           <img
@@ -52,18 +66,26 @@ export const WishCard: React.FC<WishCardProps> = ({
         ) : (
           <div className="wish-card__placeholder" aria-hidden="true">
             <div className="wish-card__placeholder-icon">
-              <Icon name="gift" size={24} />
+              <Icon name="gift" size={26} strokeWidth={1.8} />
             </div>
           </div>
         )}
 
         {/* Owner actions (strictly only for own items!) */}
         {isOwnList && (
-          <div className="wish-card__actions" role="toolbar" aria-label="Управление желанием">
+          <div
+            className="wish-card__actions"
+            role="toolbar"
+            aria-label="Управление желанием"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               className="wish-card__action-btn"
-              onClick={() => onEdit(item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(item);
+              }}
               aria-label={`Редактировать желание: ${item.title}`}
               title="Редактировать желание"
             >
@@ -72,7 +94,10 @@ export const WishCard: React.FC<WishCardProps> = ({
             <button
               type="button"
               className="wish-card__action-btn wish-card__action-btn--delete"
-              onClick={() => onDelete(item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+              }}
               aria-label={`Удалить желание: ${item.title}`}
               title="Удалить желание"
             >
@@ -101,7 +126,7 @@ export const WishCard: React.FC<WishCardProps> = ({
         </div>
 
         {/* 3. Footer Action Buttons */}
-        <div className="wish-card__footer">
+        <div className="wish-card__footer" onClick={(e) => e.stopPropagation()}>
           {isOwnList ? (
             /* Own List: «Где купить» button occupies full width */
             safeLink ? (

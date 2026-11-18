@@ -49,6 +49,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   // Collapsed accordion «Дополнительные параметры»
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [urgency, setUrgency] = useState<UrgencyLevel>('medium');
+  const [remindBeforeMinutes, setRemindBeforeMinutes] = useState<number>(60);
   const [description, setDescription] = useState('');
   const [rewardNote, setRewardNote] = useState('');
   const [error, setError] = useState('');
@@ -94,6 +95,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       }
 
       setUrgency(editingReminder.urgency || 'medium');
+      setRemindBeforeMinutes(editingReminder.remindBeforeMinutes ?? 60);
       setDueTime(editingReminder.dueTime || '');
 
       if (editingReminder.dueDate) {
@@ -127,7 +129,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       const hasAdvancedData = Boolean(
         editingReminder.description ||
           editingReminder.rewardNote ||
-          editingReminder.urgency !== 'medium'
+          editingReminder.urgency !== 'medium' ||
+          (editingReminder.remindBeforeMinutes && editingReminder.remindBeforeMinutes !== 60)
       );
       setIsAdvancedOpen(hasAdvancedData);
       setError('');
@@ -141,6 +144,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       setDueTime('');
       setTarget('partner');
       setUrgency('medium');
+      setRemindBeforeMinutes(60);
       setDeadline({ mode: 'none', dueLabel: 'Без срока' });
       setIsAdvancedOpen(false);
       setError('');
@@ -218,6 +222,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       dueDate: isoDueDate,
       dueLabel: deadline.dueLabel,
       dueTime: (deadline.time || dueTime) || undefined,
+      remindBeforeMinutes,
       urgency,
       categoryId: selectedCategoryId,
       categoryColor: selectedColor || undefined,
@@ -434,6 +439,33 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                     >
                       <span className={`create-urgency-dot ${u.dotClass}`} />
                       <span>{u.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* За сколько напомнить */}
+              <div className="create-form-field">
+                <label className="create-form-label">За сколько напомнить</label>
+                <div className="create-remind-chips-row" role="radiogroup" aria-label="За сколько напомнить">
+                  {[
+                    { value: 15, label: 'За 15 мин' },
+                    { value: 30, label: 'За 30 мин' },
+                    { value: 60, label: 'За 1 час' },
+                    { value: 180, label: 'За 3 часа' },
+                    { value: 1440, label: 'За 1 день' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={remindBeforeMinutes === chip.value}
+                      className={`create-remind-chip ${
+                        remindBeforeMinutes === chip.value ? 'create-remind-chip--active' : ''
+                      }`}
+                      onClick={() => setRemindBeforeMinutes(chip.value)}
+                    >
+                      {chip.label}
                     </button>
                   ))}
                 </div>

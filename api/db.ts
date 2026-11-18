@@ -613,6 +613,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ ok: false, error: 'Нет доступа к паре' });
       }
 
+      const remindBefore =
+        payload.remind_before_minutes ??
+        payload.remindBeforeMinutes ??
+        60;
+
       const row = {
         couple_id: payload.couple_id,
         title: payload.title,
@@ -624,6 +629,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'pending',
         due_date: payload.due_date || null,
         due_time: payload.due_time || null,
+        remind_before_minutes: typeof remindBefore === 'number' ? remindBefore : 60,
         reward_note: payload.reward_note || null,
         created_at: new Date().toISOString(),
       };
@@ -684,6 +690,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (patch.category_id !== undefined) updateData.category_id = patch.category_id || null;
       if (patch.due_date !== undefined) updateData.due_date = patch.due_date || null;
       if (patch.due_time !== undefined) updateData.due_time = patch.due_time || null;
+      if (patch.remind_before_minutes !== undefined || patch.remindBeforeMinutes !== undefined) {
+        const val = patch.remind_before_minutes ?? patch.remindBeforeMinutes;
+        updateData.remind_before_minutes = typeof val === 'number' ? val : 60;
+      }
       if (patch.reward_note !== undefined) updateData.reward_note = patch.reward_note || null;
 
       const { data, error } = await supabase

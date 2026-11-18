@@ -1,6 +1,7 @@
 import React from 'react';
 import { DateMemorySort } from '../../../types/dates';
 import { Icon } from '../../../components/ui/Icon/Icon';
+import { SketchUnderline, SketchDoodle } from '../../../components/ui/SketchDecor/SketchDecor';
 import { pluralizeRu } from '../../../utils/dateCalculations';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DatesHeader.css';
@@ -43,8 +44,11 @@ export const DatesHeader: React.FC<DatesHeaderProps> = ({
       {/* 1. Header Hero with Clean Title & Compact Pills */}
       <div className="dates-header__hero">
         <div className="dates-header__titles">
-          {/* Legacy test assertion: Моменты, которые хочется сохранить */}
-          <h1 className="dates-header__title">{isFriendship ? 'Встречи' : 'Свидания'}</h1>
+          <div className="dates-header__title-row">
+            <h1 className="dates-header__title">{isFriendship ? 'Встречи' : 'Свидания'}</h1>
+            <SketchDoodle type="sparkle" size={16} className="dates-header__doodle-sparkle" />
+          </div>
+          <SketchUnderline width={76} variant="wave" className="dates-header__title-underline" />
         </div>
 
         {/* Compact Stat Bar with Divider (Unified row / card without borders) */}
@@ -61,9 +65,6 @@ export const DatesHeader: React.FC<DatesHeaderProps> = ({
                   : `Открыть список свиданий: ${heldDatesCount} ${datesLabel}`
               }
             >
-              <div className="dates-header__stat-bg-icon" aria-hidden="true">
-                <Icon name="calendar" size={28} />
-              </div>
               <Icon name="calendar" size={14} className="dates-header__stat-pill-icon" />
               <span className="dates-header__stat-val">{heldDatesCount}</span>
               <span className="dates-header__stat-txt">{datesLabel}</span>
@@ -78,9 +79,6 @@ export const DatesHeader: React.FC<DatesHeaderProps> = ({
               title="Открыть общий фотоальбом"
               aria-label={`Открыть общий фотоальбом: ${photosCount} ${photosLabel}`}
             >
-              <div className="dates-header__stat-bg-icon" aria-hidden="true">
-                <Icon name="camera" size={28} />
-              </div>
               <Icon name="camera" size={14} className="dates-header__stat-pill-icon" />
               <span className="dates-header__stat-val">{photosCount}</span>
               <span className="dates-header__stat-txt">{photosLabel}</span>

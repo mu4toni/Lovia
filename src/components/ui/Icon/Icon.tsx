@@ -82,11 +82,11 @@ export const Icon: React.FC<IconProps> = ({
       case 'gift':
         return (
           <>
-            <rect x="3.5" y="8.5" width="17" height="12" rx="3" />
-            <path d="M12 8.5v12" />
-            <path d="M3.5 12.5h17" />
-            <path d="M12 8.5c-2-3-5.2-3-5.2-.8s3 1.2 5.2.8z" />
-            <path d="M12 8.5c2-3 5.2-3 5.2-.8s-3 1.2-5.2.8z" />
+            <rect x="3" y="8" width="18" height="4" rx="1.5" />
+            <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7" />
+            <path d="M12 8v13" />
+            <path d="M12 8H7.5a2.5 2.5 0 010-5C11 3 12 8 12 8z" />
+            <path d="M12 8h4.5a2.5 2.5 0 000-5C13 3 12 8 12 8z" />
           </>
         );
 

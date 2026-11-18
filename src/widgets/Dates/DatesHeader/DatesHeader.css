@@ -26,8 +26,26 @@
 .dates-header__titles {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   width: 100%;
+}
+
+.dates-header__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dates-header__doodle-sparkle {
+  color: var(--color-accent-rose, #e3a3b4);
+  opacity: 0.9;
+}
+
+.dates-header__title-underline {
+  margin-top: -2px;
+  margin-bottom: 4px;
+  color: var(--color-primary, #da0038);
+  opacity: 0.65;
 }
 
 .dates-header__kicker {
@@ -75,10 +93,14 @@
   display: inline-flex;
   align-items: center;
   background: var(--bg-surface-subtle);
+  border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-pill);
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.06);
   padding: 0 4px;
-  border: none;
-  box-shadow: none;
+}
+
+[data-theme='dark'] .dates-header__stats-card {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
 }
 
 .dates-header__stat-pill {
@@ -111,8 +133,8 @@
 }
 
 .dates-header__stat-pill:active {
-  transform: scale(0.96);
-  opacity: 0.8;
+  transform: translateY(1px);
+  opacity: 0.85;
   transition: transform 100ms var(--ease-tactile);
 }
 
@@ -122,11 +144,12 @@
 }
 
 .dates-header__stat-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--border-subtle);
+  width: 0;
+  height: 20px;
+  border-left: 1.5px dashed var(--border-medium);
+  background: transparent;
   flex-shrink: 0;
-  margin: 0 2px;
+  margin: 0 4px;
 }
 
 .dates-header__stat-pill-icon {
@@ -156,29 +179,6 @@
   z-index: 1;
 }
 
-.dates-header__stat-bg-icon {
-  position: absolute;
-  top: 50%;
-  right: -2px;
-  transform: translateY(-50%) rotate(-6deg);
-  height: 105%;
-  width: auto;
-  min-width: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 0;
-  pointer-events: none;
-  filter: blur(2px);
-  opacity: 0.12;
-  color: var(--text-primary);
-  transition: opacity var(--duration-fast) ease;
-}
-
-.dates-header__stat-pill:hover .dates-header__stat-bg-icon {
-  opacity: 0.2;
-}
-
 /* Controls Bar: Year Filters & Sort */
 .dates-header__controls {
   display: flex;
@@ -199,6 +199,8 @@
   -webkit-overflow-scrolling: touch;
   flex: 1;
   min-width: 0;
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
 }
 
 .dates-header__years-scroll::-webkit-scrollbar {
@@ -215,10 +217,12 @@
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-pill);
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.06);
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: all var(--duration-fast) ease;
 }
 
@@ -228,7 +232,8 @@
 }
 
 .dates-header__year-pill:active {
-  transform: scale(0.93);
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 rgba(35, 31, 32, 0.06);
   transition: transform 100ms var(--ease-tactile);
 }
 
@@ -236,7 +241,15 @@
   color: #ffffff;
   background: var(--color-primary);
   border-color: var(--color-primary);
-  box-shadow: 0 2px 8px var(--color-primary-glow);
+  box-shadow: 0 2px 0 rgba(218, 0, 56, 0.25);
+}
+
+[data-theme='dark'] .dates-header__year-pill {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='dark'] .dates-header__year-pill:active {
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.35);
 }
 
 .dates-header__sort-btn {
@@ -250,11 +263,11 @@
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-pill);
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.06);
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
   transition: all var(--duration-fast) ease;
 }
 
@@ -264,7 +277,27 @@
 }
 
 .dates-header__sort-btn:active {
-  transform: scale(0.95);
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 rgba(35, 31, 32, 0.06);
+}
+
+[data-theme='dark'] .dates-header__sort-btn {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='dark'] .dates-header__sort-btn:active {
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 420px) {
+  .dates-header__controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .dates-header__sort-btn {
+    align-self: flex-end;
+  }
 }
 
 @media (max-width: 380px) {

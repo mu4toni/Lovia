@@ -1,6 +1,7 @@
 import React from 'react';
 import { WishlistTab } from '../../../types/wishlist';
 import { Avatar } from '../../../components/ui/Avatar/Avatar';
+import { SketchUnderline, SketchDoodle } from '../../../components/ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './WishlistHeader.css';
 
@@ -120,9 +121,13 @@ export const WishlistHeader: React.FC<WishlistHeaderProps> = ({
             <span className="wishlist-header__owner-badge">
               {isOwnList ? 'Ваш персональный список' : `Список ${partnerGenitive}`}
             </span>
-            <h1 className="wishlist-header__owner-title">
-              {isOwnList ? 'Мои желания' : `Мечты ${partnerGenitive}`}
-            </h1>
+            <div className="wishlist-header__title-row">
+              <h1 className="wishlist-header__owner-title">
+                {isOwnList ? 'Мои желания' : `Мечты ${partnerGenitive}`}
+              </h1>
+              <SketchDoodle type="star" size={13} className="wishlist-header__doodle-star" />
+            </div>
+            <SketchUnderline width={72} variant="wave" className="wishlist-header__title-underline" />
             <span className="wishlist-header__owner-count">
               {currentCount > 0
                 ? `${currentCount} ${countWord} в списке`

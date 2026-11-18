@@ -104,15 +104,13 @@ export const DeadlineSelector: React.FC<DeadlineSelectorProps> = ({
     } else {
       setIsDatePickerOpen(false);
       const d = new Date(today);
+      const t = currentTime || undefined;
       onChange({
         mode: 'today',
         date: d,
-        time: undefined,
-        dueLabel: 'Сегодня',
+        time: t,
+        dueLabel: buildLabel(d, t),
       });
-      if (onDueTimeChange) {
-        onDueTimeChange('');
-      }
     }
   };
 
@@ -149,7 +147,7 @@ export const DeadlineSelector: React.FC<DeadlineSelectorProps> = ({
     const d = value.date || new Date(today);
     const trimmedTime = newTime ? newTime.trim() : undefined;
     onChange({
-      mode: 'custom',
+      mode: value.mode === 'none' ? 'today' : value.mode,
       date: d,
       time: trimmedTime,
       dueLabel: buildLabel(d, trimmedTime),
@@ -158,13 +156,6 @@ export const DeadlineSelector: React.FC<DeadlineSelectorProps> = ({
       onDueTimeChange(trimmedTime || '');
     }
   };
-
-  // Button 2 label text: shows custom selected date or "Выбрать дату"
-  const customLabel = isCustom && value.date
-    ? (toYMD(value.date) === tomorrowYMD
-        ? 'Завтра'
-        : `${value.date.getDate()} ${MONTH_NAMES_GENITIVE_RU[value.date.getMonth()]}`)
-    : 'Выбрать дату';
 
   return (
     <div className="deadline-chips-selector">
@@ -215,11 +206,11 @@ export const DeadlineSelector: React.FC<DeadlineSelectorProps> = ({
           aria-expanded={isCustom}
         >
           <Icon name="calendar" size={14} className="deadline-chip__icon" />
-          <span>{customLabel}</span>
+          <span>Выбрать дату</span>
         </button>
       </div>
 
-      {/* DatePicker Dropdown + Time Selector (visible ONLY when 'Выбрать дату' is active) */}
+      {/* DatePicker Dropdown (visible ONLY when 'Выбрать дату' is active) */}
       {(isCustom || isDatePickerOpen) && (
         <div className="deadline-custom-wrap">
           <div className="deadline-datepicker-wrap">
@@ -231,46 +222,49 @@ export const DeadlineSelector: React.FC<DeadlineSelectorProps> = ({
               autoFocus
             />
           </div>
+        </div>
+      )}
 
-          {/* Time Selector directly inside custom date selection */}
-          <div className="deadline-time-block">
-            <div className="deadline-time-label-row">
-              <label className="deadline-time-label" htmlFor="deadline-due-time-input">
-                Точное время (необязательно)
-              </label>
-              {currentTime && (
+      {/* Time Selector directly after deadline chips (visible whenever a deadline is selected: 'Сегодня' or 'Выбрать дату') */}
+      {!isNone && (
+        <div className="deadline-time-block">
+          <div className="deadline-time-label-row">
+            <label className="deadline-time-label" htmlFor="deadline-due-time-input">
+              <Icon name="clock" size={13} className="deadline-time-icon" />
+              <span>Время (необязательно)</span>
+            </label>
+            {currentTime && (
+              <button
+                type="button"
+                className="deadline-time-clear-btn"
+                onClick={() => handleTimeChange('')}
+              >
+                Сбросить время
+              </button>
+            )}
+          </div>
+
+          <div className="deadline-time-row create-time-row">
+            <input
+              id="deadline-due-time-input"
+              type="time"
+              value={currentTime}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              className="deadline-time-input create-time-input"
+            />
+            <div className="deadline-time-presets create-time-presets">
+              {['10:00', '14:00', '19:00', '21:00'].map((preset) => (
                 <button
+                  key={preset}
                   type="button"
-                  className="deadline-time-clear-btn"
-                  onClick={() => handleTimeChange('')}
+                  onClick={() => handleTimeChange(currentTime === preset ? '' : preset)}
+                  className={`deadline-time-preset create-time-preset ${
+                    currentTime === preset ? 'create-time-preset--active deadline-time-preset--active' : ''
+                  }`}
                 >
-                  Сбросить время
+                  {preset}
                 </button>
-              )}
-            </div>
-
-            <div className="deadline-time-row create-time-row">
-              <input
-                id="deadline-due-time-input"
-                type="time"
-                value={currentTime}
-                onChange={(e) => handleTimeChange(e.target.value)}
-                className="deadline-time-input create-time-input"
-              />
-              <div className="deadline-time-presets create-time-presets">
-                {['10:00', '14:00', '19:00', '21:00'].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => handleTimeChange(currentTime === preset ? '' : preset)}
-                    className={`deadline-time-preset create-time-preset ${
-                      currentTime === preset ? 'create-time-preset--active deadline-time-preset--active' : ''
-                    }`}
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>

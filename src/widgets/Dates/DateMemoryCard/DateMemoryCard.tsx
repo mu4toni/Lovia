@@ -106,7 +106,7 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
         </div>
       ) : (
         <div className="date-memory-card__stat-bg-icon" aria-hidden="true">
-          <Icon name="calendar" size={100} />
+          <Icon name="calendar" size={52} strokeWidth={1.5} />
         </div>
       )}
 

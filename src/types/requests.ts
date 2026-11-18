@@ -13,6 +13,7 @@ export interface CoupleReminder {
   dueDate: string; // ISO date string or ''
   dueLabel: string; // 'Несрочно', '14 ноября', '14 ноября · 19:00'
   dueTime?: string; // '19:00'
+  remindBeforeMinutes?: number; // 15, 30, 60 (default), 180, 1440
   urgency: UrgencyLevel; // 'low' | 'medium' | 'high'
   categoryId?: string; // ID of user-created category, or undefined if no category
   categoryName?: string; // Cached category name for display
@@ -37,6 +38,7 @@ export interface CreateReminderInput {
   dueDate: string;
   dueLabel: string;
   dueTime?: string;
+  remindBeforeMinutes?: number;
   urgency: UrgencyLevel;
   categoryId?: string;
   categoryName?: string;

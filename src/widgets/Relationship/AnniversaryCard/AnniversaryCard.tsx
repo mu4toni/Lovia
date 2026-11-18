@@ -6,6 +6,7 @@ import { AnniversaryProgressBar } from '../../../components/ui/AnniversaryProgre
 import { RelationshipMilestonesModal } from '../../../components/relationship/RelationshipMilestonesModal';
 import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
+import { SketchUnderline, SketchDoodle } from '../../../components/ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './AnniversaryCard.css';
 
@@ -104,6 +105,7 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
                 ? `${yearsTogether} ${yearsLabel} крепкой дружбы`
                 : `${yearsTogether} ${yearsLabel} вместе`}
             </h3>
+            <SketchUnderline width={90} variant="wave" className="anniversary-showcase__title-underline" />
           </div>
 
           <div className="anniversary-showcase__header-side">
@@ -142,6 +144,7 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
           <div className="anniversary-showcase__date-chip">
             <Icon name="calendar" size={13} className="date-chip-icon" />
             <span>{formattedAnniversaryDate}</span>
+            <SketchDoodle type="heart" size={11} className="anniversary-date-heart" />
           </div>
           <div className="anniversary-showcase__footer-right">
             <span className="anniversary-showcase__hint">

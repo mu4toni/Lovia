@@ -84,34 +84,62 @@
   pointer-events: none;
 }
 
-/* Dropdown Calendar Popover */
-.date-picker__dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  width: 100%;
-  min-width: 290px;
-  max-width: 360px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.16);
-  padding: 14px;
-  z-index: 1050;
+/* Dropdown Calendar Modal & Overlay */
+.date-picker__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: datePickerDropdownIn 0.18s ease-out;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: datePickerOverlayIn 0.2s ease-out;
 }
 
-@keyframes datePickerDropdownIn {
+@keyframes datePickerOverlayIn {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+  }
+}
+
+.date-picker__modal,
+.date-picker__dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 328px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: 20px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 16px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100001;
+  animation: datePickerModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='dark'] .date-picker__modal,
+[data-theme='dark'] .date-picker__dropdown {
+  background: #1f1f22 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes datePickerModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
@@ -206,22 +234,27 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  justify-items: center;
 }
 
 .date-picker__cell--blank {
-  min-height: 38px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
 }
 
 .date-picker__day-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   color: var(--text-primary);
   font-family: inherit;
   font-size: 13px;

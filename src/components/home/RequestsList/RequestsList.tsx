@@ -3,6 +3,7 @@ import { CoupleReminder, RequestFilterTab } from '../../../types';
 import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
 import { EmptyState } from '../../ui/EmptyState/EmptyState';
 import { Icon } from '../../ui/Icon/Icon';
+import { SketchDoodle } from '../../ui/SketchDecor/SketchDecor';
 import { getCardColorStyles } from '../../../utils/colorContrast';
 import { getContrastColor } from '../../../utils/categories';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
@@ -98,6 +99,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
           <div className="requests-section__title-row">
             <Icon name="bell" size={18} className="requests-section__title-icon" />
             <h2 className="requests-section__title">Напоминания</h2>
+            <SketchDoodle type="heart" size={13} className="requests-section__doodle-heart" />
           </div>
         </div>
       </div>

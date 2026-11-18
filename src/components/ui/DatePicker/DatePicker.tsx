@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useId, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../Icon/Icon';
 import {
   formatRussianDate,
@@ -58,6 +59,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const generatedId = useId();
   const inputId = id || generatedId;
   const containerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -94,7 +96,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     if (!isOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        modalRef.current &&
+        !modalRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -275,146 +283,155 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         </span>
       </button>
 
-      {/* Calendar Dropdown Panel */}
-      {isOpen && (
+      {/* Calendar Dropdown Modal Portal */}
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="date-picker__dropdown"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Календарь для выбора даты"
+          className="date-picker__overlay"
+          onClick={() => setIsOpen(false)}
+          role="presentation"
         >
-          {/* Header: Month/Year Dropdown Selectors and Navigation Arrows */}
-          <div className="date-picker__header">
-            <button
-              type="button"
-              className="date-picker__nav-btn"
-              onClick={handlePrevMonth}
-              title="Предыдущий месяц"
-              aria-label="Предыдущий месяц"
-            >
-              <Icon name="chevron-left" size={16} />
-            </button>
-
-            <div className="date-picker__selectors">
-              {/* Month Select */}
-              <select
-                className="date-picker__select date-picker__select--month"
-                value={viewMonth}
-                onChange={(e) => setViewMonth(Number(e.target.value))}
-                aria-label="Выбор месяца"
+          <div
+            ref={modalRef}
+            className="date-picker__modal date-picker__dropdown"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Календарь для выбора даты"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Month/Year Dropdown Selectors and Navigation Arrows */}
+            <div className="date-picker__header">
+              <button
+                type="button"
+                className="date-picker__nav-btn"
+                onClick={handlePrevMonth}
+                title="Предыдущий месяц"
+                aria-label="Предыдущий месяц"
               >
-                {MONTH_NAMES_FULL.map((name, idx) => (
-                  <option key={idx} value={idx}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+                <Icon name="chevron-left" size={16} />
+              </button>
 
-              {/* Year Select */}
-              <select
-                className="date-picker__select date-picker__select--year"
-                value={viewYear}
-                onChange={(e) => setViewYear(Number(e.target.value))}
-                aria-label="Выбор года"
-              >
-                {availableYears.map((yr) => (
-                  <option key={yr} value={yr}>
-                    {yr}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              className="date-picker__nav-btn"
-              onClick={handleNextMonth}
-              title="Следующий месяц"
-              aria-label="Следующий месяц"
-            >
-              <Icon name="chevron-right" size={16} />
-            </button>
-          </div>
-
-          {/* Weekday Names Header */}
-          <div className="date-picker__weekdays" aria-hidden="true">
-            {WEEKDAYS_SHORT.map((wd) => (
-              <span key={wd} className="date-picker__weekday">
-                {wd}
-              </span>
-            ))}
-          </div>
-
-          {/* Days Grid */}
-          <div className="date-picker__grid" role="grid" aria-label="Сетка дней">
-            {calendarCells.map((cell, idx) => {
-              if (cell.type === 'blank') {
-                return (
-                  <div
-                    key={`blank-${idx}`}
-                    className="date-picker__cell date-picker__cell--blank"
-                    aria-hidden="true"
-                  />
-                );
-              }
-
-              const { day, dateStr, isSelected, isToday, isDisabled } = cell;
-
-              return (
-                <button
-                  key={dateStr}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => day && handleSelectDay(day)}
-                  className={`date-picker__day-btn ${
-                    isSelected ? 'date-picker__day-btn--selected' : ''
-                  } ${isToday && !isSelected ? 'date-picker__day-btn--today' : ''} ${
-                    isDisabled ? 'date-picker__day-btn--disabled' : ''
-                  }`}
-                  aria-pressed={isSelected}
-                  aria-disabled={isDisabled}
-                  aria-label={`${day} ${MONTH_NAMES_FULL[viewMonth]} ${viewYear}${
-                    isToday ? ', сегодня' : ''
-                  }${isSelected ? ', выбрано' : ''}${isDisabled ? ', недоступно' : ''}`}
+              <div className="date-picker__selectors">
+                {/* Month Select */}
+                <select
+                  className="date-picker__select date-picker__select--month"
+                  value={viewMonth}
+                  onChange={(e) => setViewMonth(Number(e.target.value))}
+                  aria-label="Выбор месяца"
                 >
-                  <span className="date-picker__day-number">{day}</span>
-                </button>
-              );
-            })}
-          </div>
+                  {MONTH_NAMES_FULL.map((name, idx) => (
+                    <option key={idx} value={idx}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
 
-          {/* Quick Presets Footer */}
-          <div className="date-picker__footer">
-            <div className="date-picker__quick-actions">
+                {/* Year Select */}
+                <select
+                  className="date-picker__select date-picker__select--year"
+                  value={viewYear}
+                  onChange={(e) => setViewYear(Number(e.target.value))}
+                  aria-label="Выбор года"
+                >
+                  {availableYears.map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <button
                 type="button"
-                className="date-picker__quick-btn"
-                onClick={handleSelectYesterday}
-                disabled={isDateDisabled(
-                  new Date(Date.now() - 86400000).toISOString().split('T')[0]
-                )}
+                className="date-picker__nav-btn"
+                onClick={handleNextMonth}
+                title="Следующий месяц"
+                aria-label="Следующий месяц"
               >
-                Вчера
-              </button>
-              <button
-                type="button"
-                className="date-picker__quick-btn"
-                onClick={handleSelectToday}
-                disabled={isDateDisabled(getTodayDateString())}
-              >
-                Сегодня
+                <Icon name="chevron-right" size={16} />
               </button>
             </div>
 
-            <button
-              type="button"
-              className="date-picker__close-btn"
-              onClick={() => setIsOpen(false)}
-            >
-              Закрыть
-            </button>
+            {/* Weekday Names Header */}
+            <div className="date-picker__weekdays" aria-hidden="true">
+              {WEEKDAYS_SHORT.map((wd) => (
+                <span key={wd} className="date-picker__weekday">
+                  {wd}
+                </span>
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="date-picker__grid" role="grid" aria-label="Сетка дней">
+              {calendarCells.map((cell, idx) => {
+                if (cell.type === 'blank') {
+                  return (
+                    <div
+                      key={`blank-${idx}`}
+                      className="date-picker__cell date-picker__cell--blank"
+                      aria-hidden="true"
+                    />
+                  );
+                }
+
+                const { day, dateStr, isSelected, isToday, isDisabled } = cell;
+
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => day && handleSelectDay(day)}
+                    className={`date-picker__day-btn ${
+                      isSelected ? 'date-picker__day-btn--selected' : ''
+                    } ${isToday && !isSelected ? 'date-picker__day-btn--today' : ''} ${
+                      isDisabled ? 'date-picker__day-btn--disabled' : ''
+                    }`}
+                    aria-pressed={isSelected}
+                    aria-disabled={isDisabled}
+                    aria-label={`${day} ${MONTH_NAMES_FULL[viewMonth]} ${viewYear}${
+                      isToday ? ', сегодня' : ''
+                    }${isSelected ? ', выбрано' : ''}${isDisabled ? ', недоступно' : ''}`}
+                  >
+                    <span className="date-picker__day-number">{day}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Presets Footer */}
+            <div className="date-picker__footer">
+              <div className="date-picker__quick-actions">
+                <button
+                  type="button"
+                  className="date-picker__quick-btn"
+                  onClick={handleSelectYesterday}
+                  disabled={isDateDisabled(
+                    new Date(Date.now() - 86400000).toISOString().split('T')[0]
+                  )}
+                >
+                  Вчера
+                </button>
+                <button
+                  type="button"
+                  className="date-picker__quick-btn"
+                  onClick={handleSelectToday}
+                  disabled={isDateDisabled(getTodayDateString())}
+                >
+                  Сегодня
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="date-picker__close-btn"
+                onClick={() => setIsOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {error && (

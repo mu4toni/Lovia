@@ -11,11 +11,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   color-scheme: light dark;
   overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -28,6 +34,7 @@ body {
   min-height: 100dvh;
   min-height: var(--tg-viewport-stable-height, 100dvh);
   overflow-x: clip;
+  overscroll-behavior-y: none;
   width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

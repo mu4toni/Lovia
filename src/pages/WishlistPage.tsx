@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useWishlist } from '../hooks/useWishlist';
 import { useSpaceMode } from '../hooks/useSpaceMode';
 import { WishlistHeader, WishlistGrid } from '../widgets/Wishlist';
-import { CreateEditWishModal, DeleteWishConfirmDialog } from '../features/wishlist';
+import { CreateEditWishModal, DeleteWishConfirmDialog, WishDetailModal } from '../features/wishlist';
 import { Skeleton } from '../components/ui/Loading/Skeleton';
 import { BottomActionButton } from '../components/ui/BottomActionButton/BottomActionButton';
 import { useToast } from '../components/ui/Toast/ToastContext';
@@ -32,6 +33,7 @@ export function WishlistPage() {
     handleToggleReserve,
   } = useWishlist();
 
+  const [selectedWishForDetail, setSelectedWishForDetail] = useState<WishItem | null>(null);
   const { showToast } = useToast();
 
   const userName = profile?.user.name || 'Марсель';
@@ -174,6 +176,7 @@ export function WishlistPage() {
             onDelete={(item: WishItem) => setDeletingWish(item)}
             onToggleReserve={onToggleReserveWithToast}
             onRemindPartner={handleRemindPartner}
+            onItemClick={(item: WishItem) => setSelectedWishForDetail(item)}
           />
 
           {/* Single Dedicated Floating Add Wish Button */}
@@ -217,6 +220,30 @@ export function WishlistPage() {
           onClose={() => setDeletingWish(null)}
           wishTitle={deletingWish.title}
           onConfirm={onDeleteConfirm}
+        />
+      )}
+
+      {/* 7. Wish Detail Modal */}
+      {selectedWishForDetail && (
+        <WishDetailModal
+          isOpen={Boolean(selectedWishForDetail)}
+          onClose={() => setSelectedWishForDetail(null)}
+          item={selectedWishForDetail}
+          isOwnList={isOwnList}
+          onEdit={(item) => {
+            setSelectedWishForDetail(null);
+            setEditingWish(item);
+          }}
+          onDelete={(item) => {
+            setSelectedWishForDetail(null);
+            setDeletingWish(item);
+          }}
+          onToggleReserve={async (id) => {
+            await onToggleReserveWithToast(id);
+            setSelectedWishForDetail((prev) =>
+              prev && prev.id === id ? { ...prev, isReserved: !prev.isReserved } : prev
+            );
+          }}
         />
       )}
     </div>

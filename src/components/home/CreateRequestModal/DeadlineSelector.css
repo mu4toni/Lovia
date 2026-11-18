@@ -86,7 +86,8 @@
   padding: 0 14px;
   border-radius: var(--radius-md, 12px);
   background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.06);
   color: var(--text-secondary);
   font-size: 13.5px;
   font-weight: 500;
@@ -105,7 +106,8 @@
 }
 
 .deadline-chip:active {
-  transform: scale(0.97);
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 rgba(35, 31, 32, 0.08);
 }
 
 /* Active chip — Light Theme: light card bg, ruby border & shadow, clear dark text */
@@ -114,13 +116,14 @@
   border-color: var(--color-primary, #da0038);
   color: var(--text-primary);
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(218, 0, 56, 0.16), 0 0 0 1px var(--color-primary, #da0038);
+  box-shadow: 0 2px 0 rgba(218, 0, 56, 0.3), 0 0 0 1px var(--color-primary, #da0038);
 }
 
 /* Active chip — Dark Theme: dark elevated surface, ruby border, clean white text */
 [data-theme='dark'] .deadline-chip {
   background: var(--bg-surface-subtle);
   border-color: var(--border-subtle);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
   color: var(--text-secondary);
 }
 
@@ -130,12 +133,17 @@
   color: var(--text-primary);
 }
 
+[data-theme='dark'] .deadline-chip:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.45);
+}
+
 [data-theme='dark'] .deadline-chip--active {
   background: #262626;
   border-color: var(--color-primary, #da0038);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 0 0 1px var(--color-primary, #da0038);
+  box-shadow: 0 2px 0 rgba(218, 0, 56, 0.4), 0 0 0 1px var(--color-primary, #da0038);
 }
 
 .deadline-chip__icon {
@@ -152,7 +160,7 @@
   padding: 12px;
   border-radius: var(--radius-md, 12px);
   background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px dashed var(--border-subtle);
   animation: fadeInDown 0.18s ease-out;
 }
 
@@ -170,7 +178,7 @@
   flex-direction: column;
   gap: 6px;
   padding-top: 8px;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1.5px dashed var(--border-subtle);
 }
 
 .deadline-time-label-row {
@@ -181,9 +189,17 @@
 }
 
 .deadline-time-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+.deadline-time-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 .deadline-time-clear-btn {
@@ -216,7 +232,7 @@
   height: 38px;
   padding: 0 10px;
   border-radius: var(--radius-md, 12px);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
   background: #ffffff;
   color: var(--text-primary);
   font-size: 13px;
@@ -224,12 +240,14 @@
   outline: none;
   box-sizing: border-box;
   flex-shrink: 0;
-  transition: border-color var(--duration-fast, 150ms) ease;
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.05);
+  transition: border-color var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease;
 }
 
 [data-theme='dark'] .deadline-time-input {
   background: #262626;
   border-color: var(--border-subtle);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
   color: #ffffff;
 }
 
@@ -254,7 +272,8 @@
   padding: 0 12px;
   border-radius: var(--radius-md, 12px);
   background: #ffffff;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.05);
   color: var(--text-secondary);
   font-size: 12.5px;
   font-weight: 500;
@@ -269,16 +288,23 @@
   color: var(--text-primary);
 }
 
+.deadline-time-preset:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 rgba(35, 31, 32, 0.06);
+}
+
 .deadline-time-preset--active {
   background: var(--color-primary, #da0038) !important;
   border-color: var(--color-primary, #da0038) !important;
   color: #ffffff !important;
   font-weight: 600;
+  box-shadow: 0 2px 0 rgba(218, 0, 56, 0.35) !important;
 }
 
 [data-theme='dark'] .deadline-time-preset {
   background: #262626;
   border-color: var(--border-subtle);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
   color: var(--text-secondary);
 }
 
@@ -287,10 +313,16 @@
   color: var(--text-primary);
 }
 
+[data-theme='dark'] .deadline-time-preset:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.45);
+}
+
 [data-theme='dark'] .deadline-time-preset--active {
   background: var(--color-primary, #da0038) !important;
   border-color: var(--color-primary, #da0038) !important;
   color: #ffffff !important;
+  box-shadow: 0 2px 0 rgba(218, 0, 56, 0.45) !important;
 }
 
 .deadline-datepicker-wrap {

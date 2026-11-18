@@ -29,19 +29,19 @@
 .glass-card--glass,
 .glass-card--solid {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
 }
 
 /* Subtle Accent Highlight Card (Warm cream/sand with delicate ruby border) */
 .glass-card--highlight {
   background: var(--bg-surface-accent);
-  border: 1px solid rgba(200, 54, 73, 0.18);
+  border: 1.5px solid rgba(200, 54, 73, 0.18);
   box-shadow: var(--shadow-sm);
 }
 
 [data-theme='dark'] .glass-card--highlight {
   background: var(--bg-surface-accent);
-  border: 1px solid rgba(216, 71, 92, 0.28);
+  border: 1.5px solid rgba(216, 71, 92, 0.28);
 }
 
 /* Interactive Card */

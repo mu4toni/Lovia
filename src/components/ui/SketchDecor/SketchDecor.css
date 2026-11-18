@@ -1,0 +1,47 @@
+/* ==========================================================================
+   LOVIA — Hand-drawn / Sketch Vector Decor & Tactile Dividers
+   Organic diary flourishes, pen doodles, and dashed dividers
+   ========================================================================== */
+
+.sketch-underline {
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.85;
+  color: var(--color-primary, #da0038);
+}
+
+.sketch-doodle {
+  display: inline-block;
+  vertical-align: middle;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  flex-shrink: 0;
+  color: var(--color-primary, #da0038);
+}
+
+.sketch-doodle--heart {
+  color: var(--color-primary, #da0038);
+}
+
+.sketch-doodle--star,
+.sketch-doodle--sparkle {
+  color: var(--color-accent-rose, #e3a3b4);
+}
+
+[data-theme='dark'] .sketch-doodle--star,
+[data-theme='dark'] .sketch-doodle--sparkle {
+  color: var(--color-accent-rose, #e3a3b4);
+}
+
+/* Tactile Notebook Dashed Divider */
+.sketch-divider {
+  width: 100%;
+  height: 0;
+  border: none;
+  border-top: 1.5px dashed var(--border-subtle);
+  margin: var(--space-sm, 12px) 0;
+  opacity: 0.85;
+}

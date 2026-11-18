@@ -23,3 +23,4 @@ export * from './FireworksOverlay/FireworksOverlay';
 export * from './Mascot/Mascot';
 export * from './PageSkeleton/PageSkeleton';
 export * from './SubscriptionGate/SubscriptionGate';
+export * from './SketchDecor/SketchDecor';

@@ -35,7 +35,7 @@
 }
 
 .dates-empty-state__icon-box {
-  width: auto;
+  width: auto; /* width: 50px */
   min-height: 50px;
   background: transparent !important;
   border: none !important;

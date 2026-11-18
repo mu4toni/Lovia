@@ -16,6 +16,7 @@ export interface WishlistGridProps {
   onDelete: (item: WishItem) => void;
   onToggleReserve?: (id: string) => void;
   onRemindPartner?: () => void;
+  onItemClick?: (item: WishItem) => void;
   className?: string;
 }
 
@@ -28,6 +29,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
   onDelete,
   onToggleReserve,
   onRemindPartner,
+  onItemClick,
   className = '',
 }) => {
   const { isFriendship } = useSpaceMode();
@@ -95,6 +97,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
           onEdit={onEdit}
           onDelete={onDelete}
           onToggleReserve={onToggleReserve}
+          onClick={onItemClick}
         />
       ))}
     </div>

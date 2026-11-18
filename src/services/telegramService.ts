@@ -80,6 +80,8 @@ export interface TelegramWebApp {
   ready(): void;
   expand(): void;
   close(): void;
+  disableVerticalSwipes?: () => void;
+  enableVerticalSwipes?: () => void;
   enableClosingConfirmation(): void;
   disableClosingConfirmation(): void;
   setHeaderColor(color: string): void;
@@ -149,6 +151,9 @@ class TelegramService {
     try {
       tg.ready();
       tg.expand();
+      if (typeof tg.disableVerticalSwipes === 'function') {
+        tg.disableVerticalSwipes();
+      }
       if (typeof tg.enableClosingConfirmation === 'function') {
         tg.enableClosingConfirmation();
       }
@@ -364,6 +369,34 @@ class TelegramService {
     }
     if (typeof window !== 'undefined') {
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  /**
+   * Запретить сворачивание Mini App при свайпе вниз (для модалок и кастомных жестов)
+   */
+  disableVerticalSwipes(): void {
+    const tg = this.webApp;
+    if (tg && typeof tg.disableVerticalSwipes === 'function') {
+      try {
+        tg.disableVerticalSwipes();
+      } catch (e) {
+        console.warn('[TelegramService] disableVerticalSwipes error:', e);
+      }
+    }
+  }
+
+  /**
+   * Разрешить сворачивание Mini App при свайпе вниз
+   */
+  enableVerticalSwipes(): void {
+    const tg = this.webApp;
+    if (tg && typeof tg.enableVerticalSwipes === 'function') {
+      try {
+        tg.enableVerticalSwipes();
+      } catch (e) {
+        console.warn('[TelegramService] enableVerticalSwipes error:', e);
+      }
     }
   }
 }

@@ -27,6 +27,7 @@ interface ReminderRecord {
   status: string;
   due_date?: string | null;
   due_time?: string | null;
+  remind_before_minutes?: number | null;
 }
 
 interface MemorableDateRecord {
@@ -288,15 +289,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const eventUtcMs = Date.UTC(eventYear, eventMonth - 1, eventDay, eventHour, eventMinute, 0) - userOffsetMin * 60 * 1000;
         const diffMinutes = (eventUtcMs - nowMs) / (60 * 1000);
 
-        // Если до наступления события осталось от 0 до 65 минут (окно за 1 час)
-        if (diffMinutes > 0 && diffMinutes <= 65) {
-          const logId = `rem1h_${reminder.id}_${user.id}_${dateStr}_${timeStr}`;
+        const remindBefore =
+          typeof reminder.remind_before_minutes === 'number' && reminder.remind_before_minutes > 0
+            ? reminder.remind_before_minutes
+            : 60;
+
+        // Если до наступления события осталось от 0 до (remindBefore + 10) минут
+        if (diffMinutes > 0 && diffMinutes <= remindBefore + 10) {
+          const logId = `rem_${remindBefore}m_${reminder.id}_${user.id}_${dateStr}_${timeStr}`;
 
           if (sentLogIds.has(logId)) {
             continue; // Уже отправлено строго 1 раз
           }
 
-          const messageText = `⏰ Через час: «<b>${reminder.title}</b>» (${timeStr})`;
+          let whenText = `Через ${remindBefore} мин`;
+          if (remindBefore === 15) whenText = 'Через 15 минут';
+          else if (remindBefore === 30) whenText = 'Через 30 минут';
+          else if (remindBefore === 60) whenText = 'Через час';
+          else if (remindBefore === 180) whenText = 'Через 3 часа';
+          else if (remindBefore === 1440) whenText = 'Завтра';
+
+          const messageText = `⏰ ${whenText}: «<b>${reminder.title}</b>» (${timeStr})`;
           const sendResult = await sendTelegramMessage(user.telegram_id, messageText, appUrl, botToken);
 
           if (sendResult.ok) {
@@ -306,9 +319,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               id: logId,
               user_id: user.id,
               couple_id: couple.id,
-              notification_type: 'reminder_1h',
+              notification_type: `reminder_${remindBefore}m`,
               sent_at: new Date().toISOString(),
-              payload: { reminder_id: reminder.id, title: reminder.title, due_date: dateStr, due_time: timeStr },
+              payload: {
+                reminder_id: reminder.id,
+                title: reminder.title,
+                due_date: dateStr,
+                due_time: timeStr,
+                remind_before_minutes: remindBefore,
+              },
             });
           } else {
             stats.errors.push(`Reminder error (${user.id}): ${sendResult.description}`);
