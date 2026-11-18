@@ -173,13 +173,13 @@ class ProfileService {
     };
   }
 
-  updateUserName(name: string): void {
-    coupleService.updateActiveUserProfile({ name });
+  async updateUserName(name: string): Promise<void> {
+    await coupleService.updateActiveUserProfile({ name });
     this.notify();
   }
 
-  updateUserAvatar(avatarUrl: string): void {
-    coupleService.updateActiveUserProfile({ avatarUrl });
+  async updateUserAvatar(avatarUrl: string): Promise<void> {
+    await coupleService.updateActiveUserProfile({ avatarUrl });
     this.notify();
   }
 

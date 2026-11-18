@@ -156,6 +156,12 @@ class RelationshipService {
     }
 
     const couple = coupleService.getCurrentCouple();
+    if (couple) {
+      couple.startDate = newDate;
+      if (couple.id && couple.id !== 'couple-1') {
+        updateSwrCache(couple.id, 'couple', couple);
+      }
+    }
     if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
       callServerDb('update_start_date', { coupleId: couple.id, startDate: newDate }).catch((e) => {
         console.warn('[relationshipService] update_start_date error via /api/db:', e);

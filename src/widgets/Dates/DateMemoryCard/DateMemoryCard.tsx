@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DateMemory } from '../../../types/dates';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatRussianDate } from '../../../utils/dateCalculations';
+import { normalizeMediaUrl } from '../../../utils/media';
 import './DateMemoryCard.css';
 
 export interface DateMemoryCardProps {
@@ -75,7 +76,7 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
       {hasPhotos && photos && photos.length > 0 ? (
         <div className="date-memory-card__hero-photo-wrap">
           <img
-            src={photos[0]}
+            src={normalizeMediaUrl(photos[0])}
             alt={`${title} - фото`}
             className="date-memory-card__hero-img date-memory-card__photo-img"
             loading="lazy"

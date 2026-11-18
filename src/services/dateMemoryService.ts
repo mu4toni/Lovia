@@ -124,8 +124,10 @@ async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<str
         type: 'date_photo',
       });
       if (res?.publicUrl) return res.publicUrl;
-    } catch (e) {
+      throw new Error('Сервер не вернул URL фото');
+    } catch (e: any) {
       console.warn('[dateMemoryService] upload_media error via /api/db:', e);
+      throw new Error('Не удалось загрузить фото: ' + (e.message || 'ошибка сети'));
     }
   }
 

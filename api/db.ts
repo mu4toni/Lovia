@@ -435,8 +435,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: updatedUser, error } = await supabase
         .from('users')
-        .update(patch)
-        .eq('id', actorId)
+        .upsert(
+          {
+            id: actorId,
+            telegram_id: tgUser?.id ? Number(tgUser.id) : null,
+            ...patch,
+          },
+          { onConflict: 'id' }
+        )
         .select()
         .maybeSingle();
 
@@ -1142,10 +1148,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const { data: urlData } = supabase.storage.from(targetBucket).getPublicUrl(filePath);
+      const proxiedUrl = `/supabase-proxy/storage/v1/object/public/${targetBucket}/${filePath}`;
       return res.status(200).json({
         ok: true,
         data: {
-          publicUrl: urlData?.publicUrl || '',
+          publicUrl: proxiedUrl,
+          directUrl: urlData?.publicUrl || '',
         },
       });
     }

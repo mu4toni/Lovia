@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { WishItem } from '../../../types/wishlist';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { WishCardButton } from './WishCardButton';
+import { normalizeMediaUrl } from '../../../utils/media';
 import './WishCard.css';
 
 export interface WishCardProps {
@@ -57,7 +58,7 @@ export const WishCard: React.FC<WishCardProps> = ({
       <div className="wish-card__media">
         {item.imageUrl && !imageError ? (
           <img
-            src={item.imageUrl}
+            src={normalizeMediaUrl(item.imageUrl)}
             alt={item.title}
             className="wish-card__image"
             loading="lazy"

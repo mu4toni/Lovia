@@ -13,8 +13,8 @@ export interface ProfileHeaderProps {
   user: UserProfileData;
   partnerName?: string;
   isPartnerConnected: boolean;
-  onUpdateName: (newName: string) => void;
-  onUpdateAvatar: (newAvatarUrl: string) => void;
+  onUpdateName: (newName: string) => void | Promise<void>;
+  onUpdateAvatar: (newAvatarUrl: string) => void | Promise<void>;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -32,13 +32,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSaveInlineName = (e: React.FormEvent) => {
+  const handleSaveInlineName = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = nameInput.trim();
     if (clean) {
-      onUpdateName(clean);
       setIsEditingInline(false);
       telegramService.hapticImpact('light');
+      await onUpdateName(clean);
     }
   };
 
@@ -229,10 +229,10 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             setIsCropModalOpen(false);
             setRawImageForCrop(null);
           }}
-          onCropComplete={(croppedDataUrl) => {
-            onUpdateAvatar(croppedDataUrl);
+          onCropComplete={async (croppedDataUrl) => {
             setIsCropModalOpen(false);
             setRawImageForCrop(null);
+            await onUpdateAvatar(croppedDataUrl);
           }}
         />
       )}

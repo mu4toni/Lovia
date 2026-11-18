@@ -573,7 +573,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (newLogsToInsert.length > 0) {
       const { error: insertError } = await supabase
         .from('notification_logs')
-        .insert(newLogsToInsert);
+        .upsert(newLogsToInsert, { onConflict: 'id', ignoreDuplicates: true });
 
       if (insertError) {
         console.error('[cron/notifications] Failed to insert notification logs:', insertError);

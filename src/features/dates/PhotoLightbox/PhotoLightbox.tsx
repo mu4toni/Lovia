@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../../../components/ui/Icon/Icon';
+import { normalizeMediaUrl } from '../../../utils/media';
 import './PhotoLightbox.css';
 
 export interface PhotoLightboxProps {
@@ -79,7 +80,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         )}
 
         <img
-          src={currentPhoto}
+          src={normalizeMediaUrl(currentPhoto)}
           alt={`Фотография ${currentIndex + 1} из ${photos.length}`}
           className="photo-lightbox-image"
         />

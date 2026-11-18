@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button/Button';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { PlaceCard } from '../PlaceCard/PlaceCard';
 import { formatRussianDate } from '../../../utils/dateCalculations';
+import { normalizeMediaUrl } from '../../../utils/media';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DateMemoryDetailModal.css';
 
@@ -65,7 +66,7 @@ export const DateMemoryDetailModal: React.FC<DateMemoryDetailModalProps> = ({
               aria-label={`Фотография ${currentPhotoIndex + 1} из ${photos.length}. Нажмите для полноэкранного просмотра`}
             >
               <img
-                src={photos[currentPhotoIndex]}
+                src={normalizeMediaUrl(photos[currentPhotoIndex])}
                 alt={`${title} - фото ${currentPhotoIndex + 1}`}
                 className="date-memory-detail__hero-photo"
                 loading="eager"
@@ -125,7 +126,7 @@ export const DateMemoryDetailModal: React.FC<DateMemoryDetailModalProps> = ({
                     aria-label={`Выбрать фото ${idx + 1}`}
                   >
                     <img
-                      src={photoUrl}
+                      src={normalizeMediaUrl(photoUrl)}
                       alt=""
                       className="date-memory-detail__gallery-img"
                       loading="lazy"

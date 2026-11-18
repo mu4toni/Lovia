@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { WishItem } from '../../../types/wishlist';
 import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
+import { normalizeMediaUrl } from '../../../utils/media';
 import './WishDetailModal.css';
 
 export interface WishDetailModalProps {
@@ -51,7 +52,7 @@ export const WishDetailModal: React.FC<WishDetailModalProps> = ({
         <div className="wish-detail-modal__media">
           {item.imageUrl && !imageError ? (
             <img
-              src={item.imageUrl}
+              src={normalizeMediaUrl(item.imageUrl)}
               alt={item.title}
               className="wish-detail-modal__image"
               onError={() => setImageError(true)}

@@ -343,19 +343,21 @@ class RemindersService {
       this.saveLocal();
       this.notify();
 
-      callServerDb<any>('reminders_create', {
-        id: reminderId,
-        couple_id: couple.id,
-        title: input.title.trim(),
-        description: input.description?.trim(),
-        for_user_id: input.targetId,
-        due_date: input.dueDate || null,
-        due_time: input.dueTime || null,
-        remind_before_minutes: input.remindBeforeMinutes ?? 60,
-        priority: input.urgency || 'medium',
-        category_id: input.categoryId || input.category || null,
-        reward_note: input.rewardNote?.trim() || null,
-      }).then((serverRow) => {
+      try {
+        const serverRow = await callServerDb<any>('reminders_create', {
+          id: reminderId,
+          couple_id: couple.id,
+          title: input.title.trim(),
+          description: input.description?.trim(),
+          for_user_id: input.targetId,
+          due_date: input.dueDate || null,
+          due_time: input.dueTime || null,
+          remind_before_minutes: input.remindBeforeMinutes ?? 60,
+          priority: input.urgency || 'medium',
+          category_id: input.categoryId || input.category || null,
+          reward_note: input.rewardNote?.trim() || null,
+        });
+
         if (serverRow) {
           const updated = this.mapReminderRow(serverRow, couple);
           const idx = this.reminders.findIndex((r) => r.id === reminderId);
@@ -364,12 +366,13 @@ class RemindersService {
             this.saveLocal();
           }
         }
-      }).catch((err) => {
+      } catch (err) {
         console.error('[requestsService] Failed to create reminder on server, rolling back:', err);
         this.reminders = this.reminders.filter((r) => r.id !== reminderId);
         this.saveLocal();
         this.notify();
-      });
+        throw err;
+      }
 
       if (optimisticReminder.targetId !== 'user-self' && optimisticReminder.targetId !== activeUser.id) {
         sendPartnerNotification('reminder_created', {
@@ -605,13 +608,16 @@ class RemindersService {
     this.notify();
 
     if (shouldUseServerDb()) {
-      callServerDb('reminders_delete', { id }).catch((err) => {
+      try {
+        await callServerDb('reminders_delete', { id });
+        return true;
+      } catch (err) {
         console.error('[requestsService] Failed to delete reminder on server, rolling back:', err);
         this.reminders.splice(prevIndex, 0, deletedItem);
         this.saveLocal();
         this.notify();
-      });
-      return true;
+        throw err;
+      }
     }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {

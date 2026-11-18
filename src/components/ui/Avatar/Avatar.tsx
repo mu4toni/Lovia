@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '../Icon/Icon';
+import { normalizeMediaUrl } from '../../../utils/media';
 import './Avatar.css';
 
 export interface AvatarProps {
@@ -24,14 +25,16 @@ export const Avatar: React.FC<AvatarProps> = ({
     .join('')
     .toUpperCase();
 
+  const effectiveSrc = normalizeMediaUrl(src);
+
   return (
     <div
       className={`glass-avatar glass-avatar--${size} ${className}`}
       role="img"
       aria-label={`Аватар: ${name}`}
     >
-      {src ? (
-        <img src={src} alt={name} className="glass-avatar__img" />
+      {effectiveSrc ? (
+        <img src={effectiveSrc} alt={name} className="glass-avatar__img" />
       ) : (
         <div className="glass-avatar__fallback">
           {initials || <Icon name="heart-filled" size={14} />}

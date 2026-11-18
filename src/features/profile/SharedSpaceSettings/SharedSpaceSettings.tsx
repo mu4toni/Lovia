@@ -53,11 +53,27 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
     }
   };
 
-  const handleSaveStartDate = (newDate: string) => {
-    coupleService.updateStartDate(newDate);
-    relationshipService.setStartDate(newDate);
-    onStartDateChanged(newDate);
-    setIsEditDateOpen(false);
+  const handleSaveStartDate = async (newDate: string) => {
+    try {
+      await coupleService.updateStartDate(newDate);
+      relationshipService.setStartDate(newDate);
+      onStartDateChanged(newDate);
+      setIsEditDateOpen(false);
+      telegramService.hapticNotification('success');
+      showToast({
+        title: 'Дата обновлена',
+        message: isFriendship
+          ? 'Дата начала дружбы успешно сохранена'
+          : 'Дата начала отношений успешно сохранена',
+        type: 'love',
+      });
+    } catch (e: any) {
+      showToast({
+        title: 'Ошибка сохранения',
+        message: e.message || 'Не удалось сохранить дату',
+        type: 'warning',
+      });
+    }
   };
 
   const handleConfirmUnpair = async () => {

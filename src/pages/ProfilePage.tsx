@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Icon } from '../components/ui/Icon/Icon';
+import { useToast } from '../components/ui/Toast/ToastContext';
 import {
   ProfileHeader,
   PartnerInfoCard,
@@ -19,6 +20,7 @@ import './ProfilePage.css';
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [user, setUser] = useState<UserProfileData>(() => profileService.getUserProfile());
   const [partner, setPartner] = useState<PartnerProfileData>(() =>
@@ -59,14 +61,32 @@ export function ProfilePage() {
     };
   }, []);
 
-  const handleUpdateName = (newName: string) => {
-    profileService.updateUserName(newName);
-    setUser(profileService.getUserProfile());
+  const handleUpdateName = async (newName: string) => {
+    try {
+      await profileService.updateUserName(newName);
+      setUser(profileService.getUserProfile());
+      showToast({ title: 'Профиль обновлён', message: 'Имя успешно сохранено', type: 'love' });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка сохранения',
+        message: err.message || 'Не удалось сохранить имя',
+        type: 'warning',
+      });
+    }
   };
 
-  const handleUpdateAvatar = (newAvatarUrl: string) => {
-    profileService.updateUserAvatar(newAvatarUrl);
-    setUser(profileService.getUserProfile());
+  const handleUpdateAvatar = async (newAvatarUrl: string) => {
+    try {
+      await profileService.updateUserAvatar(newAvatarUrl);
+      setUser(profileService.getUserProfile());
+      showToast({ title: 'Аватар обновлён', message: 'Новое фото профиля сохранено', type: 'love' });
+    } catch (err: any) {
+      showToast({
+        title: 'Ошибка загрузки фото',
+        message: err.message || 'Не удалось загрузить аватар',
+        type: 'warning',
+      });
+    }
   };
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {

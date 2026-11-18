@@ -404,11 +404,11 @@ class CoupleService {
     return { ...u };
   }
 
-  updateActiveUserProfile(updates: {
+  async updateActiveUserProfile(updates: {
     name?: string;
     gender?: 'male' | 'female';
     avatarUrl?: string;
-  }): RegisteredUser {
+  }): Promise<RegisteredUser> {
     this.init();
     const user = this.users[this.activeUserId] || {
       id: this.activeUserId,
@@ -416,58 +416,53 @@ class CoupleService {
       joinedDate: new Date().toISOString().split('T')[0],
     };
 
+    let finalAvatar = updates.avatarUrl;
+
+    if (shouldUseServerDb()) {
+      if (finalAvatar && finalAvatar.startsWith('data:image')) {
+        const uploadRes = await callServerDb<{ publicUrl: string }>('upload_media', {
+          base64Data: finalAvatar,
+          type: 'avatar',
+        });
+        if (!uploadRes?.publicUrl) {
+          throw new Error('Не удалось загрузить аватарку на сервер');
+        }
+        finalAvatar = uploadRes.publicUrl;
+      }
+
+      await callServerDb('update_profile', {
+        name: updates.name !== undefined ? updates.name.trim() : undefined,
+        gender: updates.gender,
+        avatarUrl: finalAvatar,
+      });
+    }
+
     if (updates.name !== undefined) user.name = updates.name.trim();
     if (updates.gender !== undefined) user.gender = updates.gender;
-    if (updates.avatarUrl !== undefined) user.avatarUrl = updates.avatarUrl;
+    if (finalAvatar !== undefined) user.avatarUrl = finalAvatar;
 
     this.users[this.activeUserId] = user;
 
     // Also update name in active couple if exists
+    let targetCouple: CoupleSpace | null = null;
     if (user.coupleId && this.couples[user.coupleId]) {
-      const couple = this.couples[user.coupleId];
-      if (couple.user1.id === user.id) {
-        couple.user1.name = user.name;
-        if (updates.avatarUrl) couple.user1.avatarUrl = updates.avatarUrl;
-        if (updates.gender) couple.user1.gender = updates.gender;
-      } else if (couple.user2?.id === user.id) {
-        couple.user2.name = user.name;
-        if (updates.avatarUrl) couple.user2.avatarUrl = updates.avatarUrl;
-        if (updates.gender) couple.user2.gender = updates.gender;
+      targetCouple = this.couples[user.coupleId];
+      if (targetCouple.user1.id === user.id) {
+        targetCouple.user1.name = user.name;
+        if (finalAvatar) targetCouple.user1.avatarUrl = finalAvatar;
+        if (updates.gender) targetCouple.user1.gender = updates.gender;
+      } else if (targetCouple.user2?.id === user.id) {
+        targetCouple.user2.name = user.name;
+        if (finalAvatar) targetCouple.user2.avatarUrl = finalAvatar;
+        if (updates.gender) targetCouple.user2.gender = updates.gender;
       }
     }
 
     this.saveToStorage();
-    if (shouldUseServerDb()) {
-      (async () => {
-        let finalAvatar = updates.avatarUrl;
-        if (finalAvatar && finalAvatar.startsWith('data:image')) {
-          try {
-            const uploadRes = await callServerDb<{ publicUrl: string }>('upload_media', {
-              base64Data: finalAvatar,
-              type: 'avatar',
-            });
-            if (uploadRes?.publicUrl) {
-              finalAvatar = uploadRes.publicUrl;
-              user.avatarUrl = finalAvatar;
-              if (user.coupleId && this.couples[user.coupleId]) {
-                const c = this.couples[user.coupleId];
-                if (c.user1.id === user.id) c.user1.avatarUrl = finalAvatar;
-                else if (c.user2?.id === user.id) c.user2.avatarUrl = finalAvatar;
-              }
-              this.saveToStorage();
-              this.notify();
-            }
-          } catch (e) {
-            console.warn('[coupleService] Failed to upload avatar via upload_media:', e);
-          }
-        }
-        await callServerDb('update_profile', {
-          name: updates.name,
-          gender: updates.gender,
-          avatarUrl: finalAvatar,
-        });
-      })().catch((e) => console.warn('[coupleService] update_profile error via /api/db:', e));
+    if (targetCouple && targetCouple.id && targetCouple.id !== 'couple-1') {
+      updateSwrCache(targetCouple.id, 'couple', targetCouple);
     }
+    this.notify();
     return { ...user };
   }
 
@@ -972,7 +967,7 @@ class CoupleService {
     }
 
     // Update active user profile
-    this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
+    await this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
     const user = this.getActiveUser();
 
     // Check if user is already waiting in an active couple
@@ -1124,7 +1119,7 @@ class CoupleService {
     }
 
     // Update active user profile
-    this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
+    await this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
     const user = this.getActiveUser();
 
     // Check if user is already in a connected couple
@@ -1334,8 +1329,12 @@ class CoupleService {
     this.init();
     const user = this.users[this.activeUserId];
     if (user && user.coupleId && this.couples[user.coupleId]) {
-      this.couples[user.coupleId].startDate = newStartDate;
+      const couple = this.couples[user.coupleId];
+      couple.startDate = newStartDate;
       this.saveToStorage();
+      if (couple.id && couple.id !== 'couple-1') {
+        updateSwrCache(couple.id, 'couple', couple);
+      }
 
       if (shouldUseServerDb()) {
         try {
@@ -1345,6 +1344,7 @@ class CoupleService {
           });
         } catch (e) {
           console.warn('[coupleService] Failed to update start_date via /api/db:', e);
+          throw e;
         }
       } else if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
         try {
@@ -1354,6 +1354,7 @@ class CoupleService {
             .eq('id', user.coupleId);
         } catch (e) {
           console.warn('[coupleService] Failed to update start_date in Supabase:', e);
+          throw e;
         }
       }
     }
