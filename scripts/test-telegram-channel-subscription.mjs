@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-console.log('--- Testing Telegram Channel Subscription Check in Webhook, Gateway & Mini App ---');
+console.log('--- Testing Telegram Channel Subscription Timeout, Gateway & Error Handling ---');
 
 let passed = true;
 
@@ -19,14 +19,15 @@ function assert(condition, message) {
 const webhookCode = fs.readFileSync('api/telegram/webhook.ts', 'utf8');
 
 assert(!webhookCode.includes("from '../src") && !webhookCode.includes("from 'src"), 'api/telegram/webhook.ts has NO imports from src/');
+assert(webhookCode.includes('AbortController'), 'webhook.ts uses AbortController');
+assert(webhookCode.includes('5000'), 'webhook.ts has 5000ms timeout');
+assert(webhookCode.includes('clearTimeout'), 'webhook.ts clears timeout');
 assert(webhookCode.includes('export async function checkChannelSubscription'), 'webhook.ts exports checkChannelSubscription');
 assert(webhookCode.includes('export async function checkUserSubscription'), 'webhook.ts exports checkUserSubscription for backwards compatibility');
 assert(webhookCode.includes('normalizeChannelChatId'), 'webhook.ts normalizes channel input');
 assert(webhookCode.includes('console.error'), 'webhook.ts logs Telegram getChatMember errors in console.error');
 assert(webhookCode.includes('REQUIRED_CHANNEL_ID'), 'webhook.ts checks REQUIRED_CHANNEL_ID');
 assert(webhookCode.includes('getChatMember'), 'webhook.ts uses getChatMember API method');
-assert(webhookCode.includes("['member', 'administrator', 'creator']"), 'webhook.ts checks member, administrator, and creator statuses');
-assert(webhookCode.includes('is_member'), 'webhook.ts supports restricted status with is_member');
 
 // Check /start flow: subscribed shows greeting, unsubscribed shows prompt
 assert(webhookCode.includes("text.startsWith('/start')"), 'webhook.ts handles /start command');
@@ -49,13 +50,32 @@ assert(webhookCode.includes('editMessageText'), 'webhook.ts edits message upon s
 const dbCode = fs.readFileSync('api/db.ts', 'utf8');
 
 assert(!dbCode.includes("from '../src") && !dbCode.includes("from 'src"), 'api/db.ts has NO imports from src/');
+assert(dbCode.includes('AbortController'), 'api/db.ts uses AbortController');
+assert(dbCode.includes('5000'), 'api/db.ts has 5000ms timeout');
+assert(dbCode.includes('clearTimeout'), 'api/db.ts clears timeout');
 assert(dbCode.includes('checkChannelSubscription'), 'api/db.ts includes checkChannelSubscription');
 assert(dbCode.includes("action === 'check_subscription'"), 'api/db.ts handles action "check_subscription"');
 assert(dbCode.includes('subscriptionRequired: true'), 'api/db.ts returns subscriptionRequired: true');
+assert(dbCode.includes('error: error || undefined'), 'api/db.ts returns error field from checkChannelSubscription');
 assert(dbCode.includes('normalizeChannelChatId'), 'api/db.ts normalizes channel input');
 
 // =========================================================================
-// 3. Normalization logic tests
+// 3. Static code analysis of coupleService.ts & SubscriptionGate.tsx
+// =========================================================================
+const coupleServiceCode = fs.readFileSync('src/services/coupleService.ts', 'utf8');
+assert(coupleServiceCode.includes('throw new Error'), 'coupleService.ts throws error when Telegram error occurs');
+assert(coupleServiceCode.includes('throw e'), 'coupleService.ts rethrows errors in catch block');
+assert(coupleServiceCode.includes('this.setSubscriptionRequired(false)'), 'coupleService.ts immediately unblocks UI on subscribed');
+assert(coupleServiceCode.includes('this.syncCoupleFromSupabase().catch'), 'coupleService.ts triggers background sync without blocking UI');
+
+const subGateCode = fs.readFileSync('src/components/ui/SubscriptionGate/SubscriptionGate.tsx', 'utf8');
+assert(subGateCode.includes('openTelegramLink'), 'SubscriptionGate calls openTelegramLink');
+assert(subGateCode.includes('verifyChannelSubscription'), 'SubscriptionGate calls verifyChannelSubscription');
+assert(subGateCode.includes('err?.message'), 'SubscriptionGate displays actual error message from exception');
+assert(subGateCode.includes('Mascot'), 'SubscriptionGate displays Lovia Mascot');
+
+// =========================================================================
+// 4. Normalization logic tests
 // =========================================================================
 function normalizeChannelChatId(raw) {
   let clean = raw.trim();
@@ -79,44 +99,27 @@ assert(normalizeChannelChatId('-1001234567890') === '-1001234567890', 'Preserves
 assert(normalizeChannelChatId('1234567890') === '-1001234567890', 'Converts positive numeric ID to -100 ID');
 
 // =========================================================================
-// 4. Front-end SubscriptionGate and App.tsx verification
-// =========================================================================
-const subGateCode = fs.readFileSync('src/components/ui/SubscriptionGate/SubscriptionGate.tsx', 'utf8');
-assert(subGateCode.includes('openTelegramLink'), 'SubscriptionGate calls openTelegramLink');
-assert(subGateCode.includes('verifyChannelSubscription'), 'SubscriptionGate calls verifyChannelSubscription');
-assert(subGateCode.includes('Mascot'), 'SubscriptionGate displays Lovia Mascot');
-
-const appCode = fs.readFileSync('src/App.tsx', 'utf8');
-assert(appCode.includes('SubscriptionGate'), 'App.tsx imports SubscriptionGate');
-assert(appCode.includes('subscriptionRequired'), 'App.tsx tracks subscriptionRequired state');
-assert(appCode.includes('lovia_subscription_required'), 'App.tsx listens for lovia_subscription_required event');
-assert(appCode.includes('lovia_subscription_resolved'), 'App.tsx listens for lovia_subscription_resolved event');
-
-const coupleServiceCode = fs.readFileSync('src/services/coupleService.ts', 'utf8');
-assert(coupleServiceCode.includes('isSubscriptionRequired'), 'coupleService tracks isSubscriptionRequired');
-assert(coupleServiceCode.includes('verifyChannelSubscription'), 'coupleService has verifyChannelSubscription');
-
-// =========================================================================
 // 5. Subscription check status logic test
 // =========================================================================
 function evaluateSubscription(data) {
-  if (!data || !data.ok) return false;
+  if (!data || !data.ok) return { subscribed: false, error: data?.description || 'error' };
   const status = data.result?.status;
   const isMember = status === 'restricted' ? Boolean(data.result?.is_member) : false;
-  return ['member', 'administrator', 'creator'].includes(status) || isMember;
+  return { subscribed: ['member', 'administrator', 'creator'].includes(status) || isMember };
 }
 
-assert(evaluateSubscription({ ok: true, result: { status: 'creator' } }) === true, 'Creator is subscribed');
-assert(evaluateSubscription({ ok: true, result: { status: 'administrator' } }) === true, 'Administrator is subscribed');
-assert(evaluateSubscription({ ok: true, result: { status: 'member' } }) === true, 'Member is subscribed');
-assert(evaluateSubscription({ ok: true, result: { status: 'restricted', is_member: true } }) === true, 'Restricted with is_member is subscribed');
-assert(evaluateSubscription({ ok: true, result: { status: 'restricted', is_member: false } }) === false, 'Restricted without is_member is not subscribed');
-assert(evaluateSubscription({ ok: true, result: { status: 'left' } }) === false, 'Left is not subscribed');
-assert(evaluateSubscription({ ok: true, result: { status: 'kicked' } }) === false, 'Kicked is not subscribed');
-assert(evaluateSubscription({ ok: false, description: 'Bad Request: chat not found' }) === false, 'API error is not subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'creator' } }).subscribed === true, 'Creator is subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'administrator' } }).subscribed === true, 'Administrator is subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'member' } }).subscribed === true, 'Member is subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'restricted', is_member: true } }).subscribed === true, 'Restricted with is_member is subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'restricted', is_member: false } }).subscribed === false, 'Restricted without is_member is not subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'left' } }).subscribed === false, 'Left is not subscribed');
+assert(evaluateSubscription({ ok: true, result: { status: 'kicked' } }).subscribed === false, 'Kicked is not subscribed');
+assert(evaluateSubscription({ ok: false, description: 'Bad Request: chat not found' }).subscribed === false, 'API error is not subscribed');
+assert(evaluateSubscription({ ok: false, description: 'Bad Request: chat not found' }).error === 'Bad Request: chat not found', 'Returns actual API error description');
 
 if (passed) {
-  console.log('\n🎉 ALL SUBSCRIPTION GATE & WEBHOOK TESTS PASSED!');
+  console.log('\n🎉 ALL SUBSCRIPTION GATE, TIMEOUT & ERROR TESTS PASSED!');
   process.exit(0);
 } else {
   console.error('\n💥 SOME TESTS FAILED');

@@ -157,17 +157,22 @@ async function checkChannelSubscription(
     return { subscribed: true };
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   try {
     const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(chatId)}&user_id=${telegramUserId}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     const data: any = await response.json();
 
     if (!data || !data.ok) {
+      const errMsg = data?.description || 'Telegram API error';
       console.error(
         `[checkChannelSubscription] Telegram getChatMember error for user ${telegramUserId} in chat ${chatId}:`,
-        data?.description || data
+        errMsg
       );
-      return { subscribed: false, error: data?.description || 'Telegram API error' };
+      return { subscribed: false, error: errMsg };
     }
 
     const status = data.result?.status;
@@ -179,8 +184,13 @@ async function checkChannelSubscription(
 
     return { subscribed: false };
   } catch (err: any) {
-    console.error('[checkChannelSubscription] Network or runtime exception:', err?.message || err);
-    return { subscribed: false, error: err?.message };
+    clearTimeout(timeoutId);
+    const isTimeout = err?.name === 'AbortError';
+    const errMsg = isTimeout
+      ? 'Превышено время ожидания ответа от Telegram (таймаут 5 сек)'
+      : err?.message || 'Network error';
+    console.error('[checkChannelSubscription] Network or runtime exception:', errMsg);
+    return { subscribed: false, error: errMsg };
   }
 }
 
@@ -277,13 +287,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ДЕЙСТВИЕ 0: check_subscription
     // -------------------------------------------------------------
     if (action === 'check_subscription') {
-      const { subscribed } = await checkChannelSubscription(tgUser.id);
+      const { subscribed, error } = await checkChannelSubscription(tgUser.id);
       return res.status(200).json({
         ok: true,
         data: {
           subscribed,
           subscriptionRequired: !subscribed,
           channelUrl: getChannelUrl(),
+          error: error || undefined,
         },
       });
     }
@@ -294,13 +305,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'get_bundle') {
       // Жёсткая проверка подписки на обязательный канал:
       // если пользователь не подписан, данные пары не возвращаются!
-      const { subscribed } = await checkChannelSubscription(tgUser.id);
+      const { subscribed, error } = await checkChannelSubscription(tgUser.id);
       if (!subscribed) {
         return res.status(200).json({
           ok: true,
           data: {
             subscriptionRequired: true,
             channelUrl: getChannelUrl(),
+            error: error || undefined,
           },
         });
       }

@@ -132,22 +132,52 @@ class CoupleService {
    * Проверить подписку на канал вручную с клиента (кнопка «Я подписался — проверить»)
    */
   async verifyChannelSubscription(): Promise<boolean> {
-    if (shouldUseServerDb()) {
-      try {
-        const res = await callServerDb<{ subscribed: boolean; subscriptionRequired: boolean; channelUrl?: string }>('check_subscription');
-        if (res && res.subscribed) {
-          this.setSubscriptionRequired(false);
-          await this.syncCoupleFromSupabase();
-          return true;
-        } else if (res && res.subscriptionRequired) {
-          this.setSubscriptionRequired(true, res.channelUrl);
-          return false;
-        }
-      } catch (e) {
-        console.warn('[coupleService] verifyChannelSubscription error:', e);
-      }
+    if (!shouldUseServerDb()) {
+      return true;
     }
-    return false;
+
+    try {
+      const res = await callServerDb<{
+        subscribed: boolean;
+        subscriptionRequired: boolean;
+        channelUrl?: string;
+        error?: string;
+      }>('check_subscription');
+
+      if (!res) {
+        throw new Error('Пустой ответ от сервера при проверке подписки');
+      }
+
+      // Если Telegram API вернул явную ошибку (например, бот не админ в канале)
+      if (res.error) {
+        console.error('[coupleService] Telegram check_subscription error:', res.error);
+        let userMessage = res.error;
+        if (/chat not found/i.test(res.error)) {
+          userMessage = 'Канал не найден или бот не добавлен администратором в канал.';
+        } else if (/bot is not a member/i.test(res.error)) {
+          userMessage = 'Бот не является участником или администратором канала.';
+        }
+        throw new Error(userMessage);
+      }
+
+      if (res.subscribed) {
+        // Сразу скрываем экран блокировки и возвращаем true
+        this.setSubscriptionRequired(false);
+        // Запускаем фоновую синхронизацию данных без блокировки UI
+        this.syncCoupleFromSupabase().catch((err) => {
+          console.warn('[coupleService] Background sync after subscription error:', err);
+        });
+        return true;
+      }
+
+      // Пользователь проверен и действительно не подписан
+      this.setSubscriptionRequired(true, res.channelUrl);
+      return false;
+    } catch (e: any) {
+      console.warn('[coupleService] verifyChannelSubscription error:', e?.message || e);
+      // Пробрасываем ошибку наружу в SubscriptionGate
+      throw e;
+    }
   }
 
   constructor() {

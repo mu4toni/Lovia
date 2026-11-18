@@ -43,9 +43,12 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({
         telegramService.hapticNotification('error');
         setErrorMsg('Вы ещё не подписались на канал. Пожалуйста, подпишитесь и нажмите «Проверить» ещё раз!');
       }
-    } catch {
+    } catch (err: any) {
       telegramService.hapticNotification('error');
-      setErrorMsg('Не удалось проверить подписку. Пожалуйста, попробуйте снова через несколько секунд.');
+      const msg =
+        err?.message ||
+        'Не удалось проверить подписку. Пожалуйста, попробуйте снова через несколько секунд.';
+      setErrorMsg(msg);
     } finally {
       setIsChecking(false);
     }

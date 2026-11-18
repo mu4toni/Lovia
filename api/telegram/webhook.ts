@@ -60,17 +60,22 @@ export async function checkChannelSubscription(
     return { subscribed: true };
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   try {
     const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(chatId)}&user_id=${telegramUserId}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     const data: any = await response.json();
 
     if (!data || !data.ok) {
+      const errMsg = data?.description || 'Telegram API error';
       console.error(
         `[checkChannelSubscription] Telegram getChatMember error for user ${telegramUserId} in chat ${chatId}:`,
-        data?.description || data
+        errMsg
       );
-      return { subscribed: false, error: data?.description || 'Telegram API error' };
+      return { subscribed: false, error: errMsg };
     }
 
     const status = data.result?.status;
@@ -82,8 +87,13 @@ export async function checkChannelSubscription(
 
     return { subscribed: false };
   } catch (err: any) {
-    console.error('[checkChannelSubscription] Network or runtime exception:', err?.message || err);
-    return { subscribed: false, error: err?.message };
+    clearTimeout(timeoutId);
+    const isTimeout = err?.name === 'AbortError';
+    const errMsg = isTimeout
+      ? 'Превышено время ожидания ответа от Telegram (таймаут 5 сек)'
+      : err?.message || 'Network error';
+    console.error('[checkChannelSubscription] Network or runtime exception:', errMsg);
+    return { subscribed: false, error: errMsg };
   }
 }
 
