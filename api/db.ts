@@ -252,22 +252,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 3. Гарантируем актуальность пользователя в public.users
-    const userFullName =
-      [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ').trim() ||
-      tgUser.first_name ||
-      'Пользователь';
+    // 3. Helper: гарантируем создание/обновление пользователя в public.users
+    async function ensureServerUser(
+      client: any,
+      targetActorId: string,
+      targetTgUser: any,
+      overrides?: {
+        name?: string;
+        gender?: 'male' | 'female' | null;
+        avatarUrl?: string | null;
+        coupleId?: string | null;
+      }
+    ) {
+      const defaultName =
+        [targetTgUser?.first_name, targetTgUser?.last_name].filter(Boolean).join(' ').trim() ||
+        targetTgUser?.first_name ||
+        'Пользователь';
 
-    await supabase.from('users').upsert(
-      {
-        id: actorId,
-        telegram_id: Number(tgUser.id),
-        name: userFullName,
-        avatar_url: tgUser.photo_url || null,
+      const patch: any = {
+        id: targetActorId,
+        telegram_id: targetTgUser?.id ? Number(targetTgUser.id) : null,
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' }
-    );
+      };
+
+      if (overrides?.name !== undefined && overrides.name.trim()) {
+        patch.name = overrides.name.trim();
+      } else if (!overrides) {
+        patch.name = defaultName;
+      } else if (overrides && overrides.name === undefined) {
+        patch.name = defaultName;
+      }
+
+      if (overrides?.gender !== undefined) {
+        patch.gender = overrides.gender;
+      }
+
+      if (overrides?.avatarUrl !== undefined && overrides.avatarUrl) {
+        patch.avatar_url = overrides.avatarUrl;
+      } else if (!overrides && targetTgUser?.photo_url) {
+        patch.avatar_url = targetTgUser.photo_url;
+      } else if (overrides && overrides.avatarUrl === undefined && targetTgUser?.photo_url) {
+        patch.avatar_url = targetTgUser.photo_url;
+      }
+
+      if (overrides?.coupleId !== undefined) {
+        patch.couple_id = overrides.coupleId;
+      }
+
+      const { data: user, error } = await client
+        .from('users')
+        .upsert(patch, { onConflict: 'id' })
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        console.error('[ensureServerUser] Failed to upsert user:', error);
+      }
+      return user;
+    }
 
     const { action, payload } = req.body || {};
     if (!action) {
@@ -337,7 +379,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const coupleRow = coupleRes.data;
-      const userRow = userRes.data;
+      let userRow = userRes.data;
+
+      // Если в public.users ещё нет строки (первый вход) - создаём через ensureServerUser
+      if (!userRow) {
+        userRow = await ensureServerUser(supabase, actorId, tgUser);
+      }
 
       if (!coupleRow) {
         return res.status(200).json({
@@ -485,7 +532,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ ok: false, error: error.message });
       }
 
-      await supabase.from('users').update({ couple_id: newCouple.id }).eq('id', actorId);
+      await ensureServerUser(supabase, actorId, tgUser, {
+        name: payload?.name || tgUser?.first_name,
+        gender: payload?.gender,
+        avatarUrl: payload?.avatarUrl || tgUser?.photo_url,
+        coupleId: newCouple.id,
+      });
 
       return res.status(200).json({ ok: true, data: newCouple });
     }
@@ -532,7 +584,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ ok: false, error: updateErr.message });
       }
 
-      await supabase.from('users').update({ couple_id: couple.id }).eq('id', actorId);
+      await ensureServerUser(supabase, actorId, tgUser, {
+        name: payload?.name || tgUser?.first_name,
+        gender: payload?.gender,
+        avatarUrl: payload?.avatarUrl || tgUser?.photo_url,
+        coupleId: couple.id,
+      });
 
       const { data: partnerUser } = await supabase
         .from('users')

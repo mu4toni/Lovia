@@ -30,6 +30,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const [nameInput, setNameInput] = useState(user.name);
   const [rawImageForCrop, setRawImageForCrop] = useState<string | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveInlineName = async (e: React.FormEvent) => {
@@ -81,6 +82,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <div
             className="profile-hero-card__avatar-frame"
             onClick={() => {
+              if (isUploadingAvatar) return;
               telegramService.hapticImpact('light');
               fileInputRef.current?.click();
             }}
@@ -91,11 +93,16 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                fileInputRef.current?.click();
+                if (!isUploadingAvatar) fileInputRef.current?.click();
               }
             }}
           >
             <Avatar name={user.name} src={user.avatarUrl} size="lg" className="profile-hero-avatar" />
+            {isUploadingAvatar && (
+              <div className="profile-hero-avatar-loading" aria-label="Загрузка фото...">
+                <div className="profile-hero-avatar-spinner" />
+              </div>
+            )}
           </div>
 
           <button
@@ -232,7 +239,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           onCropComplete={async (croppedDataUrl) => {
             setIsCropModalOpen(false);
             setRawImageForCrop(null);
-            await onUpdateAvatar(croppedDataUrl);
+            setIsUploadingAvatar(true);
+            try {
+              await onUpdateAvatar(croppedDataUrl);
+            } finally {
+              setIsUploadingAvatar(false);
+            }
           }}
         />
       )}

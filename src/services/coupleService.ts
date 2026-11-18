@@ -954,6 +954,7 @@ class CoupleService {
     gender?: 'male' | 'female';
     startDate?: string;
     spaceType?: SpaceType;
+    avatarUrl?: string;
   }): Promise<CoupleSpace> {
     this.init();
     const cleanName = input.name.trim();
@@ -967,7 +968,11 @@ class CoupleService {
     }
 
     // Update active user profile
-    await this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
+    await this.updateActiveUserProfile({
+      name: cleanName,
+      gender: input.gender,
+      avatarUrl: input.avatarUrl,
+    });
     const user = this.getActiveUser();
 
     // Check if user is already waiting in an active couple
@@ -999,6 +1004,9 @@ class CoupleService {
       const serverCouple = await callServerDb<any>('create_couple', {
         startDate: effectiveStartDate,
         spaceType: effectiveSpaceType,
+        name: cleanName,
+        gender: input.gender,
+        avatarUrl: input.avatarUrl || user.avatarUrl,
       });
 
       const newCouple: CoupleSpace = {
@@ -1101,6 +1109,7 @@ class CoupleService {
     code: string;
     name: string;
     gender?: 'male' | 'female';
+    avatarUrl?: string;
   }): Promise<CoupleSpace> {
     this.init();
     const cleanName = input.name.trim();
@@ -1119,7 +1128,11 @@ class CoupleService {
     }
 
     // Update active user profile
-    await this.updateActiveUserProfile({ name: cleanName, gender: input.gender });
+    await this.updateActiveUserProfile({
+      name: cleanName,
+      gender: input.gender,
+      avatarUrl: input.avatarUrl,
+    });
     const user = this.getActiveUser();
 
     // Check if user is already in a connected couple
@@ -1143,6 +1156,9 @@ class CoupleService {
     if (shouldUseServerDb()) {
       const res = await callServerDb<{ couple: any; partner: any }>('join_couple', {
         inviteCode: cleanCode,
+        name: cleanName,
+        gender: input.gender,
+        avatarUrl: input.avatarUrl || user.avatarUrl,
       });
       const c = res.couple;
       const partnerData = res.partner;

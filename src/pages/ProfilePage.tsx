@@ -65,7 +65,7 @@ export function ProfilePage() {
     try {
       await profileService.updateUserName(newName);
       setUser(profileService.getUserProfile());
-      showToast({ title: 'Профиль обновлён', message: 'Имя успешно сохранено', type: 'love' });
+      showToast({ title: 'Сохранено', message: 'Имя успешно сохранено', type: 'love' });
     } catch (err: any) {
       showToast({
         title: 'Ошибка сохранения',
@@ -79,7 +79,7 @@ export function ProfilePage() {
     try {
       await profileService.updateUserAvatar(newAvatarUrl);
       setUser(profileService.getUserProfile());
-      showToast({ title: 'Аватар обновлён', message: 'Новое фото профиля сохранено', type: 'love' });
+      showToast({ title: 'Сохранено', message: 'Новое фото профиля сохранено', type: 'love' });
     } catch (err: any) {
       showToast({
         title: 'Ошибка загрузки фото',
