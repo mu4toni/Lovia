@@ -72,6 +72,34 @@ assert(
   'api/db.ts prevents users from reserving/booking their own wishlist items'
 );
 
+// Check guaranteed non-empty id generation for insert operations
+assert(
+  dbApi.includes('crypto.randomUUID()') &&
+  dbApi.includes('coupleId') &&
+  dbApi.includes('id: coupleId'),
+  'api/db.ts generates guaranteed id for create_couple'
+);
+assert(
+  dbApi.includes('reminderId') &&
+  dbApi.includes('id: reminderId'),
+  'api/db.ts generates guaranteed id for reminders_create'
+);
+assert(
+  dbApi.includes('wishId') &&
+  dbApi.includes('id: wishId'),
+  'api/db.ts generates guaranteed id for wishlist_create'
+);
+assert(
+  dbApi.includes('memorableDateId') &&
+  dbApi.includes('id: memorableDateId'),
+  'api/db.ts generates guaranteed id for memorable_dates_create'
+);
+assert(
+  dbApi.includes('memoryId') &&
+  dbApi.includes('id: memoryId'),
+  'api/db.ts generates guaranteed id for date_memories_create'
+);
+
 // =========================================================================
 // 2. Cryptographic Telegram HMAC-SHA256 signature verification test
 // =========================================================================

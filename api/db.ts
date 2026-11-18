@@ -446,10 +446,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'create_couple') {
       const code = generateInviteCode();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const coupleId =
+        payload?.id && typeof payload.id === 'string' && payload.id.trim()
+          ? payload.id.trim()
+          : `couple-${crypto.randomUUID()}`;
 
       const { data: newCouple, error } = await supabase
         .from('couples')
         .insert({
+          id: coupleId,
           user1_id: actorId,
           user2_id: null,
           invite_code: code,
@@ -618,7 +623,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         payload.remindBeforeMinutes ??
         60;
 
+      const reminderId =
+        payload?.id && typeof payload.id === 'string' && payload.id.trim()
+          ? payload.id.trim()
+          : `reminder-${crypto.randomUUID()}`;
+
       const row = {
+        id: reminderId,
         couple_id: payload.couple_id,
         title: payload.title,
         description: payload.description || null,
@@ -733,8 +744,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ ok: false, error: 'Нет доступа к паре' });
       }
 
+      const wishId =
+        payload?.id && typeof payload.id === 'string' && payload.id.trim()
+          ? payload.id.trim()
+          : `wish-${crypto.randomUUID()}`;
+
       // Всегда создаём желание от имени actorId
       const row = {
+        id: wishId,
         couple_id: payload.couple_id,
         user_id: actorId,
         title: payload.title,
@@ -861,7 +878,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ ok: false, error: 'Нет доступа к паре' });
       }
 
+      const memorableDateId =
+        payload?.id && typeof payload.id === 'string' && payload.id.trim()
+          ? payload.id.trim()
+          : `date-${crypto.randomUUID()}`;
+
       const row = {
+        id: memorableDateId,
         couple_id: payload.couple_id,
         title: payload.title,
         date: payload.date,
@@ -937,7 +960,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ ok: false, error: 'Нет доступа к паре' });
       }
 
+      const memoryId =
+        payload?.id && typeof payload.id === 'string' && payload.id.trim()
+          ? payload.id.trim()
+          : `memory-${crypto.randomUUID()}`;
+
       const row = {
+        id: memoryId,
         couple_id: payload.couple_id,
         title: payload.title,
         date: payload.date,
