@@ -221,3 +221,32 @@ CREATE POLICY "Public access to media bucket"
 ON storage.objects FOR ALL
 USING (bucket_id = 'lovia_media')
 WITH CHECK (bucket_id = 'lovia_media');
+
+-- ============================================================
+-- 7. Support & Ad Bot Tables
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.support_bot_users (
+  telegram_id BIGINT PRIMARY KEY,
+  username TEXT,
+  first_name TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE TABLE IF NOT EXISTS public.support_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+ALTER TABLE public.support_bot_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_settings ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  CREATE POLICY "Public access to support_bot_users" ON public.support_bot_users FOR ALL USING (true) WITH CHECK (true);
+  CREATE POLICY "Public access to support_settings" ON public.support_settings FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
