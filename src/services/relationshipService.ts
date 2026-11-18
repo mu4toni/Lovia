@@ -7,7 +7,7 @@ import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
-import { supabase, isSupabaseConfigured } from './api';
+import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
 
 const STORAGE_START_DATE_KEY = 'lovia_relationship_start_date_v1';
 const STORAGE_MEMORABLE_DATES_KEY = 'lovia_memorable_dates_v1';
@@ -156,7 +156,12 @@ class RelationshipService {
     }
 
     const couple = coupleService.getCurrentCouple();
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+    if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
+      callServerDb('update_start_date', { coupleId: couple.id, startDate: newDate }).catch((e) => {
+        console.warn('[relationshipService] update_start_date error via /api/db:', e);
+      });
+      sendPartnerNotification('start_date_updated', { date: newDate });
+    } else if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       supabase
         .from('couples')
         .update({ start_date: newDate })
@@ -178,6 +183,19 @@ class RelationshipService {
 
   hasCachedData(): boolean {
     return this.getMemorableDates().length > 0;
+  }
+
+  hydrateFromBundle(rows: any[], coupleId?: string): void {
+    const mapped: MemorableDate[] = (rows || []).map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      date: row.date,
+      description: row.description || undefined,
+      isAnnual: Boolean(row.is_annual),
+      createdAt: row.created_at,
+    }));
+    this.saveMemorableDatesToStorage(mapped, coupleId);
+    this.notify();
   }
 
   private saveMemorableDatesToStorage(dates: MemorableDate[], coupleId?: string): void {
@@ -212,6 +230,14 @@ class RelationshipService {
     if (this.isRevalidating) return;
     this.isRevalidating = true;
     try {
+      if (shouldUseServerDb()) {
+        const bundle = await callServerDb<any>('get_bundle');
+        if (bundle && Array.isArray(bundle.memorableDates)) {
+          this.hydrateFromBundle(bundle.memorableDates, coupleId);
+          return;
+        }
+      }
+
       const { data, error } = await supabase
         .from('memorable_dates')
         .select('*')
@@ -268,6 +294,18 @@ class RelationshipService {
         return cached;
       }
 
+      if (shouldUseServerDb()) {
+        try {
+          const bundle = await callServerDb<any>('get_bundle');
+          if (bundle && Array.isArray(bundle.memorableDates)) {
+            this.hydrateFromBundle(bundle.memorableDates, couple.id);
+            return this.getMemorableDates();
+          }
+        } catch (e) {
+          console.warn('[relationshipService] get_bundle error via /api/db:', e);
+        }
+      }
+
       const { data, error } = await supabase
         .from('memorable_dates')
         .select('*')
@@ -307,6 +345,37 @@ class RelationshipService {
       if (!couple || couple.id === 'couple-1') {
         throw new Error('Пара не подключена. Сначала создайте или подключитесь к паре.');
       }
+    }
+
+    if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
+      const serverRow = await callServerDb<any>('memorable_dates_create', {
+        couple_id: couple.id,
+        title: input.title.trim(),
+        date: input.date,
+        description: input.description?.trim() || null,
+        isAnnual: !!input.isAnnual,
+      });
+
+      const newEntry: MemorableDate = {
+        id: serverRow.id,
+        title: serverRow.title,
+        date: serverRow.date,
+        description: serverRow.description || undefined,
+        isAnnual: Boolean(serverRow.is_annual),
+        createdAt: serverRow.created_at,
+      };
+
+      const dates = this.getMemorableDates();
+      const updated = [newEntry, ...dates];
+      this.saveMemorableDatesToStorage(updated, couple.id);
+      this.notify();
+
+      sendPartnerNotification('memorable_date_added', {
+        title: newEntry.title,
+        date: newEntry.date,
+      });
+
+      return newEntry;
     }
 
     const dates = this.getMemorableDates();
@@ -352,6 +421,34 @@ class RelationshipService {
   async updateMemorableDate(id: string, input: UpdateMemorableDateInput): Promise<MemorableDate | null> {
     const couple = coupleService.getCurrentCouple();
 
+    if (shouldUseServerDb()) {
+      const patch: any = {};
+      if (input.title !== undefined) patch.title = input.title.trim();
+      if (input.date !== undefined) patch.date = input.date;
+      if (input.description !== undefined) patch.description = input.description?.trim() || null;
+      if (input.isAnnual !== undefined) patch.is_annual = input.isAnnual;
+
+      const serverRow = await callServerDb<any>('memorable_dates_update', { id, patch });
+      const updatedEntry: MemorableDate = {
+        id: serverRow.id,
+        title: serverRow.title,
+        date: serverRow.date,
+        description: serverRow.description || undefined,
+        isAnnual: Boolean(serverRow.is_annual),
+        createdAt: serverRow.created_at,
+        updatedAt: serverRow.created_at,
+      };
+
+      const dates = this.getMemorableDates();
+      const index = dates.findIndex((d) => d.id === id);
+      if (index !== -1) {
+        dates[index] = updatedEntry;
+        this.saveMemorableDatesToStorage(dates, couple?.id);
+        this.notify();
+      }
+      return updatedEntry;
+    }
+
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const updateData: any = {};
       if (input.title !== undefined) updateData.title = input.title.trim();
@@ -393,6 +490,15 @@ class RelationshipService {
 
   async deleteMemorableDate(id: string): Promise<boolean> {
     const couple = coupleService.getCurrentCouple();
+
+    if (shouldUseServerDb()) {
+      await callServerDb('memorable_dates_delete', { id });
+      const dates = this.getMemorableDates();
+      const filtered = dates.filter((d) => d.id !== id);
+      this.saveMemorableDatesToStorage(filtered, couple?.id);
+      this.notify();
+      return true;
+    }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const { error } = await supabase

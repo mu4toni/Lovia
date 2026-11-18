@@ -2,7 +2,7 @@ import { CoupleProfile } from '../types/couple';
 import { initialCoupleProfile } from './mockData';
 import { relationshipService } from './relationshipService';
 import { coupleService } from './coupleService';
-import { supabase, isSupabaseConfigured } from './api';
+import { supabase, isSupabaseConfigured, shouldUseServerDb, callServerDb } from './api';
 
 const NOTIFICATIONS_KEY = 'lovia_notifications_enabled';
 
@@ -45,8 +45,24 @@ class ProfileService {
     }
     this.initialized = true;
 
-    // Фоновая синхронизация настройки уведомлений из Supabase
-    if (isSupabaseConfigured()) {
+    // Фоновая синхронизация настройки уведомлений
+    if (shouldUseServerDb()) {
+      callServerDb<any>('get_bundle')
+        .then((bundle) => {
+          if (bundle?.user && typeof bundle.user.notifications_enabled === 'boolean') {
+            this.notificationsEnabled = bundle.user.notifications_enabled;
+            try {
+              localStorage.setItem(NOTIFICATIONS_KEY, String(bundle.user.notifications_enabled));
+            } catch {
+              // ignore
+            }
+            this.notify();
+          }
+        })
+        .catch((e) => {
+          console.warn('[profileService] Failed to sync notifications from server bundle:', e);
+        });
+    } else if (isSupabaseConfigured()) {
       const activeUser = coupleService.getActiveUser();
       const effectiveUserId =
         activeUser?.id && activeUser.id !== 'user-marsel' && !activeUser.id.startsWith('guest')
@@ -178,7 +194,13 @@ class ProfileService {
     this.notify();
 
     // Синхронизация настройки уведомлений в Supabase public.users
-    if (isSupabaseConfigured()) {
+    if (shouldUseServerDb()) {
+      callServerDb('update_profile', {
+        notificationsEnabled: enabled,
+      }).catch((err) => {
+        console.warn('[profileService] Failed to update notifications_enabled via /api/db:', err);
+      });
+    } else if (isSupabaseConfigured()) {
       const activeUser = coupleService.getActiveUser();
       const effectiveUserId =
         activeUser?.id && activeUser.id !== 'user-marsel' && !activeUser.id.startsWith('guest')

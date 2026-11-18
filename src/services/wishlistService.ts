@@ -4,7 +4,7 @@ import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
-import { supabase, isSupabaseConfigured } from './api';
+import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
 
 const STORAGE_KEY = 'lovia_wishlist_items_v1';
 
@@ -117,7 +117,50 @@ class WishlistService {
     }
   }
 
+  mapWishRow(row: any): WishItem {
+    const catInfo = this.getCategoryDetails(row.category_id || 'gifts');
+    return {
+      id: row.id,
+      userId: row.user_id,
+      title: row.title,
+      description: row.description || undefined,
+      imageUrl: row.image_url || undefined,
+      linkUrl: row.link_url || undefined,
+      estimatedPrice: row.price ? Number(row.price) : undefined,
+      currency: '₽',
+      categoryId: row.category_id || 'gifts',
+      categoryLabel: catInfo.categoryLabel,
+      categoryColor: catInfo.categoryColor,
+      isReserved: Boolean(row.is_booked),
+      reservedByUserId: row.booked_by_user_id || undefined,
+      createdAt: row.created_at,
+      updatedAt: row.created_at,
+    };
+  }
+
+  hydrateFromBundle(rows: any[], coupleId?: string): void {
+    const mapped = (rows || []).map((r) => this.mapWishRow(r));
+    this.saveToStorage(mapped);
+    const targetCoupleId = coupleId || coupleService.getCurrentCouple()?.id;
+    if (targetCoupleId && targetCoupleId !== 'couple-1') {
+      updateSwrCache(targetCoupleId, 'wishlist', mapped);
+    }
+    this.notify();
+  }
+
   private async fetchWishlistFromSupabase(coupleId: string): Promise<WishItem[]> {
+    if (shouldUseServerDb()) {
+      try {
+        const bundle = await callServerDb<any>('get_bundle');
+        if (bundle && Array.isArray(bundle.wishlist)) {
+          this.hydrateFromBundle(bundle.wishlist, coupleId);
+          return this.loadFromStorage();
+        }
+      } catch (e) {
+        console.warn('[wishlistService] get_bundle error via /api/db:', e);
+      }
+    }
+
     const { data, error } = await supabase
       .from('wishlist_items')
       .select('*')
@@ -129,26 +172,7 @@ class WishlistService {
       throw new Error('Ошибка БД: ' + error.message);
     }
 
-    const mapped: WishItem[] = (data || []).map((row: any) => {
-      const catInfo = this.getCategoryDetails(row.category_id || 'gifts');
-      return {
-        id: row.id,
-        userId: row.user_id,
-        title: row.title,
-        description: row.description || undefined,
-        imageUrl: row.image_url || undefined,
-        linkUrl: row.link_url || undefined,
-        estimatedPrice: row.price ? Number(row.price) : undefined,
-        currency: '₽',
-        categoryId: row.category_id || 'gifts',
-        categoryLabel: catInfo.categoryLabel,
-        categoryColor: catInfo.categoryColor,
-        isReserved: Boolean(row.is_booked),
-        reservedByUserId: row.booked_by_user_id || undefined,
-        createdAt: row.created_at,
-        updatedAt: row.created_at,
-      };
-    });
+    const mapped: WishItem[] = (data || []).map((row: any) => this.mapWishRow(row));
 
     this.saveToStorage(mapped);
     return mapped;
@@ -235,6 +259,30 @@ class WishlistService {
       }
     }
 
+    if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
+      const serverRow = await callServerDb<any>('wishlist_create', {
+        couple_id: couple.id,
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        imageUrl: input.imageUrl?.trim() || null,
+        linkUrl: input.linkUrl?.trim() || null,
+        estimatedPrice: input.estimatedPrice ? Math.max(0, input.estimatedPrice) : null,
+        categoryId: input.categoryId || 'gifts',
+      });
+      const newItem = this.mapWishRow(serverRow);
+      const all = this.loadFromStorage();
+      all.unshift(newItem);
+      this.saveToStorage(all);
+      this.notify();
+
+      sendPartnerNotification('wishlist_added', {
+        title: newItem.title,
+        price: newItem.estimatedPrice,
+      });
+
+      return newItem;
+    }
+
     const all = this.loadFromStorage();
     const effectiveCategory = input.categoryId || 'gifts';
     const catInfo = this.getCategoryDetails(effectiveCategory);
@@ -303,6 +351,27 @@ class WishlistService {
   ): Promise<WishItem> {
     const couple = coupleService.getCurrentCouple();
 
+    if (shouldUseServerDb()) {
+      const patch: any = {};
+      if (input.title !== undefined) patch.title = input.title.trim();
+      if (input.description !== undefined) patch.description = input.description?.trim() || null;
+      if (input.imageUrl !== undefined) patch.imageUrl = input.imageUrl?.trim() || null;
+      if (input.linkUrl !== undefined) patch.linkUrl = input.linkUrl?.trim() || null;
+      if (input.estimatedPrice !== undefined) patch.estimatedPrice = input.estimatedPrice || null;
+      if (input.categoryId !== undefined) patch.categoryId = input.categoryId;
+
+      const serverRow = await callServerDb<any>('wishlist_update', { id, patch });
+      const updated = this.mapWishRow(serverRow);
+      const all = this.loadFromStorage();
+      const idx = all.findIndex((item) => item.id === id);
+      if (idx !== -1) {
+        all[idx] = updated;
+      }
+      this.saveToStorage(all);
+      this.notify();
+      return updated;
+    }
+
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const updateData: any = {};
       if (input.title !== undefined) updateData.title = input.title.trim();
@@ -365,6 +434,15 @@ class WishlistService {
   async deleteWishItem(id: string, _currentUserId?: string): Promise<boolean> {
     const couple = coupleService.getCurrentCouple();
 
+    if (shouldUseServerDb()) {
+      await callServerDb('wishlist_delete', { id });
+      const all = this.loadFromStorage();
+      const filtered = all.filter((item) => item.id !== id);
+      this.saveToStorage(filtered);
+      this.notify();
+      return true;
+    }
+
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const { error } = await supabase
         .from('wishlist_items')
@@ -403,6 +481,15 @@ class WishlistService {
     const couple = coupleService.getCurrentCouple();
     const newIsReserved = !item.isReserved;
     const newReservedBy = newIsReserved ? currentUserId : null;
+
+    if (shouldUseServerDb()) {
+      const serverRow = await callServerDb<any>('wishlist_toggle_reserve', { id });
+      const updated = this.mapWishRow(serverRow);
+      all[index] = updated;
+      this.saveToStorage(all);
+      this.notify();
+      return updated;
+    }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const { error } = await supabase

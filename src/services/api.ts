@@ -5,6 +5,51 @@ import { isLocalDevHost } from '../utils/env';
 export { supabase, isSupabaseConfigured };
 export type { Database };
 
+/**
+ * Проверка, следует ли перенаправлять запросы к базе данных через серверный защищённый шлюз /api/db.
+ * В продакшене внутри Telegram Mini App все операции работают исключительно через сервер.
+ */
+export function shouldUseServerDb(): boolean {
+  return telegramService.isTelegramEnv();
+}
+
+/**
+ * Единый защищённый клиентский метод вызова серверного шлюза /api/db с авторизацией через Telegram initData.
+ */
+export async function callServerDb<T>(action: string, payload?: any): Promise<T> {
+  const initData = telegramService.getInitData();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (initData) {
+    headers['x-telegram-init-data'] = initData;
+  }
+
+  const response = await fetch('/api/db', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action, payload }),
+  });
+
+  if (!response.ok) {
+    let errMsg = `Ошибка сервера (${response.status})`;
+    try {
+      const errJson = await response.json();
+      if (errJson.error) errMsg = errJson.error;
+    } catch {
+      // ignore
+    }
+    throw new Error(errMsg);
+  }
+
+  const result = await response.json();
+  if (!result.ok) {
+    throw new Error(result.error || 'Запрос к серверу завершился с ошибкой');
+  }
+
+  return result.data as T;
+}
+
 export interface UserRecord {
   id: string;
   name: string;

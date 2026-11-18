@@ -14,6 +14,8 @@ import {
   ensureUserInSupabase,
   fetchUserById,
   updateUserCoupleId,
+  callServerDb,
+  shouldUseServerDb,
 } from './api';
 
 import type { SpaceType } from '../types/couple';
@@ -346,6 +348,37 @@ class CoupleService {
     }
 
     this.saveToStorage();
+    if (shouldUseServerDb()) {
+      (async () => {
+        let finalAvatar = updates.avatarUrl;
+        if (finalAvatar && finalAvatar.startsWith('data:image')) {
+          try {
+            const uploadRes = await callServerDb<{ publicUrl: string }>('upload_media', {
+              base64Data: finalAvatar,
+              type: 'avatar',
+            });
+            if (uploadRes?.publicUrl) {
+              finalAvatar = uploadRes.publicUrl;
+              user.avatarUrl = finalAvatar;
+              if (user.coupleId && this.couples[user.coupleId]) {
+                const c = this.couples[user.coupleId];
+                if (c.user1.id === user.id) c.user1.avatarUrl = finalAvatar;
+                else if (c.user2?.id === user.id) c.user2.avatarUrl = finalAvatar;
+              }
+              this.saveToStorage();
+              this.notify();
+            }
+          } catch (e) {
+            console.warn('[coupleService] Failed to upload avatar via upload_media:', e);
+          }
+        }
+        await callServerDb('update_profile', {
+          name: updates.name,
+          gender: updates.gender,
+          avatarUrl: finalAvatar,
+        });
+      })().catch((e) => console.warn('[coupleService] update_profile error via /api/db:', e));
+    }
     return { ...user };
   }
 
@@ -431,10 +464,126 @@ class CoupleService {
     }
   }
 
+  applyBundle(bundle: {
+    user: any;
+    couple: any;
+    partner: any;
+    reminders: any[];
+    wishlist: any[];
+    memorableDates: any[];
+    dateMemories: any[];
+  }): CoupleSpace | null {
+    const active = this.getActiveUser();
+
+    if (bundle.user) {
+      this.users[active.id] = {
+        ...this.users[active.id],
+        id: bundle.user.id || active.id,
+        name: bundle.user.name || active.name,
+        avatarUrl: bundle.user.avatar_url || active.avatarUrl,
+        gender: bundle.user.gender || active.gender,
+        coupleId: bundle.couple ? bundle.couple.id : null,
+      };
+    }
+
+    if (!bundle.couple) {
+      if (this.users[active.id].coupleId) {
+        const oldId = this.users[active.id].coupleId!;
+        delete this.couples[oldId];
+        this.users[active.id].coupleId = null;
+        this.saveToStorage();
+        this.notify();
+      }
+      return null;
+    }
+
+    const coupleRow = bundle.couple;
+    const user1Data = coupleRow.user1_id === active.id ? bundle.user : bundle.partner;
+    const user2Data = coupleRow.user2_id === active.id ? bundle.user : bundle.partner;
+
+    const syncedCouple: CoupleSpace = {
+      id: coupleRow.id,
+      inviteCode: coupleRow.invite_code,
+      codeExpiresAt: coupleRow.code_expires_at,
+      codeStatus: coupleRow.code_status as 'active' | 'used' | 'expired',
+      spaceType: (coupleRow.space_type as SpaceType) || 'relationship',
+      user1: {
+        id: coupleRow.user1_id,
+        name: user1Data?.name || 'Пользователь',
+        gender: (user1Data?.gender as 'male' | 'female') || undefined,
+        avatarUrl: user1Data?.avatar_url || undefined,
+      },
+      user2: coupleRow.user2_id
+        ? {
+            id: coupleRow.user2_id,
+            name: user2Data?.name || 'Партнёр',
+            gender: (user2Data?.gender as 'male' | 'female') || undefined,
+            avatarUrl: user2Data?.avatar_url || undefined,
+          }
+        : undefined,
+      status: coupleRow.status as 'waiting_partner' | 'connected' | 'dissolved',
+      startDate: coupleRow.start_date || undefined,
+      createdAt: coupleRow.created_at,
+      dissolvedAt: coupleRow.dissolved_at || undefined,
+    };
+
+    const targetId = syncedCouple.id;
+    const wasWaiting = this.couples[targetId]?.status === 'waiting_partner';
+    this.couples[targetId] = syncedCouple;
+    this.users[active.id].coupleId = targetId;
+    updateSwrCache(targetId, 'couple', syncedCouple);
+
+    if (bundle.partner) {
+      this.users[bundle.partner.id] = {
+        id: bundle.partner.id,
+        name: bundle.partner.name,
+        gender: bundle.partner.gender,
+        avatarUrl: bundle.partner.avatar_url,
+        joinedDate: bundle.partner.joined_date || new Date().toISOString().split('T')[0],
+        coupleId: targetId,
+      };
+    }
+
+    if (Array.isArray(bundle.reminders)) {
+      requestsService.hydrateFromBundle(bundle.reminders, syncedCouple);
+    }
+    if (Array.isArray(bundle.wishlist)) {
+      wishlistService.hydrateFromBundle(bundle.wishlist, syncedCouple.id);
+    }
+    if (Array.isArray(bundle.memorableDates)) {
+      relationshipService.hydrateFromBundle(bundle.memorableDates, syncedCouple.id);
+    }
+    if (Array.isArray(bundle.dateMemories)) {
+      dateMemoryService.hydrateFromBundle(bundle.dateMemories, syncedCouple.id);
+    }
+
+    this.saveToStorage();
+    this.notify();
+
+    if (wasWaiting && syncedCouple.status === 'connected' && syncedCouple.user2) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('lovia_couple_connected'));
+      }
+    }
+
+    return syncedCouple;
+  }
+
   /**
    * Синхронизация данных пары из Supabase с локальным состоянием
    */
   async syncCoupleFromSupabase(coupleIdToSync?: string): Promise<CoupleSpace | null> {
+    if (shouldUseServerDb()) {
+      try {
+        const bundle = await callServerDb<any>('get_bundle');
+        if (bundle) {
+          return this.applyBundle(bundle);
+        }
+      } catch (err: any) {
+        console.warn('[coupleService] get_bundle error via /api/db:', err?.message || err);
+      }
+    }
+
     if (!isSupabaseConfigured()) return null;
 
     const user = this.getActiveUser();
@@ -688,15 +837,52 @@ class CoupleService {
       }
     }
 
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const effectiveStartDate = input.startDate || todayStr;
+    const effectiveSpaceType: SpaceType = input.spaceType || 'relationship';
+
+    if (shouldUseServerDb()) {
+      const serverCouple = await callServerDb<any>('create_couple', {
+        startDate: effectiveStartDate,
+        spaceType: effectiveSpaceType,
+      });
+
+      const newCouple: CoupleSpace = {
+        id: serverCouple.id,
+        inviteCode: serverCouple.invite_code,
+        codeExpiresAt: serverCouple.code_expires_at,
+        codeStatus: serverCouple.code_status || 'active',
+        spaceType: (serverCouple.space_type as SpaceType) || effectiveSpaceType,
+        user1: {
+          id: user.id,
+          name: user.name,
+          gender: user.gender,
+          avatarUrl: user.avatarUrl,
+        },
+        status: 'waiting_partner',
+        startDate: serverCouple.start_date || effectiveStartDate,
+        createdAt: serverCouple.created_at || now.toISOString(),
+      };
+
+      this.couples[serverCouple.id] = newCouple;
+      this.users[user.id].coupleId = serverCouple.id;
+
+      // Initialize clean shared spaces for new couple
+      await this.resetAllSharedSpaces();
+      relationshipService.setStartDate(effectiveStartDate);
+
+      this.saveToStorage();
+      this.subscribeToCoupleUpdates(serverCouple.id);
+      this.notify();
+      return { ...newCouple };
+    }
+
     // 1. Обязательно гарантируем наличие пользователя в public.users перед записью в public.couples
     await this.ensureUserInSupabase(user);
 
     const coupleId = `couple-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const inviteCode = this.generateUniqueInviteCode().toUpperCase();
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const effectiveStartDate = input.startDate || todayStr;
-    const effectiveSpaceType: SpaceType = input.spaceType || 'relationship';
     // 7 days expiration
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -801,7 +987,30 @@ class CoupleService {
     };
     let createdAt = new Date().toISOString();
 
-    if (isSupabaseConfigured()) {
+    if (shouldUseServerDb()) {
+      const res = await callServerDb<{ couple: any; partner: any }>('join_couple', {
+        inviteCode: cleanCode,
+      });
+      const c = res.couple;
+      const partnerData = res.partner;
+
+      targetCoupleId = c.id;
+      targetCoupleCode = c.invite_code;
+      targetSpaceType = (c.space_type as SpaceType) || 'relationship';
+      effectiveStartDate = c.start_date || effectiveStartDate;
+      createdAt = c.created_at || new Date().toISOString();
+
+      if (partnerData) {
+        user1Info = {
+          id: partnerData.id,
+          name: partnerData.name,
+          gender: (partnerData.gender as 'male' | 'female') || undefined,
+          avatarUrl: partnerData.avatar_url || undefined,
+        };
+      } else {
+        user1Info.id = c.user1_id;
+      }
+    } else if (isSupabaseConfigured()) {
       // 1. Строгий прямой запрос в Supabase: НЕ ищем в локальном массиве!
       const { data: targetCouple, error } = await supabase
         .from('couples')
@@ -970,7 +1179,16 @@ class CoupleService {
       this.couples[user.coupleId].startDate = newStartDate;
       this.saveToStorage();
 
-      if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
+      if (shouldUseServerDb()) {
+        try {
+          await callServerDb('update_start_date', {
+            coupleId: user.coupleId,
+            startDate: newStartDate,
+          });
+        } catch (e) {
+          console.warn('[coupleService] Failed to update start_date via /api/db:', e);
+        }
+      } else if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
         try {
           await supabase
             .from('couples')
@@ -1003,7 +1221,9 @@ class CoupleService {
       // Запоминаем ID партнёра ДО обнуления пары в базе и локальном хранилище!
       const partnerId = couple.user1.id === user.id ? couple.user2?.id : couple.user1.id;
 
-      if (isSupabaseConfigured() && coupleId !== 'couple-1') {
+      if (shouldUseServerDb()) {
+        await callServerDb('dissolve_couple', { coupleId });
+      } else if (isSupabaseConfigured() && coupleId !== 'couple-1') {
         const { error: dissolveError } = await supabase
           .from('couples')
           .update({
@@ -1074,7 +1294,13 @@ class CoupleService {
     if (user.coupleId && this.couples[user.coupleId]) {
       const c = this.couples[user.coupleId];
       if (c.status === 'waiting_partner') {
-        if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
+        if (shouldUseServerDb()) {
+          try {
+            await callServerDb('dissolve_couple', { coupleId: user.coupleId });
+          } catch (e) {
+            console.warn('[coupleService] Failed to cancel waiting couple via /api/db:', e);
+          }
+        } else if (isSupabaseConfigured() && user.coupleId !== 'couple-1') {
           try {
             await supabase.from('couples').delete().eq('id', user.coupleId);
             await updateUserCoupleId(user.id, null);

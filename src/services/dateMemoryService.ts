@@ -8,7 +8,7 @@ import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
-import { supabase, isSupabaseConfigured } from './api';
+import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
 
 const STORAGE_DATE_MEMORIES_KEY = 'lovia_date_memories_v1';
 
@@ -116,6 +116,19 @@ async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<str
   if (!photo || !photo.startsWith('data:')) {
     return photo;
   }
+
+  if (shouldUseServerDb()) {
+    try {
+      const res = await callServerDb<{ publicUrl: string }>('upload_media', {
+        base64Data: photo,
+        type: 'date_photo',
+      });
+      if (res?.publicUrl) return res.publicUrl;
+    } catch (e) {
+      console.warn('[dateMemoryService] upload_media error via /api/db:', e);
+    }
+  }
+
   try {
     const match = photo.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
     if (!match) return photo;
@@ -238,6 +251,31 @@ class DateMemoryService {
     }
   }
 
+  hydrateFromBundle(rows: any[], coupleId?: string): void {
+    const mapped: DateMemory[] = (rows || []).map((row: any) => {
+      let rawLoc = row.location_data ?? row.location;
+      if (typeof rawLoc === 'string') {
+        try {
+          rawLoc = JSON.parse(rawLoc);
+        } catch {
+          rawLoc = undefined;
+        }
+      }
+      return {
+        id: row.id,
+        title: row.title,
+        date: row.date,
+        place: row.place || undefined,
+        location: rawLoc && typeof rawLoc === 'object' ? rawLoc : undefined,
+        story: row.story || undefined,
+        photos: Array.isArray(row.photos) ? row.photos : [],
+        createdAt: row.created_at,
+      };
+    });
+    this.saveDateMemoriesToStorage(mapped, coupleId);
+    this.notify();
+  }
+
   getDateMemories(): DateMemory[] {
     try {
       const stored = localStorage.getItem(STORAGE_DATE_MEMORIES_KEY);
@@ -258,6 +296,14 @@ class DateMemoryService {
     if (this.isRevalidating) return;
     this.isRevalidating = true;
     try {
+      if (shouldUseServerDb()) {
+        const bundle = await callServerDb<any>('get_bundle');
+        if (bundle && Array.isArray(bundle.dateMemories)) {
+          this.hydrateFromBundle(bundle.dateMemories, coupleId);
+          return;
+        }
+      }
+
       const { data, error } = await supabase
         .from('date_memories')
         .select('*')
@@ -326,6 +372,18 @@ class DateMemoryService {
       if (cached.length > 0) {
         this.revalidateMemoriesInBackground(couple.id);
         return cached;
+      }
+
+      if (shouldUseServerDb()) {
+        try {
+          const bundle = await callServerDb<any>('get_bundle');
+          if (bundle && Array.isArray(bundle.dateMemories)) {
+            this.hydrateFromBundle(bundle.dateMemories, couple.id);
+            return this.getDateMemories();
+          }
+        } catch (e) {
+          console.warn('[dateMemoryService] get_bundle error via /api/db:', e);
+        }
       }
 
       const { data, error } = await supabase
@@ -397,10 +455,52 @@ class DateMemoryService {
     const effectivePlace = input.place?.trim() || input.location?.placeName || undefined;
 
     let processedPhotos: string[] = input.photos ? [...input.photos] : [];
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+    if (couple) {
       processedPhotos = await Promise.all(
         processedPhotos.map((p) => uploadPhotoIfNeeded(couple.id, p))
       );
+    }
+
+    if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
+      const serverRow = await callServerDb<any>('date_memories_create', {
+        couple_id: couple.id,
+        title: input.title.trim(),
+        date: input.date,
+        place: effectivePlace || null,
+        location: input.location ? { ...input.location } : null,
+        story: input.story?.trim() || null,
+        photos: processedPhotos,
+      });
+
+      let rawLoc = serverRow.location_data ?? serverRow.location;
+      if (typeof rawLoc === 'string') {
+        try {
+          rawLoc = JSON.parse(rawLoc);
+        } catch {
+          rawLoc = undefined;
+        }
+      }
+
+      const newEntry: DateMemory = {
+        id: serverRow.id,
+        title: serverRow.title,
+        date: serverRow.date,
+        place: serverRow.place || undefined,
+        location: rawLoc && typeof rawLoc === 'object' ? rawLoc : undefined,
+        story: serverRow.story || undefined,
+        photos: Array.isArray(serverRow.photos) ? serverRow.photos : [],
+        createdAt: serverRow.created_at,
+      };
+
+      const updated = [newEntry, ...list];
+      this.saveDateMemoriesToStorage(updated, couple.id);
+      this.notify();
+
+      sendPartnerNotification('date_memory_added', {
+        title: newEntry.title,
+      });
+
+      return newEntry;
     }
 
     const newEntry: DateMemory = {
@@ -467,10 +567,47 @@ class DateMemoryService {
         : existing.place;
 
     let processedPhotos = input.photos !== undefined ? [...input.photos] : existing.photos;
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple && input.photos !== undefined) {
+    if (couple && input.photos !== undefined) {
       processedPhotos = await Promise.all(
         processedPhotos.map((p) => uploadPhotoIfNeeded(couple.id, p))
       );
+    }
+
+    if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
+      const patch: any = {};
+      if (input.title !== undefined) patch.title = input.title.trim();
+      if (input.date !== undefined) patch.date = input.date;
+      if (input.place !== undefined || input.location !== undefined) patch.place = effectivePlace || null;
+      if (input.location !== undefined) patch.location = input.location ? { ...input.location } : null;
+      if (input.story !== undefined) patch.story = input.story?.trim() || null;
+      if (input.photos !== undefined) patch.photos = processedPhotos;
+
+      const serverRow = await callServerDb<any>('date_memories_update', { id, patch });
+      let rawLoc = serverRow.location_data ?? serverRow.location;
+      if (typeof rawLoc === 'string') {
+        try {
+          rawLoc = JSON.parse(rawLoc);
+        } catch {
+          rawLoc = undefined;
+        }
+      }
+
+      const updatedEntry: DateMemory = {
+        id: serverRow.id,
+        title: serverRow.title,
+        date: serverRow.date,
+        place: serverRow.place || undefined,
+        location: rawLoc && typeof rawLoc === 'object' ? rawLoc : undefined,
+        story: serverRow.story || undefined,
+        photos: Array.isArray(serverRow.photos) ? serverRow.photos : [],
+        createdAt: serverRow.created_at,
+        updatedAt: serverRow.created_at,
+      };
+
+      list[index] = updatedEntry;
+      this.saveDateMemoriesToStorage(list, couple.id);
+      this.notify();
+      return updatedEntry;
     }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
@@ -514,6 +651,15 @@ class DateMemoryService {
 
   async deleteDateMemory(id: string): Promise<boolean> {
     const couple = coupleService.getCurrentCouple();
+
+    if (shouldUseServerDb()) {
+      await callServerDb('date_memories_delete', { id });
+      const list = this.getDateMemories();
+      const filtered = list.filter((m) => m.id !== id);
+      this.saveDateMemoriesToStorage(filtered, couple?.id);
+      this.notify();
+      return true;
+    }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const { error } = await supabase

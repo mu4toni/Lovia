@@ -14,7 +14,7 @@ import { coupleService } from './coupleService';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
-import { supabase, isSupabaseConfigured } from './api';
+import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
 
 const STORAGE_REMINDERS_KEY = 'lovia_reminders';
 const STORAGE_EVENTS_KEY = 'lovia_events';
@@ -156,7 +156,72 @@ class RemindersService {
     });
   }
 
+  mapReminderRow(row: any, couple?: any): CoupleReminder {
+    const isUser1Target = couple ? row.for_user_id === couple.user1.id : false;
+    const isUser2Target = couple && couple.user2 ? row.for_user_id === couple.user2.id : false;
+    const targetName = isUser1Target
+      ? couple?.user1.name || 'Партнёр'
+      : isUser2Target
+      ? couple?.user2?.name || 'Партнёр'
+      : row.for_user_id === 'both'
+      ? 'Для нас обоих'
+      : 'Партнёр';
+
+    const isUser1Author = couple ? row.created_by_id === couple.user1.id : false;
+    const authorName = isUser1Author
+      ? couple?.user1.name || 'Пользователь'
+      : couple?.user2?.name || 'Партнёр';
+
+    const dueLabel = row.due_date
+      ? row.due_time
+        ? `${row.due_date} · ${row.due_time}`
+        : row.due_date
+      : 'Несрочно';
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description || undefined,
+      authorId: row.created_by_id,
+      authorName,
+      targetId: row.for_user_id,
+      targetName,
+      dueDate: row.due_date || '',
+      dueLabel,
+      dueTime: row.due_time || undefined,
+      urgency: (row.priority as 'low' | 'medium' | 'high') || 'medium',
+      categoryId: row.category_id || undefined,
+      category: row.category_id || undefined,
+      status: (row.status as 'pending' | 'completed') || 'pending',
+      createdAt: row.created_at,
+      rewardNote: row.reward_note || undefined,
+    };
+  }
+
+  hydrateFromBundle(rows: any[], couple?: any): void {
+    const effCouple = couple || coupleService.getCurrentCouple();
+    const mapped = (rows || []).map((r) => this.mapReminderRow(r, effCouple));
+    this.reminders = mapped;
+    this.saveLocal();
+    if (effCouple && effCouple.id && effCouple.id !== 'couple-1') {
+      updateSwrCache(effCouple.id, 'reminders', mapped);
+    }
+    this.notify();
+  }
+
   private async fetchFromSupabase(coupleId: string): Promise<CoupleReminder[]> {
+    if (shouldUseServerDb()) {
+      try {
+        const bundle = await callServerDb<any>('get_bundle');
+        if (bundle && Array.isArray(bundle.reminders)) {
+          this.hydrateFromBundle(bundle.reminders);
+          return [...this.reminders];
+        }
+      } catch (e) {
+        console.warn('[requestsService] get_bundle error via /api/db:', e);
+      }
+    }
+
     const couple = coupleService.getCurrentCouple();
     const { data, error } = await supabase
       .from('reminders')
@@ -169,47 +234,7 @@ class RemindersService {
       throw new Error('Ошибка БД: ' + error.message);
     }
 
-    const mapped: CoupleReminder[] = (data || []).map((row: any) => {
-      const isUser1Target = couple ? row.for_user_id === couple.user1.id : false;
-      const isUser2Target = couple && couple.user2 ? row.for_user_id === couple.user2.id : false;
-      const targetName = isUser1Target
-        ? couple?.user1.name || 'Партнёр'
-        : isUser2Target
-        ? couple?.user2?.name || 'Партнёр'
-        : row.for_user_id === 'both'
-        ? 'Для нас обоих'
-        : 'Партнёр';
-
-      const isUser1Author = couple ? row.created_by_id === couple.user1.id : false;
-      const authorName = isUser1Author
-        ? couple?.user1.name || 'Пользователь'
-        : couple?.user2?.name || 'Партнёр';
-
-      const dueLabel = row.due_date
-        ? row.due_time
-          ? `${row.due_date} · ${row.due_time}`
-          : row.due_date
-        : 'Несрочно';
-
-      return {
-        id: row.id,
-        title: row.title,
-        description: row.description || undefined,
-        authorId: row.created_by_id,
-        authorName,
-        targetId: row.for_user_id,
-        targetName,
-        dueDate: row.due_date || '',
-        dueLabel,
-        dueTime: row.due_time || undefined,
-        urgency: (row.priority as 'low' | 'medium' | 'high') || 'medium',
-        categoryId: row.category_id || undefined,
-        category: row.category_id || undefined,
-        status: (row.status as 'pending' | 'completed') || 'pending',
-        createdAt: row.created_at,
-        rewardNote: row.reward_note || undefined,
-      };
-    });
+    const mapped: CoupleReminder[] = (data || []).map((row: any) => this.mapReminderRow(row, couple));
 
     this.reminders = mapped;
     this.saveLocal();
@@ -291,6 +316,38 @@ class RemindersService {
       }
     }
 
+    if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
+      const serverRow = await callServerDb<any>('reminders_create', {
+        couple_id: couple.id,
+        title: input.title.trim(),
+        description: input.description?.trim(),
+        for_user_id: input.targetId,
+        due_date: input.dueDate || null,
+        due_time: input.dueTime || null,
+        priority: input.urgency || 'medium',
+        category_id: input.categoryId || input.category || null,
+        reward_note: input.rewardNote?.trim() || null,
+      });
+
+      const newReminder = this.mapReminderRow(serverRow, couple);
+      this.reminders.unshift(newReminder);
+      this.saveLocal();
+      this.notify();
+
+      if (newReminder.targetId !== 'user-self' && newReminder.targetId !== activeUser.id) {
+        sendPartnerNotification('reminder_created', {
+          title: newReminder.title,
+          dueLabel: newReminder.dueLabel,
+          dueTime: newReminder.dueTime,
+          isCommon:
+            newReminder.targetId === 'all' ||
+            newReminder.targetId === 'both' ||
+            newReminder.targetId === 'common',
+        });
+      }
+      return newReminder;
+    }
+
     const newReminder: CoupleReminder = {
       id: `rem-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: input.title.trim(),
@@ -359,6 +416,30 @@ class RemindersService {
     this.initLocal();
     const couple = coupleService.getCurrentCouple();
 
+    if (shouldUseServerDb()) {
+      const patch: any = {};
+      if (input.title !== undefined) patch.title = input.title.trim();
+      if (input.description !== undefined) patch.description = input.description.trim() || null;
+      if (input.targetId !== undefined) patch.for_user_id = input.targetId;
+      if (input.urgency !== undefined) patch.priority = input.urgency;
+      if (input.categoryId !== undefined || input.category !== undefined) {
+        patch.category_id = input.categoryId || input.category || null;
+      }
+      if (input.dueDate !== undefined) patch.due_date = input.dueDate || null;
+      if (input.dueTime !== undefined) patch.due_time = input.dueTime || null;
+      if (input.rewardNote !== undefined) patch.reward_note = input.rewardNote.trim() || null;
+
+      const serverRow = await callServerDb<any>('reminders_update', { id, patch });
+      const updated = this.mapReminderRow(serverRow, coupleService.getCurrentCouple());
+      const idx = this.reminders.findIndex((r) => r.id === id);
+      if (idx !== -1) {
+        this.reminders[idx] = updated;
+      }
+      this.saveLocal();
+      this.notify();
+      return updated;
+    }
+
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const updateData: any = {};
       if (input.title !== undefined) updateData.title = input.title.trim();
@@ -416,6 +497,25 @@ class RemindersService {
     const newStatus = rem.status === 'completed' ? 'pending' : 'completed';
     const couple = coupleService.getCurrentCouple();
 
+    if (shouldUseServerDb()) {
+      const serverRow = await callServerDb<any>('reminders_toggle', {
+        id,
+        status: newStatus,
+      });
+      const updated = this.mapReminderRow(serverRow, coupleService.getCurrentCouple());
+      rem.status = updated.status;
+      this.saveLocal();
+      this.notify();
+
+      if (newStatus === 'completed') {
+        sendPartnerNotification('reminder_completed', {
+          title: rem.title,
+        });
+      }
+
+      return { ...rem };
+    }
+
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const { error } = await supabase
         .from('reminders')
@@ -448,6 +548,14 @@ class RemindersService {
   async deleteRequest(id: string): Promise<boolean> {
     this.initLocal();
     const couple = coupleService.getCurrentCouple();
+
+    if (shouldUseServerDb()) {
+      await callServerDb('reminders_delete', { id });
+      this.reminders = this.reminders.filter((r) => r.id !== id);
+      this.saveLocal();
+      this.notify();
+      return true;
+    }
 
     if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const { error } = await supabase
