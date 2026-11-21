@@ -54,8 +54,9 @@ export const WishCard: React.FC<WishCardProps> = ({
         }
       }}
     >
-      {/* 1. Media container: Photo (Hero) or Minimalist Lovia Mascot Placeholder */}
+      {/* 1. Polaroid-Framed Media Container */}
       <div className="wish-card__media">
+        <span className="wish-card__tape" aria-hidden="true" />
         {item.imageUrl && !imageError ? (
           <img
             src={normalizeMediaUrl(item.imageUrl)}
@@ -67,9 +68,17 @@ export const WishCard: React.FC<WishCardProps> = ({
         ) : (
           <div className="wish-card__placeholder" aria-hidden="true">
             <div className="wish-card__placeholder-icon">
-              <Icon name="gift" size={26} strokeWidth={1.8} />
+              <Icon name="gift" size={26} strokeWidth={1.75} />
             </div>
           </div>
+        )}
+
+        {/* Partner-only secret reservation badge */}
+        {!isOwnList && item.isReserved && (
+          <span className="wish-card__reserved-pill">
+            <Icon name="heart-filled" size={11} />
+            <span>Вы дарите</span>
+          </span>
         )}
 
         {/* Owner actions (strictly only for own items!) */}
@@ -110,6 +119,9 @@ export const WishCard: React.FC<WishCardProps> = ({
 
       {/* 2. Card Body */}
       <div className="wish-card__body">
+        {item.categoryLabel && (
+          <span className="wish-card__category-tag">{item.categoryLabel}</span>
+        )}
         {/* Title with predictable 2-line height */}
         <div className="wish-card__title-row">
           <h3 id={`wish-title-${item.id}`} className="wish-card__title" title={item.title}>

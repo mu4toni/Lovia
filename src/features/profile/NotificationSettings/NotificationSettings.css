@@ -10,14 +10,14 @@
 
 .notification-settings__card {
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px 18px;
+  border: 1.5px solid var(--border-sketch);
+  border-radius: 20px;
+  padding: 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .notification-settings__left {

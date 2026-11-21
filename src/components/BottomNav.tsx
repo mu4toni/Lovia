@@ -8,7 +8,6 @@ interface NavItem {
   to: string;
   label: string;
   icon: IconName;
-  isFeatured?: boolean;
 }
 
 export function BottomNav() {
@@ -21,7 +20,6 @@ export function BottomNav() {
       to: '/relationship',
       label: isFriendship ? 'Дружба' : 'Отношения',
       icon: isFriendship ? 'sparkles' : 'relationship',
-      isFeatured: true,
     },
     {
       to: '/dates',
@@ -38,36 +36,26 @@ export function BottomNav() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === '/'}
             onClick={() => {
               telegramService.hapticImpact('light');
             }}
             className={({ isActive }) =>
-              `bottom-nav__item ${item.isFeatured ? 'bottom-nav__item--featured' : ''} ${
-                isActive ? 'bottom-nav__item--active' : ''
-              }`
+              `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
             }
           >
             {({ isActive }) => (
               <>
-                <span
-                  className={`bottom-nav__icon ${
-                    item.isFeatured ? 'bottom-nav__icon--featured' : ''
-                  }`}
-                  aria-hidden="true"
-                >
-                  <Icon
-                    name={item.icon}
-                    size={item.isFeatured ? 28 : 20}
-                    strokeWidth={item.isFeatured ? 2.2 : (isActive ? 2.1 : 1.8)}
-                  />
+                <span className="bottom-nav__icon-wrap" aria-hidden="true">
+                  <span className="bottom-nav__icon">
+                    <Icon
+                      name={item.icon}
+                      size={isActive ? 20 : 21}
+                      strokeWidth={isActive ? 2 : 1.75}
+                    />
+                  </span>
                 </span>
-                <span
-                  className={`bottom-nav__label ${
-                    item.isFeatured ? 'bottom-nav__label--featured' : ''
-                  }`}
-                >
-                  {item.label}
-                </span>
+                <span className="bottom-nav__label">{item.label}</span>
               </>
             )}
           </NavLink>

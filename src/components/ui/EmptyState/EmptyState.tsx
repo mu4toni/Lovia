@@ -1,10 +1,11 @@
 import React from 'react';
 import { Button } from '../Button/Button';
-import { Mascot } from '../Mascot/Mascot';
+import { Mascot, MascotMood } from '../Mascot/Mascot';
 import './EmptyState.css';
 
 export interface EmptyStateProps {
   icon?: React.ReactNode;
+  mascotMood?: MascotMood;
   mascotVariant?: 'sleepy' | 'love' | 'peek';
   title: string;
   description: string;
@@ -15,6 +16,7 @@ export interface EmptyStateProps {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon,
+  mascotMood,
   mascotVariant = 'sleepy',
   title,
   description,
@@ -22,11 +24,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onAction,
   className = '',
 }) => {
+  const resolvedMood = mascotMood || mascotVariant;
+
   return (
     <div className={`empty-state ${className}`}>
-      {mascotVariant ? (
+      {resolvedMood ? (
         <div className="empty-state__mascot-wrap" aria-hidden="true">
-          <Mascot variant={mascotVariant} size={118} animated interactive />
+          <Mascot mood={resolvedMood} size={114} interactive />
         </div>
       ) : (
         icon && (

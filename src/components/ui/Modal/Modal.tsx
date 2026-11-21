@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { IconButton } from '../IconButton/IconButton';
 import { Icon } from '../Icon/Icon';
 import { telegramService } from '../../../services/telegramService';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './Modal.css';
 
 export interface ModalProps {
@@ -23,6 +24,7 @@ export const Modal: React.FC<ModalProps> = ({
   className = '',
 }) => {
   const titleId = useId();
+  const { isFriendship } = useSpaceMode();
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -230,14 +232,17 @@ export const Modal: React.FC<ModalProps> = ({
           <div className="modal-sheet__header">
             {title && (
               <h2 id={titleId} className="modal-sheet__title">
-                {title}
+                <span>{title}</span>
+                <span className="modal-sheet__title-mark" aria-hidden="true">
+                  {isFriendship ? '✦' : '♥'}
+                </span>
               </h2>
             )}
             <IconButton
               size="sm"
               variant="ghost"
               aria-label="Закрыть окно"
-              icon={<Icon name="close" size={18} />}
+              icon={<Icon name="close" size={17} strokeWidth={2.2} />}
               onClick={startCloseSequence}
               className="modal-sheet__close"
             />

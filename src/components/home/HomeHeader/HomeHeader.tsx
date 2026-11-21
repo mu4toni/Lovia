@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CoupleProfile } from '../../../types';
 import { Avatar } from '../../ui/Avatar/Avatar';
 import { Icon } from '../../ui/Icon/Icon';
+import { PolaroidFrame } from '../../ui/PolaroidFrame/PolaroidFrame';
 import { formatDateRu } from '../../../utils/helpers';
 import {
   calculateDaysTogether,
@@ -17,7 +18,7 @@ import { AnniversaryProgressBar } from '../../ui/AnniversaryProgress/Anniversary
 import { PartnerQuickModal } from '../../partner/PartnerQuickModal';
 import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../ui/Mascot/Mascot';
-import { SketchUnderline, SketchDoodle } from '../../ui/SketchDecor/SketchDecor';
+import { SketchUnderline } from '../../ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './HomeHeader.css';
 
@@ -42,14 +43,14 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
 
   const hasPartner = profile.isPartnerConnected && Boolean(profile.partner);
+  const userName = profile.user.name;
+  const partnerName = profile.partner?.name || (isFriendship ? 'Друг' : 'Партнёр');
 
-  // Dynamic calculations from startDate
-  const { daysTogether, anniversary, currentYearsLabel, nextYearsLabel } = useMemo(() => {
+  const { daysTogether, daysLabel, anniversary, currentYearsLabel, nextYearsLabel } = useMemo(() => {
     const sDate = profile.startDate || relationshipService.getStartDate();
     const days = calculateDaysTogether(sDate);
     const anniv = getAnniversaryInfo(sDate);
 
-    // Calculate completed full years for the left label, and next anniversary year for the right label
     let completedYears = 0;
     if (sDate) {
       const { year: startYear, month: startMonth, day: startDay } = parseDateComponents(sDate);
@@ -63,14 +64,12 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     }
     const nextYears = completedYears + 1;
 
-    const currentLabel = `${completedYears} ${pluralizeRu(completedYears, 'год', 'года', 'лет')}`;
-    const nextLabel = `${nextYears} ${pluralizeRu(nextYears, 'год', 'года', 'лет')}`;
-
     return {
       daysTogether: days,
+      daysLabel: pluralizeRu(days, 'день', 'дня', 'дней'),
       anniversary: anniv,
-      currentYearsLabel: currentLabel,
-      nextYearsLabel: nextLabel,
+      currentYearsLabel: `${completedYears} ${pluralizeRu(completedYears, 'год', 'года', 'лет')}`,
+      nextYearsLabel: `${nextYears} ${pluralizeRu(nextYears, 'год', 'года', 'лет')}`,
     };
   }, [profile.startDate]);
 
@@ -106,195 +105,172 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <>
-      {/*
-        HomeHeader: разгруженная 3-колоночная плашка пары:
-        - МЫ ВМЕСТЕ и daysLabel счётчик убраны из DOM
-        - home-header__avatar-label подписи под аватарами убраны
-        - Стрелка chevron справа убрана
-        - Дублирующая точка онлайна у имени партнёра убрана (сохранена на самом круглом аватаре)
-      */}
       <header className={`home-header ${className}`} aria-label="Пространство пары">
-        {/* 1. Date Row: Pure Typography with Sketch Sparkle */}
-        <div className="home-header__date-row">
-          <Icon name="calendar" size={14} className="home-header__date-icon" />
-          <span className="home-header__date-text">
-            {capitalizedWeekday}, {formattedDate}
-          </span>
-          <SketchDoodle type="sparkle" size={13} className="home-header__date-doodle" />
+        {/* 1. Handwritten Scrapbook Greeting Row + Peeking Bean on Top-Right */}
+        <div className="home-header__greeting-row">
+          <div className="home-header__greeting-text">
+            <span className="home-header__date-chip">
+              <Icon name="calendar" size={12} className="home-header__date-icon" />
+              <span>
+                {capitalizedWeekday}, {formattedDate}
+              </span>
+            </span>
+
+            <h1 className="home-header__greeting-title">
+              {hasPartner
+                ? `Привет, ${userName} и ${partnerName} `
+                : `Привет, ${userName} `}
+              <span className="home-header__greeting-mark" aria-hidden="true">
+                {isFriendship ? '✦' : '♥'}
+              </span>
+            </h1>
+
+            <p className="home-header__greeting-subtitle">
+              {hasPartner
+                ? isFriendship
+                  ? 'Хорошо, что вы дружите ✦'
+                  : 'Хорошо, что вы есть ♡'
+                : isFriendship
+                ? 'Пригласите друга в ваш дневник ✦'
+                : 'Пригласите партнёра в ваш дневник ♡'}
+            </p>
+          </div>
+
+          {/* Bean gently peeking from top-right — strictly pointer-events: none */}
+          <div className="home-header__peeking-mascot" aria-hidden="true">
+            <Mascot mood="peek" size={68} />
+          </div>
         </div>
 
-        {/* 2. Expressive Clean 3-Column Interactive Couple Card with Peeking Mascot */}
-        <div className="home-header__card-wrapper">
-          <div
-            className="home-header__peeking-mascot"
-            onClick={(e) => {
-              e.stopPropagation();
-              telegramService.hapticImpact('medium');
-            }}
-            aria-hidden="true"
+        {/* 2. Scrapbook Note Card: «Вместе N дней» with Polaroid on Left & Handwritten Counter on Right */}
+        <div
+          className={`home-header__together-card ${
+            anniversary.isToday ? 'home-header__together-card--celebrate' : ''
+          }`}
+          role="button"
+          tabIndex={0}
+          onClick={handleCardClick}
+          onKeyDown={handleCardKeyDown}
+          aria-label={
+            isFriendship
+              ? `Дружим ${daysTogether} ${daysLabel}. Перейти в раздел Дружба.`
+              : `Вместе ${daysTogether} ${daysLabel}. Перейти в раздел Отношения.`
+          }
+        >
+          {/* Left: Tilted Polaroid with Couple Mini-Avatars */}
+          <PolaroidFrame
+            tilt="left"
+            sticker={isFriendship ? 'star' : 'heart'}
+            className="home-header__polaroid"
           >
-            <Mascot variant="peek" size={64} animated interactive />
-          </div>
-
-          <div
-            className={`home-header__couple-card ${
-              anniversary.isToday ? 'home-header__couple-card--celebrate' : ''
-            } ${anniversary.isUpcoming ? 'home-header__couple-card--upcoming' : ''}`}
-            role="button"
-            tabIndex={0}
-            onClick={handleCardClick}
-            onKeyDown={handleCardKeyDown}
-            aria-label={
-              isFriendship
-                ? 'Перейти в раздел Дружба и памятные даты'
-                : 'Перейти в раздел Отношения и памятные даты'
-            }
-            title={
-              isFriendship
-                ? 'Нажмите, чтобы открыть историю дружбы'
-                : 'Нажмите, чтобы открыть историю отношений'
-            }
-          >
-          <div className="home-header__card-glow" aria-hidden="true" />
-
-          {anniversary.isToday && (
-            <div className="home-header__card-confetti" aria-hidden="true">
-              <Icon name="sparkles" size={13} className="home-header__sparkle s1" />
-              <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={11} className="home-header__sparkle s2" />
-              <Icon name="sparkles" size={13} className="home-header__sparkle s3" />
-            </div>
-          )}
-
-          {/* Left Column: User Round Avatar (Clickable to /profile) */}
-          <div
-            className="home-header__avatar-side home-header__avatar-side--user"
-            role="button"
-            tabIndex={0}
-            onClick={handleUserClick}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleUserClick(e);
-              }
-            }}
-            title="Перейти в мой профиль"
-            aria-label={`Мой профиль: ${profile.user.name}`}
-          >
-            <div className="home-header__avatar-frame home-header__avatar-frame--user">
-              <Avatar
-                name={profile.user.name}
-                src={profile.user.avatarUrl}
-                size="lg"
-                className="home-header__flank-avatar"
-              />
-            </div>
-          </div>
-
-          {/* Center Column: Couple Names & Progress */}
-          <div className="home-header__center-zone">
-            {/* Names: Имя1 ❤️ Имя2 */}
-            <div className="home-header__names-row">
-              <span className="home-header__name-text">{profile.user.name}</span>
-              <span className="home-header__heart-badge" aria-hidden="true">
-                <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={14} />
-              </span>
-              <span className="home-header__name-text">
-                {hasPartner ? profile.partner?.name : (isFriendship ? 'Друг' : 'Партнёр')}
-              </span>
-            </div>
-            <SketchUnderline width={68} variant="wave" className="home-header__names-underline" />
-
-            {/* Anniversary Progress Bar & Year Labels */}
-            {hasPartner ? (
-              <div className="home-header__progress-container">
-                <AnniversaryProgressBar
-                  progressPercent={anniversary.progressPercent}
-                  daysUntil={anniversary.daysUntil}
-                  isToday={anniversary.isToday}
-                  yearsTogether={anniversary.yearsTogether}
-                  hideCaption
+            <div className="home-header__polaroid-avatars">
+              <div
+                className="home-header__polaroid-avatar-btn home-header__polaroid-avatar-btn--user"
+                role="button"
+                tabIndex={0}
+                onClick={handleUserClick}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleUserClick(e);
+                  }
+                }}
+                title="Мой профиль"
+                aria-label={`Мой профиль: ${userName}`}
+              >
+                <Avatar
+                  name={userName}
+                  src={profile.user.avatarUrl}
+                  size="md"
+                  className="home-header__mini-avatar"
                 />
-                <div className="home-header__progress-labels">
-                  <span className="home-header__progress-year">{currentYearsLabel}</span>
-                  <span className="home-header__progress-year">{nextYearsLabel}</span>
-                </div>
               </div>
-            ) : (
-              <div className="home-header__unpaired-block">
-                <span className="home-header__unpaired-desc">
-                  {isFriendship
-                    ? 'Пригласите друга для общего прогресса'
-                    : 'Пригласите партнёра для общего прогресса'}
-                </span>
-                {onInvitePartner && (
-                  <button
-                    type="button"
-                    className="home-header__invite-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onInvitePartner();
-                    }}
-                  >
-                    Пригласить
-                  </button>
+
+              <div
+                className="home-header__polaroid-avatar-btn home-header__polaroid-avatar-btn--partner"
+                role="button"
+                tabIndex={0}
+                onClick={handlePartnerClick}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handlePartnerClick(e);
+                  }
+                }}
+                title={hasPartner ? partnerName : isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
+                aria-label={hasPartner ? partnerName : isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
+              >
+                {hasPartner ? (
+                  <Avatar
+                    name={partnerName}
+                    src={profile.partner!.avatarUrl}
+                    size="md"
+                    className="home-header__mini-avatar"
+                  />
+                ) : (
+                  <span className="home-header__polaroid-plus" aria-hidden="true">
+                    <Icon name="plus" size={16} />
+                  </span>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          </PolaroidFrame>
 
-          {/* Right Column: Partner Round Avatar (Clickable to PartnerQuickModal) */}
-          <div
-            className="home-header__avatar-side home-header__avatar-side--partner"
-            role="button"
-            tabIndex={0}
-            onClick={handlePartnerClick}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handlePartnerClick(e);
-              }
-            }}
-            title={
-              hasPartner
-                ? `${isFriendship ? 'О друге' : 'О партнёре'}: ${profile.partner?.name}`
-                : isFriendship
-                ? 'Пригласить друга'
-                : 'Пригласить партнёра'
-            }
-            aria-label={
-              hasPartner
-                ? `${isFriendship ? 'Друг' : 'Партнёр'}: ${profile.partner?.name}`
-                : isFriendship
-                ? 'Пригласить друга'
-                : 'Пригласить партнёра'
-            }
-          >
+          {/* Right: Handwritten Days Counter & Warm Caption */}
+          <div className="home-header__together-info">
+            <span className="home-header__together-kicker">
+              {isFriendship ? 'Дружим уже' : 'Вместе уже'}
+            </span>
+
+            <div className="home-header__days-row">
+              <span className="home-header__days-num">{daysTogether}</span>
+              <span className="home-header__days-unit">{daysLabel}</span>
+            </div>
+
+            <SketchUnderline width={86} variant="wave" className="home-header__days-underline" />
+
             {hasPartner ? (
-              <div className="home-header__avatar-frame home-header__avatar-frame--partner">
-                <Avatar
-                  name={profile.partner!.name}
-                  src={profile.partner!.avatarUrl}
-                  size="lg"
-                  className="home-header__flank-avatar"
-                />
-              </div>
+              <>
+                <p className="home-header__together-note">
+                  {anniversary.isToday
+                    ? 'С праздником вас сегодня! ♥'
+                    : isFriendship
+                    ? 'Столько тёплых встреч вместе ✦'
+                    : 'Каждый день с тобой особенный ♡'}
+                </p>
+
+                <div className="home-header__progress-wrap">
+                  <AnniversaryProgressBar
+                    progressPercent={anniversary.progressPercent}
+                    daysUntil={anniversary.daysUntil}
+                    isToday={anniversary.isToday}
+                    yearsTogether={anniversary.yearsTogether}
+                    hideCaption
+                  />
+                  <div className="home-header__progress-labels">
+                    <span>{currentYearsLabel}</span>
+                    <span>{nextYearsLabel}</span>
+                  </div>
+                </div>
+              </>
             ) : (
-              <button
-                type="button"
-                className="home-header__add-partner-avatar"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePartnerClick(e);
-                }}
-                title={isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
-                aria-label={isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
-              >
-                <Icon name="plus" size={20} />
-              </button>
+              <div className="home-header__unpaired-block">
+                <p className="home-header__together-note">
+                  {isFriendship
+                    ? 'Подключите друга по коду, чтобы вести дневник вместе'
+                    : 'Подключите партнёра по коду, чтобы вести дневник вместе'}
+                </p>
+                <button
+                  type="button"
+                  className="home-header__invite-pill"
+                  onClick={handlePartnerClick}
+                >
+                  {isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
+                </button>
+              </div>
             )}
           </div>
         </div>
-      </div>
       </header>
 
       {/* Partner Quick Info Modal */}

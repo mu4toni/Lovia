@@ -3,93 +3,92 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-xs);
-  font-family: var(--font-family);
-  font-weight: 600;
-  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  border-radius: 999px;
   cursor: pointer;
   user-select: none;
   position: relative;
   overflow: hidden;
-  transition: transform var(--duration-fast) var(--ease-spring),
-              background var(--duration-normal) var(--ease-smooth),
-              border-color var(--duration-normal) var(--ease-smooth),
-              box-shadow var(--duration-normal) var(--ease-smooth),
+  transition: transform var(--duration-fast) var(--ease-tactile),
+              background-color var(--duration-fast) ease,
+              border-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease,
               opacity var(--duration-fast) ease;
-  min-height: 44px; /* Accessible tap target */
+  min-height: 44px;
   min-width: 44px;
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(1.5px) scale(0.93);
-  box-shadow: var(--shadow-sketch-pressed, var(--shadow-xs));
-  transition: transform 100ms var(--ease-tactile);
+  transform: scale(0.97);
+  box-shadow: var(--shadow-sketch-pressed);
+  transition: transform 90ms var(--ease-tactile);
 }
 
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.48;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Sizing */
+/* Sizing — Always Pill-Shaped */
 .btn--sm {
-  padding: 6px 14px;
+  padding: 7px 16px;
   font-size: var(--font-size-xs);
   min-height: 38px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
 }
 
 .btn--md {
-  padding: 9px 18px;
+  padding: 10px 20px;
   font-size: var(--font-size-sm);
   min-height: 44px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
 }
 
 .btn--lg {
-  padding: 13px 24px;
+  padding: 13px 26px;
   font-size: var(--font-size-md);
   min-height: 50px;
-  border-radius: var(--radius-lg);
+  border-radius: 999px;
 }
 
 .btn--full-width {
   width: 100%;
 }
 
-/* Variants — Tactile Warm Sketch Buttons */
+/* Primary: Accent Pill (var(--accent-primary), White text) */
 .btn--primary {
-  background: var(--color-primary);
-  color: var(--text-on-accent);
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
-  box-shadow: var(--shadow-sketch, var(--shadow-sm));
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  border: 1.5px solid transparent;
+  box-shadow: 0 4px 14px var(--accent-shadow);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--accent-primary-hover);
 }
 
 .btn--primary:active:not(:disabled) {
-  background: var(--color-primary-active);
+  background: var(--accent-primary-active);
 }
 
+/* Secondary: Cream Paper with Cocoa Outline */
 .btn--secondary {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1.5px solid var(--border-subtle);
-  box-shadow: var(--shadow-sketch, var(--shadow-sm));
+  background: var(--bg-card);
+  color: var(--text-cocoa);
+  border: 1.5px solid var(--text-cocoa);
+  box-shadow: var(--shadow-xs);
 }
 
 .btn--secondary:hover:not(:disabled) {
   background: var(--bg-surface-hover);
-  border-color: var(--border-medium);
 }
 
 .btn--outline {
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text-cocoa);
   border: 1.5px solid var(--border-medium);
-  box-shadow: var(--shadow-sketch, var(--shadow-sm));
 }
 
 .btn--outline:hover:not(:disabled) {
@@ -104,13 +103,13 @@
 
 .btn--ghost:hover:not(:disabled) {
   background: var(--bg-surface-subtle);
-  color: var(--text-primary);
+  color: var(--text-cocoa);
 }
 
 .btn--danger {
   background: var(--color-primary-tint);
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary-subtle-border);
+  color: var(--accent-strawberry);
+  border: 1.5px dashed var(--border-dashed);
 }
 
 .btn--danger:hover:not(:disabled) {

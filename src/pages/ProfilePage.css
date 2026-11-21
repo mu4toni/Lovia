@@ -5,9 +5,10 @@
 .profile-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl, 24px);
-  padding-top: calc(8px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(92px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  gap: 18px;
+  padding-top: calc(6px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(108px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  overflow-x: clip;
   animation: pageEntrance var(--duration-normal) var(--ease-telegram) backwards;
 }
 

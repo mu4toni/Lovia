@@ -1,6 +1,5 @@
 /* ==========================================================================
-   LOVIA — Dedicated Bottom Action Button Component
-   Unified standard for inline and floating bottom actions
+   LOVIA — Dedicated Bottom Action Button (Strawberry Scrapbook Pill)
    ========================================================================== */
 
 .bottom-action-wrapper {
@@ -14,14 +13,11 @@
               transform var(--motion-component) var(--motion-ease-smooth);
 }
 
-/* Floating Mode: Placed directly above the BottomNav dock */
 .bottom-action-wrapper--floating {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 14px);
-  /* 14px clearance (12-16px) above the elevated center button (94px) of BottomNav */
-  bottom: calc(108px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  bottom: calc(96px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
   z-index: 95;
   margin: 0;
   padding: 0;
@@ -29,13 +25,13 @@
   justify-content: center;
   align-items: center;
   pointer-events: none;
-  animation: floating-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: floating-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes floating-enter {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.94);
+    transform: translateY(12px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -43,11 +39,10 @@
   }
 }
 
-/* Hidden state when forms, modals or keyboards are active */
 .bottom-action-wrapper--hidden {
   opacity: 0;
   pointer-events: none !important;
-  transform: translateY(16px) scale(0.92);
+  transform: translateY(14px) scale(0.94);
 }
 
 .bottom-action-btn {
@@ -60,43 +55,40 @@
   height: 48px;
   min-height: 48px;
   padding: 0 24px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: #ffffff;
-  border: none;
-  font-family: inherit;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  border: 2px solid var(--bg-card);
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(218, 0, 56, 0.24);
-  transition: transform var(--motion-micro) var(--motion-ease-spring),
+  box-shadow: 0 6px 20px var(--accent-shadow);
+  transition: transform var(--motion-micro) var(--ease-tactile),
               background-color var(--motion-micro) ease,
-              box-shadow var(--motion-micro) ease,
-              opacity var(--motion-micro) ease;
+              box-shadow var(--motion-micro) ease;
   user-select: none;
   -webkit-user-select: none;
   outline: none;
   position: relative;
 }
 
-/* Floating button style: compact, pill-shaped, premium (48-52px height) */
 .bottom-action-btn--floating {
   width: auto;
   max-width: fit-content;
-  height: 48px;
-  min-height: 48px;
+  height: 46px;
+  min-height: 46px;
   padding: 0 22px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: #ffffff;
-  box-shadow: 0 6px 22px rgba(218, 0, 56, 0.3), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  box-shadow: 0 6px 20px var(--accent-shadow), 0 2px 6px rgba(73, 55, 47, 0.12);
   pointer-events: auto;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* Touch Target Minimum Bounds (WCAG 44x44px) */
 .bottom-action-btn::before {
   content: '';
   position: absolute;
@@ -109,18 +101,16 @@
 }
 
 .bottom-action-btn:hover {
-  background: var(--color-primary-hover, #bf0031);
-  box-shadow: 0 6px 24px rgba(218, 0, 56, 0.32);
+  background: var(--accent-primary-hover);
 }
 
 .bottom-action-btn:active {
-  transform: scale(0.93);
-  transition: transform 100ms var(--ease-tactile);
-  box-shadow: 0 2px 8px rgba(218, 0, 56, 0.2);
+  transform: scale(0.97);
+  transition: transform 90ms var(--ease-tactile);
 }
 
 .bottom-action-btn:focus-visible {
-  box-shadow: 0 0 0 3px rgba(200, 54, 73, 0.4);
+  box-shadow: 0 0 0 3px var(--accent-shadow);
 }
 
 .bottom-action-btn__icon {
@@ -132,26 +122,4 @@
 
 .bottom-action-btn__label {
   white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bottom-action-wrapper,
-  .bottom-action-btn {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
-/* Dark theme */
-[data-theme='dark'] .bottom-action-btn {
-  background: var(--color-primary);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-}
-
-[data-theme='dark'] .bottom-action-btn--floating {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(218, 0, 56, 0.25);
-}
-
-[data-theme='dark'] .bottom-action-btn:hover {
-  background: var(--color-primary-hover, #bf0031);
 }

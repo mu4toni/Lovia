@@ -73,9 +73,9 @@
 }
 
 .appearance-card--active {
-  border-color: var(--color-primary) !important;
-  background: var(--color-primary-soft) !important;
-  box-shadow: 0 4px 16px rgba(218, 0, 56, 0.16);
+  border-color: var(--accent-primary) !important;
+  background: var(--accent-soft) !important;
+  box-shadow: 0 4px 16px var(--accent-shadow);
 }
 
 /* Visual miniature preview */
@@ -93,13 +93,13 @@
 }
 
 .appearance-card__preview--light {
-  background: #f2f2f2;
-  border: 1px solid rgba(23, 23, 23, 0.08);
+  background: #F8F1E9;
+  border: 1px solid rgba(73, 55, 47, 0.14);
 }
 
 .appearance-card__preview--dark {
-  background: #171717;
-  border: 1px solid rgba(229, 229, 229, 0.1);
+  background: #221A17;
+  border: 1px solid rgba(245, 235, 226, 0.14);
 }
 
 .appearance-card__preview-row {
@@ -112,7 +112,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #da0038;
+  background: var(--accent-primary);
 }
 
 .appearance-card__preview-bar {
@@ -122,22 +122,22 @@
 }
 
 .appearance-card__preview--light .appearance-card__preview-bar {
-  background: #171717;
+  background: #49372F;
 }
 
 .appearance-card__preview--dark .appearance-card__preview-bar {
-  background: #e5e5e5;
+  background: #F5EBE2;
 }
 
 .appearance-card__preview-card {
   width: 100%;
   height: 16px;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .appearance-card__preview--light .appearance-card__preview-card {
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: #FFFBF6;
+  border: 1px solid rgba(73, 55, 47, 0.10);
 }
 
 .appearance-card__preview--dark .appearance-card__preview-card {
@@ -178,8 +178,134 @@
   pointer-events: none;
 }
 
+/* ==========================================================================
+   Scrapbook Accent Color Swatch Card
+   ========================================================================== */
+
+.appearance-accents {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-sketch);
+  box-shadow: var(--shadow-card);
+}
+
+.appearance-accents__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.appearance-accents__label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+}
+
+.appearance-accents__current {
+  font-family: var(--font-handwritten);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+
+.appearance-accents__row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  align-items: start;
+}
+
+.appearance-accent-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  outline: none;
+  min-height: 48px;
+  transition: transform var(--duration-fast) var(--ease-tactile);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.appearance-accent-item:active {
+  transform: scale(0.93);
+}
+
+.appearance-accent-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 2px 8px rgba(73, 55, 47, 0.16), 0 0 0 1.5px var(--border-sketch);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              box-shadow var(--duration-fast) ease;
+  position: relative;
+}
+
+.appearance-accent-item:hover .appearance-accent-swatch {
+  transform: translateY(-2px);
+}
+
+.appearance-accent-item--active .appearance-accent-swatch {
+  box-shadow: 0 0 0 2.5px var(--bg-card), 0 0 0 4.5px var(--swatch-color, var(--accent-primary)),
+              0 4px 12px var(--accent-shadow);
+  transform: scale(1.06);
+}
+
+.appearance-accent-swatch__check {
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.appearance-accent-item__name {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  transition: color var(--duration-fast) ease;
+}
+
+.appearance-accent-item--active .appearance-accent-item__name {
+  color: var(--accent-primary);
+  font-weight: 800;
+}
+
+@media (max-width: 360px) {
+  .appearance-accent-swatch {
+    width: 34px;
+    height: 34px;
+  }
+  .appearance-accent-item__name {
+    font-size: 9.8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .appearance-card {
+  .appearance-card,
+  .appearance-accent-item,
+  .appearance-accent-swatch {
     transition: none;
     transform: none;
   }

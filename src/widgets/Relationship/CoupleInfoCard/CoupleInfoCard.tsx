@@ -104,7 +104,7 @@ export const CoupleInfoCard: React.FC<CoupleInfoCardProps> = ({
             <div className="relationship-hero-card__names-row">
               <span className="relationship-hero-card__name">{userName}</span>
               <span className="relationship-hero-card__heart" aria-hidden="true">
-                <Icon name="heart-filled" size={13} />
+                <Icon name={isFriendship ? 'sparkles' : 'heart-filled'} size={14} />
               </span>
               <span className="relationship-hero-card__name">{partnerName}</span>
             </div>

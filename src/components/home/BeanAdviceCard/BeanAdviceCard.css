@@ -1,0 +1,56 @@
+/* ==========================================================================
+   LOVIA — "Bean Advises" Scrapbook Tip Card
+   ========================================================================== */
+
+.bean-advice-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border-dashed-cocoa);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.bean-advice-card__mascot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.bean-advice-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bean-advice-card__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bean-advice-card__title {
+  font-family: var(--font-handwritten);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-caramel);
+  line-height: 1.2;
+}
+
+.bean-advice-card__doodle {
+  color: var(--accent-strawberry);
+}
+
+.bean-advice-card__text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-cocoa);
+}

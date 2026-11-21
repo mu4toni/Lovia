@@ -8,13 +8,14 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: var(--color-primary-soft);
-  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1.5px dashed var(--border-dashed);
+  border-radius: 16px;
   padding: 12px 14px;
 }
 
 .edit-start-date-form__note-icon {
-  color: var(--color-primary);
+  color: var(--accent-primary);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -22,7 +23,7 @@
 .edit-start-date-form__note-text {
   margin: 0;
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text-cocoa);
   line-height: 1.45;
 }
 

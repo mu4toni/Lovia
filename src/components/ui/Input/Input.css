@@ -5,28 +5,28 @@
 .input-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: 5px;
   width: 100%;
 }
 
 .input-field__label {
-  font-size: var(--font-size-xs, 12px);
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-cocoa);
   user-select: none;
-  letter-spacing: 0.1px;
+  letter-spacing: -0.01em;
 }
 
 .input-field__container {
   display: flex;
   align-items: center;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0 var(--space-sm, 12px);
-  min-height: 44px; /* Accessible touch target */
+  background: var(--bg-surface-subtle);
+  border: 1.5px solid var(--border-sketch);
+  border-radius: 16px;
+  padding: 0 14px;
+  min-height: 46px; /* Accessible touch target */
   transition: border-color var(--duration-fast) var(--ease-smooth),
-              background var(--duration-fast) var(--ease-smooth);
+              background-color var(--duration-fast) var(--ease-smooth);
   box-sizing: border-box;
 }
 
@@ -35,17 +35,17 @@
   border-color: var(--border-medium);
 }
 
-/* Clean single focus outline: exactly 1 brand red border, no double outlines, no spread glow */
+/* Clean single focus outline: accent border on warm card paper */
 .input-field__container:focus-within {
-  border-color: var(--color-primary);
-  background: var(--bg-surface);
+  border-color: var(--accent-primary);
+  background: var(--bg-card);
   box-shadow: none !important;
   outline: none !important;
 }
 
-/* Error state: single clean red border, no secondary glow */
+/* Error state: single clean accent border */
 .input-field__container--error {
-  border-color: var(--color-primary) !important;
+  border-color: var(--accent-primary) !important;
   box-shadow: none !important;
   outline: none !important;
 }

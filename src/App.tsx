@@ -94,6 +94,8 @@ export function App() {
     if (savedTheme) {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
+    const savedAccent = localStorage.getItem('lovia_accent_color') || 'strawberry';
+    document.documentElement.setAttribute('data-accent', savedAccent);
     telegramService.init();
     telegramService.applyThemeColors();
 

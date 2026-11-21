@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LOVIA — Mascot Component Styles (Hand-drawn warmth, micro-motion)
+   LOVIA — Mascot Bear Bean Component Styles (Lightweight, 60fps safe)
    ========================================================================== */
 
 .lovia-mascot {
@@ -13,124 +13,89 @@
   user-select: none;
   -webkit-user-select: none;
   transform-origin: center bottom;
-  will-change: transform;
 }
 
-.lovia-mascot__img {
+.lovia-mascot--decorative {
+  pointer-events: none;
+}
+
+.lovia-mascot__img,
+.lovia-mascot__svg-fallback {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 4px 10px rgba(35, 31, 32, 0.08));
-  transition: filter var(--duration-fast, 150ms) ease;
 }
 
-/* Dark Theme: gentle outline separation drop-shadow */
-[data-theme='dark'] .lovia-mascot__img {
-  filter: drop-shadow(0 2px 10px rgba(255, 255, 255, 0.08))
-          drop-shadow(0 4px 14px rgba(0, 0, 0, 0.5));
-}
-
-/* Interactive click/tap bounce */
+/* Interactive tap feedback */
 .lovia-mascot--interactive {
   cursor: pointer;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
 }
 
 .lovia-mascot--interactive:active {
-  transform: scale(0.94);
+  transform: scale(0.95);
   transition: transform 100ms var(--ease-tactile);
 }
 
 .lovia-mascot--tapped {
-  animation: mascotTapReaction 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  animation: mascotTapReaction 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .lovia-mascot__float-heart {
   position: absolute;
-  top: 15%;
+  top: 10%;
+  color: var(--accent-strawberry, #C92D48);
+  font-family: var(--font-handwritten);
   pointer-events: none;
   user-select: none;
-  animation: mascotFloatHeart 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: mascotFloatHeart 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   z-index: 10;
 }
 
 @keyframes mascotFloatHeart {
   0% {
     opacity: 1;
-    transform: translateY(0) scale(0.6);
+    transform: translateY(0) scale(0.7);
   }
   50% {
     opacity: 1;
-    transform: translateY(-24px) scale(1.2);
+    transform: translateY(-20px) scale(1.15);
   }
   100% {
     opacity: 0;
-    transform: translateY(-46px) scale(0.9);
+    transform: translateY(-38px) scale(0.9);
   }
 }
 
-/* Animations for each mascot */
-.lovia-mascot--animated.lovia-mascot--love {
-  animation: mascotLoveFloat 4.2s ease-in-out infinite;
+/* Gentle, subtle breathing motion only when explicitly animated */
+.lovia-mascot--animated {
+  animation: mascotGentleFloat 4.5s ease-in-out infinite;
 }
 
-.lovia-mascot--animated.lovia-mascot--sleepy {
-  animation: mascotSleepyBreathe 3.6s ease-in-out infinite;
-}
-
-.lovia-mascot--animated.lovia-mascot--peek {
-  animation: mascotPeekSway 3.8s ease-in-out infinite;
-}
-
-/* Keyframes */
-@keyframes mascotLoveFloat {
+@keyframes mascotGentleFloat {
   0%, 100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-4px) rotate(1.2deg);
-  }
-}
-
-@keyframes mascotSleepyBreathe {
-  0%, 100% {
-    transform: scale(1) translateY(0);
-  }
-  50% {
-    transform: scale(1.02, 0.98) translateY(1px);
-  }
-}
-
-@keyframes mascotPeekSway {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-2px) rotate(-1.5deg);
-  }
-  75% {
-    transform: translateY(-1px) rotate(1.5deg);
+    transform: translateY(-3px);
   }
 }
 
 @keyframes mascotTapReaction {
   0% {
-    transform: scale(0.92);
+    transform: scale(0.94);
   }
   45% {
-    transform: scale(1.12) rotate(4deg);
-  }
-  70% {
-    transform: scale(0.98) rotate(-2deg);
+    transform: scale(1.08) rotate(3deg);
   }
   100% {
     transform: scale(1) rotate(0deg);
   }
 }
 
-/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .lovia-mascot--animated,
   .lovia-mascot--tapped {

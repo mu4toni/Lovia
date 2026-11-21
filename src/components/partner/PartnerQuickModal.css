@@ -26,11 +26,12 @@
 }
 
 .partner-quick-modal__name {
-  font-size: 20px;
+  font-family: var(--font-handwritten);
+  font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-cocoa);
   margin: 0 0 12px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .partner-quick-modal__days-box {
@@ -40,18 +41,18 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: var(--radius-md);
-  background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
+  border-radius: 16px;
+  background: var(--accent-soft);
+  border: 1.5px dashed var(--border-dashed);
+  color: var(--text-cocoa);
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 20px;
 }
 
 .partner-quick-modal__days-box strong {
-  color: var(--color-primary);
-  font-weight: 700;
+  color: var(--accent-primary);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
@@ -69,18 +70,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-sketch);
   background: var(--bg-card);
-  color: var(--text-primary);
+  color: var(--text-cocoa);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: transform var(--duration-fast) var(--ease-spring),
               background var(--duration-fast) ease,
               border-color var(--duration-fast) ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-xs);
 }
 
 .partner-quick-modal__btn:hover {
@@ -93,14 +94,21 @@
 }
 
 .partner-quick-modal__btn--primary {
-  background: var(--color-primary-soft);
-  border-color: rgba(227, 163, 180, 0.28);
-  color: var(--color-primary);
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--accent-shadow);
+}
+
+.partner-quick-modal__btn--primary .partner-quick-modal__btn-icon,
+.partner-quick-modal__btn--primary .partner-quick-modal__chevron {
+  color: #ffffff;
+  opacity: 1;
 }
 
 .partner-quick-modal__btn--primary:hover {
-  background: rgba(227, 163, 180, 0.24);
-  border-color: rgba(227, 163, 180, 0.4);
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
 }
 
 .partner-quick-modal__btn-content {

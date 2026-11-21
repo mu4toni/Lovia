@@ -9,6 +9,8 @@ import { BottomActionButton } from '../components/ui/BottomActionButton/BottomAc
 import { useToast } from '../components/ui/Toast/ToastContext';
 import { MemorableDate, CreateMemorableDateInput } from '../types/relationship';
 import { Skeleton } from '../components/ui/Loading/Skeleton';
+import { Mascot } from '../components/ui/Mascot/Mascot';
+import { SketchUnderline } from '../components/ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../hooks/useSpaceMode';
 import './RelationshipPage.css';
 
@@ -94,7 +96,18 @@ export function RelationshipPage() {
   return (
     <div className="relationship-page">
       <header className="relationship-page__header">
-        <h1 className="relationship-page__title">{isFriendship ? 'Наша дружба' : 'Наша история'}</h1>
+        <div className="relationship-page__header-left">
+          <h1 className="relationship-page__title">
+            {isFriendship ? 'Наша дружба ' : 'Наша история '}
+            <span className="relationship-page__title-mark" aria-hidden="true">
+              {isFriendship ? '✦' : '♥'}
+            </span>
+          </h1>
+          <SketchUnderline width={110} variant="wave" className="relationship-page__title-underline" />
+        </div>
+        <div className="relationship-page__peeking-mascot" aria-hidden="true">
+          <Mascot mood="peek" size={64} />
+        </div>
       </header>
 
       {/* 1.1 Couple Info Card */}

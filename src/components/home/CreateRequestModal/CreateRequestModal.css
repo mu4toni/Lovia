@@ -24,16 +24,16 @@
 }
 
 .create-form-label {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-cocoa);
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
 
 .create-category-reset-link {
   font-size: 11.5px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -43,21 +43,21 @@
 }
 
 .create-category-reset-link:hover {
-  color: var(--color-primary);
+  color: var(--accent-primary);
 }
 
-/* 1. Чистый инпут без кричащих рамок в покое */
+/* 1. Тёплый бумажный инпут */
 .create-request-title-input {
   width: 100%;
-  height: 44px;
-  min-height: 44px;
+  height: 46px;
+  min-height: 46px;
   padding: 0 14px;
   font-size: 14.5px;
-  font-weight: 500;
-  border-radius: var(--radius-md, 12px);
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
+  font-weight: 600;
+  border-radius: 16px;
+  background: var(--bg-surface-subtle);
+  border: 1.5px solid var(--border-sketch);
+  color: var(--text-cocoa);
   outline: none;
   transition: all var(--duration-fast, 150ms) ease;
   box-sizing: border-box;
@@ -65,22 +65,24 @@
 
 [data-theme='dark'] .create-request-title-input {
   background: var(--bg-surface-subtle);
-  border-color: var(--border-subtle);
-  color: var(--text-primary);
+  border-color: var(--border-sketch);
+  color: var(--text-cocoa);
 }
 
 .create-request-title-input:focus {
-  border-color: var(--color-primary, #da0038);
-  box-shadow: 0 0 0 2px rgba(218, 0, 56, 0.2);
+  border-color: var(--accent-primary);
+  background: var(--bg-card);
+  box-shadow: none;
 }
 
 .create-request-title-input--error {
-  border-color: var(--color-primary, #da0038);
+  border-color: var(--accent-primary);
 }
 
 .create-input-error-msg {
   font-size: 11.5px;
-  color: var(--color-primary, #da0038);
+  font-weight: 600;
+  color: var(--accent-primary);
   margin-top: 2px;
 }
 
@@ -286,14 +288,14 @@
   text-align: center;
 }
 
-/* 4. Сегментный переключатель получателя на главном экране */
+/* 4. Сегментный переключатель получателя (Scrapbook Pill Dock) */
 .create-target-toggle {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
-  padding: 3px;
-  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--border-sketch);
+  padding: 4px;
+  border-radius: 999px;
   gap: 4px;
   width: 100%;
 }
@@ -301,9 +303,9 @@
 .create-target-btn {
   padding: 0 6px;
   font-size: 12.5px;
-  font-weight: 500;
-  border-radius: var(--radius-sm, 7px);
-  color: var(--text-secondary);
+  font-weight: 600;
+  border-radius: 999px;
+  color: var(--text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -320,40 +322,38 @@
 }
 
 .create-target-btn:hover {
-  color: var(--text-primary);
+  color: var(--text-cocoa);
 }
 
 .create-target-btn:active {
   transform: scale(0.97);
 }
 
-/* Light Theme Active Target Button: clear white card bg, subtle shadow, dark primary text */
 .create-target-btn--active {
-  background: #ffffff;
-  color: var(--text-primary);
-  font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(23, 23, 23, 0.04);
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 3px 10px var(--accent-shadow);
 }
 
-/* Dark Theme Target Toggle & Active Button */
 [data-theme='dark'] .create-target-toggle {
   background: var(--bg-surface-subtle);
-  border-color: var(--border-subtle);
+  border-color: var(--border-sketch);
 }
 
 [data-theme='dark'] .create-target-btn {
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 [data-theme='dark'] .create-target-btn:hover {
-  color: var(--text-primary);
+  color: var(--text-cocoa);
 }
 
 [data-theme='dark'] .create-target-btn--active {
-  background: #262626;
+  background: var(--accent-primary);
   color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+  box-shadow: 0 3px 10px var(--accent-shadow);
 }
 
 /* 5. Аккордеон «Дополнительные параметры» */
@@ -363,7 +363,7 @@
   gap: 8px;
   margin-top: 6px;
   padding-top: 12px;
-  border-top: 1.5px dashed var(--border-subtle);
+  border-top: 1.5px dashed var(--border-sketch);
 }
 
 .create-advanced-toggle {
@@ -371,41 +371,39 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0 14px;
-  border-radius: var(--radius-md, 12px);
+  padding: 0 16px;
+  border-radius: 999px;
   background: var(--bg-surface-subtle);
-  border: 1.5px solid var(--border-subtle);
-  box-shadow: 0 2px 0 rgba(35, 31, 32, 0.05);
-  color: var(--text-secondary);
+  border: 1.5px solid var(--border-sketch);
+  box-shadow: var(--shadow-xs);
+  color: var(--text-cocoa);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   outline: none;
-  height: 42px;
-  min-height: 42px;
+  height: 44px;
+  min-height: 44px;
   transition: all var(--duration-fast, 150ms) ease;
 }
 
 .create-advanced-toggle:active {
-  transform: translateY(1px);
-  box-shadow: 0 0.5px 0 rgba(35, 31, 32, 0.05);
+  transform: scale(0.98);
 }
 
 .create-advanced-toggle:hover {
   background: var(--bg-surface-hover);
-  color: var(--text-primary);
+  color: var(--text-cocoa);
 }
 
 [data-theme='dark'] .create-advanced-toggle {
   background: var(--bg-surface-subtle);
-  border-color: var(--border-subtle);
-  color: var(--text-secondary);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  border-color: var(--border-sketch);
+  color: var(--text-cocoa);
 }
 
 [data-theme='dark'] .create-advanced-toggle:hover {
-  background: var(--bg-surface-elevated, #262626);
-  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+  color: var(--text-cocoa);
 }
 
 .create-advanced-toggle__label {
@@ -415,11 +413,11 @@
 }
 
 .create-advanced-toggle__icon {
-  color: var(--color-primary, #da0038);
+  color: var(--accent-primary);
 }
 
 .create-advanced-toggle__chevron {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   transition: transform var(--duration-fast, 150ms) ease;
 }
 
@@ -427,16 +425,16 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md, 12px);
+  padding: 14px;
+  border-radius: 18px;
   background: var(--bg-surface-subtle);
-  border: 1.5px dashed var(--border-subtle);
+  border: 1.5px dashed var(--border-sketch);
   animation: fadeIn 0.18s ease-out;
 }
 
 [data-theme='dark'] .create-advanced-drawer {
   background: var(--bg-surface-subtle);
-  border-color: var(--border-subtle);
+  border-color: var(--border-sketch);
 }
 
 /* Точное время */
@@ -679,12 +677,12 @@
   background: var(--urgency-high, #da0038);
 }
 
-/* 4. Нижняя панель действий (Одна главная кнопка во всю ширину + ссылка отмены) */
+/* 4. Нижняя панель действий (Scrapbook Accent Pill) */
 .create-request-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -694,17 +692,23 @@
   min-height: 48px;
   font-size: 14.5px;
   font-weight: 700;
-  background: var(--color-primary, #da0038) !important;
+  background: var(--accent-primary) !important;
   color: #ffffff !important;
-  border-radius: var(--radius-md, 12px) !important;
-  border: 1.5px solid rgba(0, 0, 0, 0.12) !important;
-  box-shadow: 0 3px 0 rgba(163, 0, 42, 0.4) !important;
-  transition: transform var(--duration-fast) var(--ease-spring), box-shadow var(--duration-fast) ease !important;
+  border-radius: 999px !important;
+  border: 1.5px solid transparent !important;
+  box-shadow: 0 4px 14px var(--accent-shadow) !important;
+  transition: transform var(--duration-fast) var(--ease-tactile),
+              background-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease !important;
 }
 
-.create-request-submit-btn:active {
-  transform: translateY(1px) !important;
-  box-shadow: 0 1px 0 rgba(163, 0, 42, 0.4) !important;
+.create-request-submit-btn:hover:not(:disabled) {
+  background: var(--accent-primary-hover) !important;
+}
+
+.create-request-submit-btn:active:not(:disabled) {
+  transform: scale(0.98) !important;
+  background: var(--accent-primary-active) !important;
 }
 
 .create-request-cancel-link {

@@ -3,7 +3,7 @@
 }
 
 .home-calendar__card {
-  padding: 22px 20px;
+  padding: 18px 16px;
 }
 
 /* 1. Header with Month navigation and view switch */
@@ -13,9 +13,9 @@
   justify-content: space-between;
   flex-wrap: nowrap;
   gap: var(--space-xs);
-  margin-bottom: var(--space-lg, 20px);
-  padding-bottom: var(--space-md, 16px);
-  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px dashed var(--border-sketch);
   min-height: 44px;
 }
 
@@ -68,11 +68,12 @@
 }
 
 .home-calendar__month-name {
-  font-size: 14px;
+  font-family: var(--font-handwritten);
+  font-size: 16.5px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-cocoa);
   padding: 0 4px;
-  min-width: 124px;
+  min-width: 118px;
   text-align: center;
   white-space: nowrap;
   letter-spacing: -0.01em;
@@ -431,9 +432,9 @@
 
 /* 5. Day Scheduled Events & Reminders */
 .home-calendar__events-section {
-  margin-top: var(--space-lg, 20px);
-  padding-top: var(--space-lg, 20px);
-  border-top: 1px solid var(--border-subtle);
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1.5px dashed var(--border-sketch);
 }
 
 .home-calendar__events-header {
@@ -444,10 +445,11 @@
 }
 
 .home-calendar__events-title {
-  font-size: 14.5px;
+  font-family: var(--font-handwritten);
+  font-size: 15.5px;
   font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.5;
+  color: var(--text-cocoa);
+  line-height: 1.4;
 }
 
 .home-calendar__events-count {

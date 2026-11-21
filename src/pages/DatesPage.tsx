@@ -9,6 +9,8 @@ import { DatesQuickListModal } from '../features/dates/DatesQuickListModal/Dates
 import { AllDatesAlbumModal } from '../features/dates/AllDatesAlbumModal/AllDatesAlbumModal';
 import { PhotoLightbox } from '../features/dates/PhotoLightbox/PhotoLightbox';
 import { BottomActionButton } from '../components/ui/BottomActionButton/BottomActionButton';
+import { Button } from '../components/ui/Button/Button';
+import { Icon } from '../components/ui/Icon/Icon';
 import { useToast } from '../components/ui/Toast/ToastContext';
 import { DateMemory, CreateDateMemoryInput } from '../types/dates';
 import { Mascot } from '../components/ui/Mascot/Mascot';
@@ -85,7 +87,11 @@ export function DatesPage() {
     } catch (err: any) {
       showToast({
         title: 'Ошибка сохранения',
-        message: err.message || (isFriendship ? 'Не удалось сохранить встречу в Supabase' : 'Не удалось сохранить свидание в Supabase'),
+        message:
+          err.message ||
+          (isFriendship
+            ? 'Не удалось сохранить встречу в Supabase'
+            : 'Не удалось сохранить свидание в Supabase'),
         type: 'info',
       });
     }
@@ -107,7 +113,11 @@ export function DatesPage() {
     } catch (err: any) {
       showToast({
         title: 'Ошибка удаления',
-        message: err.message || (isFriendship ? 'Не удалось удалить встречу из базы данных' : 'Не удалось удалить свидание из базы данных'),
+        message:
+          err.message ||
+          (isFriendship
+            ? 'Не удалось удалить встречу из базы данных'
+            : 'Не удалось удалить свидание из базы данных'),
         type: 'info',
       });
     }
@@ -122,7 +132,7 @@ export function DatesPage() {
 
   return (
     <div className="dates-page">
-      {/* 3.1 Header with stats, sorting and year filters */}
+      {/* 1. Header with stats, year filters and sort */}
       <DatesHeader
         heldDatesCount={heldDatesCount}
         memoriesWithPhotosCount={totalMemoriesWithPhotos}
@@ -142,31 +152,48 @@ export function DatesPage() {
         }}
       />
 
-      {/* List of date memories or empty state */}
+      {/* 2. Scrapbook Photo Album / Memories Feed or Empty State */}
       {memories.length === 0 ? (
         <section
           className="dates-empty-state"
           aria-label={isFriendship ? 'Нет сохранённых встреч' : 'Нет сохранённых свиданий'}
         >
-          <div className="dates-empty-state__icon-box" aria-hidden="true">
-            <Mascot variant="sleepy" size={120} animated interactive />
+          <div className="dates-empty-state__mascot" aria-hidden="true">
+            <Mascot mood="camera" size={120} interactive />
           </div>
           <h2 className="dates-empty-state__title">
-            Здесь будут храниться ваши маленькие истории
+            {isFriendship
+              ? 'Здесь будут храниться ваши яркие встречи ✦'
+              : 'Здесь будут храниться ваши маленькие истории ♡'}
           </h2>
           <p className="dates-empty-state__desc">
-            Нажмите «+», чтобы сохранить первое воспоминание
+            {isFriendship
+              ? 'Сохраняйте фото, любимые места и тёплые заметки о каждом совместном дне'
+              : 'Сохраняйте полароидные фото, любимые места и тёплые заметки о каждом свидании'}
           </p>
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={<Icon name="plus" size={16} />}
+            onClick={() => {
+              telegramService.hapticImpact('light');
+              setEditingMemory(null);
+              setIsCreateModalOpen(true);
+            }}
+          >
+            {isFriendship ? 'Добавить первую встречу' : 'Добавить первое свидание'}
+          </Button>
         </section>
       ) : (
         <section
           className="dates-list"
           aria-label={isFriendship ? 'Список прошедших встреч' : 'Список прошедших свиданий'}
         >
-          {memories.map((memory) => (
+          {memories.map((memory, idx) => (
             <DateMemoryCard
               key={memory.id}
               memory={memory}
+              tilt={idx % 2 === 0 ? 'left' : 'right'}
               onClick={(mem) => setSelectedMemory(mem)}
               onEdit={(mem, e) => {
                 e.stopPropagation();
@@ -187,7 +214,7 @@ export function DatesPage() {
       <BottomActionButton
         variant="floating"
         visible={!isAnyModalOpen}
-        label="Добавить воспоминание"
+        label={isFriendship ? 'Добавить встречу' : 'Добавить свидание'}
         onClick={() => {
           setEditingMemory(null);
           setIsCreateModalOpen(true);

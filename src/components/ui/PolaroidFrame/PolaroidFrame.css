@@ -1,0 +1,127 @@
+/* ==========================================================================
+   LOVIA — Scrapbook Polaroid Photo Frame Primitive
+   Warm paper border (6px 6px 14px 6px), gentle ±1.5deg tilt, corner sticker/tape
+   ========================================================================== */
+
+.polaroid-frame {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  background: var(--bg-card, #FFFBF6);
+  padding: 6px 6px 14px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border-sketch, rgba(73, 55, 47, 0.16));
+  box-shadow: var(--shadow-polaroid, 0 6px 18px rgba(73, 55, 47, 0.10));
+  box-sizing: border-box;
+  transition: transform var(--duration-fast, 140ms) var(--ease-tactile, ease),
+              box-shadow var(--duration-fast, 140ms) ease;
+}
+
+.polaroid-frame--tilt-left {
+  transform: rotate(-1.5deg);
+}
+
+.polaroid-frame--tilt-right {
+  transform: rotate(1.5deg);
+}
+
+.polaroid-frame--tilt-none {
+  transform: none;
+}
+
+.polaroid-frame--clickable {
+  cursor: pointer;
+}
+
+.polaroid-frame--clickable:active {
+  transform: scale(0.97) rotate(0deg);
+}
+
+.polaroid-frame__photo-box {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--bg-surface-subtle, #F2E8DE);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.polaroid-frame__photo-box--square {
+  aspect-ratio: 1 / 1;
+}
+
+.polaroid-frame__photo-box--landscape {
+  aspect-ratio: 16 / 10;
+}
+
+.polaroid-frame__photo-box--portrait {
+  aspect-ratio: 4 / 5;
+}
+
+.polaroid-frame__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.polaroid-frame__empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-caramel, #A87554);
+  background: var(--bg-blush-light, rgba(232, 185, 181, 0.18));
+}
+
+.polaroid-frame__caption {
+  margin-top: 6px;
+  font-family: var(--font-handwritten);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-cocoa, #49372F);
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Decorative corner sticker (strictly pointer-events: none) */
+.polaroid-frame__sticker {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(12deg);
+  filter: drop-shadow(0 1px 2px rgba(73, 55, 47, 0.15));
+}
+
+/* Translucent kraft tape strip at top center */
+.polaroid-frame__tape {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 38px;
+  height: 13px;
+  background: rgba(232, 185, 181, 0.62);
+  border: 1px solid rgba(168, 117, 84, 0.24);
+  border-radius: 2px;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+}
+
+[data-theme='dark'] .polaroid-frame__tape {
+  background: rgba(201, 150, 116, 0.42);
+  border-color: rgba(245, 235, 226, 0.18);
+}

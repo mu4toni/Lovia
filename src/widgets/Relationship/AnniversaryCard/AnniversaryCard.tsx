@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { AnniversaryInfo } from '../../../types/relationship';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { pluralizeRu } from '../../../utils/dateCalculations';
@@ -6,7 +6,6 @@ import { AnniversaryProgressBar } from '../../../components/ui/AnniversaryProgre
 import { RelationshipMilestonesModal } from '../../../components/relationship/RelationshipMilestonesModal';
 import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
-import { SketchUnderline, SketchDoodle } from '../../../components/ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './AnniversaryCard.css';
 
@@ -86,8 +85,8 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
         {/* Top Banner Row */}
         <div className="anniversary-showcase__header">
           <div className="anniversary-showcase__title-wrap">
-            <span className="anniversary-showcase__kicker">
-              <Icon name="sparkles" size={13} className="anniversary-kicker-icon" />
+            <span className="anniversary-showcase__kicker paper-tag">
+              <span aria-hidden="true">{isFriendship ? '✦' : '♥'}</span>
               {isToday
                 ? 'Праздник сегодня!'
                 : isUpcoming
@@ -105,31 +104,28 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
                 ? `${yearsTogether} ${yearsLabel} крепкой дружбы`
                 : `${yearsTogether} ${yearsLabel} вместе`}
             </h3>
-            <SketchUnderline width={90} variant="wave" className="anniversary-showcase__title-underline" />
           </div>
 
-          <div className="anniversary-showcase__header-side">
+          {/* Tear-off calendar sticker with Bean peeking over its corner */}
+          <div className="anniversary-showcase__hero-badge">
+            <span className="anniversary-showcase__hero-cap" aria-hidden="true" />
             <div className="anniversary-showcase__mascot" aria-hidden="true">
-              <Mascot variant="love" size={54} animated interactive />
+              <Mascot variant="love" size={46} animated />
             </div>
-
-            {/* Hero Countdown Digit */}
-            <div className="anniversary-showcase__hero-badge">
-              {isToday ? (
-                <span className="anniversary-hero-today">
-                  <Icon name="sparkles" size={20} />
-                </span>
-              ) : (
-                <>
-                  <span className="anniversary-hero-num">{daysUntil}</span>
-                  <span className="anniversary-hero-unit">{daysLabel}</span>
-                </>
-              )}
-            </div>
+            {isToday ? (
+              <span className="anniversary-hero-today">
+                <Icon name="sparkles" size={20} />
+              </span>
+            ) : (
+              <>
+                <span className="anniversary-hero-num">{daysUntil}</span>
+                <span className="anniversary-hero-unit">{daysLabel}</span>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar (single caption row: text left, percent right) */}
         <div className="anniversary-showcase__progress-wrap">
           <AnniversaryProgressBar
             progressPercent={progressPercent}
@@ -141,21 +137,19 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
 
         {/* Footer Meta Row */}
         <div className="anniversary-showcase__footer">
-          <div className="anniversary-showcase__date-chip">
-            <Icon name="calendar" size={13} className="date-chip-icon" />
+          <div className="anniversary-showcase__date-chip paper-tag">
+            <span className="anniversary-showcase__date-mark" aria-hidden="true">
+              {isFriendship ? '✦' : '♥'}
+            </span>
             <span>{formattedAnniversaryDate}</span>
-            <SketchDoodle type="heart" size={11} className="anniversary-date-heart" />
           </div>
-          <div className="anniversary-showcase__footer-right">
+          <div className="anniversary-showcase__footer-right sketch-pill">
             <span className="anniversary-showcase__hint">
-              {isToday
-                ? `${yearsTogether} ${yearsLabel} любви`
-                : `Годовой цикл: ${Math.round(progressPercent)}%`}
+              {isToday ? `${yearsTogether} ${yearsLabel} любви` : 'Годовой цикл'}
             </span>
             <Icon name="chevron-right" size={14} className="anniversary-showcase__chevron" />
           </div>
-        </div>
-      </article>
+        </div>      </article>
 
       {/* Relationship Milestones Modal */}
       {startDate && (
@@ -169,3 +163,4 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
     </>
   );
 };
+

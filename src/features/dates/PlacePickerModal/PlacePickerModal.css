@@ -26,9 +26,9 @@
   height: 90vh;
   max-height: 780px;
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  border: 1.5px solid var(--border-sketch);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -50,7 +50,7 @@
 .place-picker-header {
   padding: calc(12px + var(--tg-total-top-inset, env(safe-area-inset-top, 0px))) 16px 14px;
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1.5px dashed var(--border-sketch);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -66,29 +66,42 @@
 
 .place-picker-title {
   margin: 0;
-  font-size: 17px;
+  font-family: var(--font-handwritten);
+  font-size: 19px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-cocoa);
 }
 
 .place-picker-close-btn {
-  min-width: 44px;
-  min-height: 44px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
   padding: 0;
-  margin: -10px -10px -10px auto;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-full);
-  color: var(--text-secondary);
+  margin-left: auto;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-sketch);
+  border-radius: 50%;
+  color: var(--text-cocoa);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--motion-micro);
+  position: relative;
+  transition: background-color var(--motion-micro) ease, color var(--motion-micro) ease;
+}
+
+.place-picker-close-btn::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .place-picker-close-btn:hover {
-  color: var(--text-primary);
+  background: var(--accent-soft);
+  color: var(--accent-primary);
 }
 
 .place-picker-search-row {
@@ -302,7 +315,7 @@
 .place-picker-footer {
   padding: 14px 16px;
   background: var(--bg-card);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1.5px dashed var(--border-sketch);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -313,9 +326,9 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.03));
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+  border: 1.5px dashed var(--border-sketch);
+  border-radius: 16px;
   padding: 10px 12px;
 }
 

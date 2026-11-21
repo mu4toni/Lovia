@@ -1,6 +1,8 @@
 import { Navigate } from 'react-router-dom';
 import { useHomeData } from '../hooks';
 import { HomeHeader, HomeCalendar, RequestsList, UnpairedBanner } from '../widgets';
+import { NearestEventCard } from '../components/home/NearestEventCard/NearestEventCard';
+import { BeanAdviceCard } from '../components/home/BeanAdviceCard/BeanAdviceCard';
 import { CreateRequestModal } from '../features/create-reminder';
 import { DemoStateSwitcher } from '../features/demo-switcher';
 import { Card, Button, Skeleton, Icon, useToast, BottomActionButton } from '../shared';
@@ -181,7 +183,7 @@ export function HomePage() {
       {/* 4. Normal / Unpaired / Empty / Overdue Content */}
       {!isLoading && !error && profile && (
         <>
-          {/* Header */}
+          {/* 1. Greeting & Together N Days Polaroid Card */}
           <HomeHeader profile={profile} />
 
           {/* Unpaired state banner if partner is not connected (ONLY in local dev simulation) */}
@@ -192,7 +194,14 @@ export function HomePage() {
             />
           )}
 
-          {/* Shared Calendar */}
+          {/* 2. Nearest Event Card (Blush Paper + Bean) */}
+          <NearestEventCard
+            events={events}
+            requests={requests}
+            startDate={profile.startDate}
+          />
+
+          {/* 3. Shared Calendar */}
           <HomeCalendar
             events={events}
             requests={requests}
@@ -201,7 +210,7 @@ export function HomePage() {
             onSelectDate={setSelectedDate}
           />
 
-          {/* Reminders List */}
+          {/* 4. Today & Reminders List */}
           <RequestsList
             requests={requests}
             categories={categories}
@@ -217,6 +226,9 @@ export function HomePage() {
               setIsCreateModalOpen(true);
             }}
           />
+
+          {/* 5. Bean Advises Card */}
+          <BeanAdviceCard />
 
           {/* Single Dedicated Floating Add Reminder Button */}
           <BottomActionButton

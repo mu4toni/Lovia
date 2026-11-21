@@ -224,8 +224,8 @@
 }
 
 .shared-space-confirm-unpair-btn {
-  background: #da0038 !important;
-  border-color: #da0038 !important;
+  background: var(--accent-strawberry) !important;
+  border-color: var(--accent-strawberry) !important;
   color: #ffffff !important;
   display: inline-flex !important;
   align-items: center;
@@ -234,8 +234,8 @@
 }
 
 .shared-space-confirm-unpair-btn:hover:not(:disabled) {
-  background: #bf0031 !important;
-  border-color: #bf0031 !important;
+  background: var(--accent-strawberry-hover) !important;
+  border-color: var(--accent-strawberry-hover) !important;
 }
 
 .shared-space-spinner {

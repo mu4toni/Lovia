@@ -4,6 +4,16 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { telegramService } from './services/telegramService';
 import './styles/global.css';
+import './styles/scrapbook.css';
+
+// Synchronous theme & accent restoration before render to avoid flash of default colors
+const savedTheme = localStorage.getItem('lovia_theme');
+if (savedTheme === 'light' || savedTheme === 'dark') {
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+const savedAccent = localStorage.getItem('lovia_accent_color') || 'strawberry';
+document.documentElement.setAttribute('data-accent', savedAccent);
 
 // Initialize Telegram Mini App SDK environment
 telegramService.init();

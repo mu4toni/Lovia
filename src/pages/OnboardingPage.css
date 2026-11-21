@@ -10,8 +10,8 @@
   align-items: center;
   justify-content: flex-start;
   padding: calc(24px + var(--tg-total-top-inset, env(safe-area-inset-top, 0px))) 16px calc(36px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
-  background: var(--bg-app, #f2f2f2);
-  color: var(--text-primary, #171717);
+  background: var(--bg-paper);
+  color: var(--text-cocoa);
   box-sizing: border-box;
   overflow-x: clip;
   width: 100%;

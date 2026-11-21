@@ -96,10 +96,25 @@ export const RequestsList: React.FC<RequestsListProps> = ({
         <div className="requests-section__title-wrap">
           <div className="requests-section__title-row">
             <Icon name="bell" size={18} className="requests-section__title-icon" />
-            <h2 className="requests-section__title">Напоминания</h2>
-            <SketchDoodle type="heart" size={13} className="requests-section__doodle-heart" />
+            <h2 className="requests-section__title">Сегодня</h2>
+            <SketchDoodle
+              type={isFriendship ? 'star' : 'heart-filled'}
+              size={12}
+              className="requests-section__doodle-heart"
+            />
           </div>
         </div>
+        <button
+          type="button"
+          className="requests-section__all-btn"
+          onClick={() => {
+            setActiveTab('all');
+            setSelectedColor(null);
+          }}
+        >
+          <span>Все</span>
+          <Icon name="chevron-right" size={14} />
+        </button>
       </div>
 
       {/* Overdue Alert Banner if any */}

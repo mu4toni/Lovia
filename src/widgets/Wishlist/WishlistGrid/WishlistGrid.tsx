@@ -40,7 +40,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
       return (
         <div className="wishlist-empty-card" role="region" aria-label="Ваш вишлист пуст">
           <div className="wishlist-empty-icon" aria-hidden="true">
-            <Mascot variant="sleepy" size={120} animated interactive />
+            <Mascot mood="thinking" size={114} interactive />
           </div>
           <h2 className="wishlist-empty-title">Ваш вишлист пока пуст</h2>
           <p className="wishlist-empty-desc">

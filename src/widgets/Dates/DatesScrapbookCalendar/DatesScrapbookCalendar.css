@@ -1,0 +1,155 @@
+/* ==========================================================================
+   LOVIA — Scrapbook Monthly Calendar for Dates Page
+   ========================================================================== */
+
+.scrapbook-cal {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-sketch);
+  border-radius: 22px;
+  padding: 16px 14px 14px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scrapbook-cal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px dashed var(--border-sketch);
+}
+
+.scrapbook-cal__nav-btn {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-cocoa);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-sketch);
+  transition: transform var(--duration-fast) var(--ease-tactile), background-color var(--duration-fast) ease;
+}
+
+.scrapbook-cal__nav-btn:active {
+  transform: scale(0.94);
+}
+
+.scrapbook-cal__month-title {
+  margin: 0;
+  font-family: var(--font-handwritten);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.scrapbook-cal__month-heart {
+  color: var(--accent-strawberry);
+}
+
+.scrapbook-cal__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  text-align: center;
+}
+
+.scrapbook-cal__weekday {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 2px 0;
+}
+
+.scrapbook-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.scrapbook-cal__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 4px 2px 3px;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text-cocoa);
+  cursor: pointer;
+  overflow: visible;
+  transition: background-color var(--duration-fast) ease,
+              color var(--duration-fast) ease,
+              transform var(--duration-fast) var(--ease-tactile);
+}
+
+.scrapbook-cal__cell:hover:not(.scrapbook-cal__cell--selected) {
+  background: var(--bg-blush-light);
+}
+
+.scrapbook-cal__cell:active {
+  transform: scale(0.94);
+}
+
+.scrapbook-cal__cell--outside {
+  opacity: 0.32;
+}
+
+.scrapbook-cal__cell--today {
+  background: var(--bg-blush-soft);
+  color: var(--accent-strawberry);
+  font-weight: 800;
+}
+
+/* Selected Day: Strawberry Rounded Square + White Digits + Mini Hand-Drawn Rays */
+.scrapbook-cal__cell--selected {
+  background: var(--accent-strawberry) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(201, 45, 72, 0.28);
+  z-index: 2;
+}
+
+.scrapbook-cal__rays {
+  position: absolute;
+  inset: -7px;
+  width: calc(100% + 14px);
+  height: calc(100% + 14px);
+  color: var(--accent-strawberry);
+  pointer-events: none;
+}
+
+.scrapbook-cal__num {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.scrapbook-cal__mark-slot {
+  height: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  pointer-events: none;
+}
+
+.scrapbook-cal__event-heart {
+  font-size: 10px;
+  line-height: 1;
+  color: var(--accent-strawberry);
+}
+
+.scrapbook-cal__event-heart--selected {
+  color: #FFFFFF;
+}

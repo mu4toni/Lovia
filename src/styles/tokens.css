@@ -1,157 +1,190 @@
 /* ==========================================================================
-   LOVIA DESIGN TOKENS
-   Restrained, uniform, and timeless 5-color palette system:
-   - #171717: Deep Neutral Graphite (Dark Canvas & Primary Dark Background)
-   - #444444: Restrained Slate Gray (Borders, Dividers, Light Secondary Text)
-   - #E5E5E5: Soft Light Gray (Light Canvas & Dark Primary Text)
-   - #E3A3B4: Dusty Rose (Calm Subdued Accent & Soft Highlights)
-   - #DA0038: Ruby-Crimson (Pinpoint Primary Accent)
+   LOVIA DESIGN TOKENS — Cozy Hand-Drawn Scrapbook Diary System
+   Palette:
+   - --bg-paper: #F8F1E9        (Milky Paper — Main Screen Canvas)
+   - --bg-card: #FFFBF6         (Warm Paper — Cards, Polaroids & Modals)
+   - --bg-blush: #E8B9B5        (Powder Blush — Date Pills, Stickers, Soft Badges)
+   - --accent-strawberry: #C92D48 (Strawberry — Primary Pills, Active Nav, Hearts)
+   - --accent-caramel: #A87554  (Caramel — Warm Secondary Accents & Icons)
+   - --text-cocoa: #49372F      (Cocoa — Primary Text, Headings, SVG Strokes)
+   - --text-muted: #8C766C      (Muted Cocoa — Captions, Weekdays, Secondary)
+   - --border-sketch: rgba(73, 55, 47, 0.16)
+   - --border-dashed: rgba(201, 45, 72, 0.35)
    ========================================================================== */
 
 :root {
-  /* --- Brand Core --- */
+  /* --- Strict Scrapbook Core Tokens --- */
   --brand-name: 'Lovia';
-  --color-primary: #da0038;
-  --color-primary-hover: #bf0031;
-  --color-primary-active: #a3002a;
-  --color-primary-soft: rgba(227, 163, 180, 0.16);
-  --color-primary-tint: rgba(218, 0, 56, 0.08);
-  --color-primary-tint-hover: rgba(218, 0, 56, 0.14);
-  --color-primary-subtle-border: rgba(218, 0, 56, 0.22);
-  --color-secondary: #444444;
+  --bg-paper: #F8F1E9;
+  --bg-card: #FFFBF6;
+  --text-cocoa: #49372F;
+  --text-muted: #8C766C;
+  --border-sketch: rgba(73, 55, 47, 0.16);
+  --border-dashed-cocoa: rgba(73, 55, 47, 0.22);
 
-  /* --- 5-Color Palette Anchors --- */
-  --palette-graphite: #171717;
-  --palette-slate: #444444;
-  --palette-light-gray: #e5e5e5;
-  --palette-dusty-rose: #e3a3b4;
-  --palette-ruby-crimson: #da0038;
+  /* --- Customizable Accent Color System (Default: Strawberry) --- */
+  --accent-primary: #C92D48;
+  --accent-primary-hover: #B1243D;
+  --accent-primary-active: #961D33;
+  --accent-soft: rgba(232, 185, 181, 0.35);
+  --accent-soft-light: rgba(232, 185, 181, 0.18);
+  --accent-shadow: rgba(201, 45, 72, 0.28);
+  --border-dashed: rgba(201, 45, 72, 0.35);
+  --bg-blush: #E8B9B5;
+
+  /* --- Aliases mapped to Customizable Accent --- */
+  --bg-blush-soft: var(--accent-soft);
+  --bg-blush-light: var(--accent-soft-light);
+  --accent-strawberry: var(--accent-primary);
+  --accent-strawberry-hover: var(--accent-primary-hover);
+  --accent-strawberry-active: var(--accent-primary-active);
+  --accent-caramel: #A87554;
+  --accent-caramel-soft: rgba(168, 117, 84, 0.14);
+
+  /* --- Brand & Interactive Aliases --- */
+  --color-primary: var(--accent-primary);
+  --color-primary-hover: var(--accent-primary-hover);
+  --color-primary-active: var(--accent-primary-active);
+  --color-primary-soft: var(--accent-soft);
+  --color-primary-tint: var(--accent-soft-light);
+  --color-primary-tint-hover: var(--accent-soft);
+  --color-primary-subtle-border: var(--border-dashed);
+  --color-secondary: var(--accent-caramel);
+  --color-danger: #C92D48;
+
+  /* --- Palette Anchors (Legacy Compatibility) --- */
+  --palette-graphite: #49372F;
+  --palette-slate: #8C766C;
+  --palette-light-gray: #F8F1E9;
+  --palette-dusty-rose: var(--bg-blush);
+  --palette-ruby-crimson: var(--accent-primary);
 
   /* --- Soft Accent Tokens --- */
-  --color-accent-muted: #e3a3b4;
-  --color-accent-rose: #e3a3b4;
-  --color-accent-rose-soft: rgba(227, 163, 180, 0.14);
+  --color-accent-muted: var(--bg-blush);
+  --color-accent-rose: var(--bg-blush);
+  --color-accent-rose-soft: var(--accent-soft);
+  --color-accent-ruby: var(--accent-primary);
 
-  /* --- 3 Standard Pastel Colors (Preserved for compatibility) --- */
-  --pastel-powder: #f4dde2;
-  --pastel-sage: #e3ebdd;
-  --pastel-cream: #f5eacd;
+  /* --- Pastel Stickers --- */
+  --pastel-powder: #F4DDD9;
+  --pastel-sage: #E6ECDE;
+  --pastel-cream: #F6EAD4;
 
   /* --- Semantic Colors for Tinted Surfaces --- */
-  --text-on-light-tint: #171717;
-  --text-on-light-tint-secondary: #444444;
-  --text-on-light-tint-tertiary: #737373;
-  --text-on-dark-tint: #ffffff;
-  --text-on-dark-tint-secondary: rgba(255, 255, 255, 0.92);
-  --text-on-dark-tint-tertiary: rgba(255, 255, 255, 0.78);
+  --text-on-light-tint: #49372F;
+  --text-on-light-tint-secondary: #6E584E;
+  --text-on-light-tint-tertiary: #8C766C;
+  --text-on-dark-tint: #FFFBF6;
+  --text-on-dark-tint-secondary: rgba(255, 251, 246, 0.92);
+  --text-on-dark-tint-tertiary: rgba(255, 251, 246, 0.78);
 
-  /* --- Light Theme (Default: Warm Kraft / Paper Aesthetic) --- */
-  --bg-page: #fbf6f0;
-  --bg-app: #fbf6f0;
-  --bg-app-ambient: #fbf6f0;
+  /* --- Light Theme Surfaces (Warm Diary Paper) --- */
+  --bg-page: var(--bg-paper);
+  --bg-app: var(--bg-paper);
+  --bg-app-ambient: none;
 
-  /* Surfaces */
-  /* Legacy test assertion: --bg-card: #ffffff; */
-  --bg-card: #fffdf9;
-  --bg-elevated: #ffffff;
-  --bg-surface: #fffdf9;
-  --bg-surface-hover: #f7f3ec;
-  --bg-surface-subtle: #f4eee6;
-  --bg-surface-elevated: #ffffff;
-  --bg-surface-pressed: #eee7dc;
-  --bg-surface-accent: rgba(227, 163, 180, 0.14);
+  --bg-elevated: #FFFBF6;
+  --bg-surface: #FFFBF6;
+  --bg-surface-hover: #F5ECE3;
+  --bg-surface-subtle: #F2E8DE;
+  --bg-surface-elevated: #FFFBF6;
+  --bg-surface-pressed: #ECE0D4;
+  --bg-surface-accent: var(--accent-soft);
+  --bg-card-hover: #FAF3EB;
 
-  /* Liquid Glass */
-  --bg-glass: rgba(255, 253, 249, 0.90);
-  --bg-glass-card: rgba(255, 253, 249, 0.95);
-  --bg-glass-modal: rgba(255, 255, 255, 0.97);
-  --glass-blur: blur(20px) saturate(180%);
-  --glass-border: rgba(35, 31, 32, 0.08);
-  --glass-border-subtle: rgba(35, 31, 32, 0.06);
+  /* Paper & Overlay Surfaces (No heavy continuous blur on lists) */
+  --bg-glass: rgba(255, 251, 246, 0.94);
+  --bg-glass-card: rgba(255, 251, 246, 0.98);
+  --bg-glass-modal: #FFFBF6;
+  --glass-blur: none;
+  --glass-border: rgba(73, 55, 47, 0.14);
+  --glass-border-subtle: rgba(73, 55, 47, 0.10);
 
-  /* Borders (Warm Pencil Outlines) */
-  --border-hairline: rgba(35, 31, 32, 0.08);
-  --border-subtle: rgba(35, 31, 32, 0.14);
-  --border-medium: rgba(35, 31, 32, 0.24);
-  --border-focus: #da0038;
+  /* Borders (Warm Pencil & Sketch Outlines) */
+  --border-hairline: rgba(73, 55, 47, 0.09);
+  --border-subtle: rgba(73, 55, 47, 0.14);
+  --border-medium: rgba(73, 55, 47, 0.24);
+  --border-focus: var(--accent-primary);
 
-  /* Text & Hierarchy (Chocolate Graphite & Warm Pencil Text) */
-  --text-primary: #231f20;        /* Contrast 15.3:1 on #FFFDF9 */
-  --text-secondary: #6b625e;      /* Contrast 5.2:1 on #FFFDF9 */
-  --text-tertiary: #8f8580;       /* High readability muted tone */
-  --text-muted: #8f8580;
-  --text-on-accent: #ffffff;
-  --text-on-primary: #ffffff;
+  /* Text & Hierarchy (Cocoa Ink & Muted Cocoa) */
+  --text-primary: var(--text-cocoa);       /* #49372F — High contrast on #FFFBF6 */
+  --text-secondary: #6E584E;               /* Warm medium cocoa */
+  --text-tertiary: var(--text-muted);      /* #8C766C */
+  --text-placeholder: #A18C82;
+  --text-on-accent: #FFFFFF;
+  --text-on-primary: #FFFFFF;
 
   /* Navigation & Overlays */
-  --bg-nav: rgba(255, 253, 249, 0.94);
-  --nav-border: rgba(35, 31, 32, 0.12);
-  --bg-modal-overlay: rgba(35, 31, 32, 0.50);
+  --bg-nav: #FFFBF6;
+  --nav-border: rgba(73, 55, 47, 0.16);
+  --bg-modal-overlay: rgba(73, 55, 47, 0.44);
 
-  /* Tactile Sketch Shadows */
-  --shadow-sketch: 0 3px 0 rgba(35, 31, 32, 0.08);
-  --shadow-sketch-pressed: 0 1px 0 rgba(35, 31, 32, 0.08);
-  --shadow-xs: 0 1px 0 rgba(35, 31, 32, 0.06);
-  --shadow-sm: 0 3px 0 rgba(35, 31, 32, 0.08), 0 1px 3px rgba(35, 31, 32, 0.04);
-  --shadow-md: 0 4px 0 rgba(35, 31, 32, 0.08), 0 3px 8px rgba(35, 31, 32, 0.06);
-  --shadow-lg: 0 6px 0 rgba(35, 31, 32, 0.10), 0 12px 28px rgba(35, 31, 32, 0.08);
+  /* Warm Scrapbook Shadows */
+  --shadow-card: 0 4px 16px rgba(73, 55, 47, 0.06);
+  --shadow-polaroid: 0 6px 18px rgba(73, 55, 47, 0.10), 0 1px 4px rgba(73, 55, 47, 0.06);
+  --shadow-sketch: 0 4px 16px rgba(73, 55, 47, 0.06);
+  --shadow-sketch-pressed: 0 1px 4px rgba(73, 55, 47, 0.08);
+  --shadow-xs: 0 2px 6px rgba(73, 55, 47, 0.05);
+  --shadow-sm: 0 4px 16px rgba(73, 55, 47, 0.06);
+  --shadow-md: 0 6px 20px rgba(73, 55, 47, 0.09);
+  --shadow-lg: 0 12px 32px rgba(73, 55, 47, 0.14);
 
-  /* Task Categories — Subdued System */
-  --cat-dates: #da0038;
-  --cat-dates-bg: rgba(218, 0, 56, 0.08);
-  --cat-dates-border: rgba(218, 0, 56, 0.24);
+  /* Task Categories — Warm Scrapbook Inks */
+  --cat-dates: #C92D48;
+  --cat-dates-bg: rgba(201, 45, 72, 0.09);
+  --cat-dates-border: rgba(201, 45, 72, 0.25);
 
-  --cat-chores: #4a6b82;
-  --cat-chores-bg: rgba(74, 107, 130, 0.08);
-  --cat-chores-border: rgba(74, 107, 130, 0.24);
+  --cat-chores: #5A7A8C;
+  --cat-chores-bg: rgba(90, 122, 140, 0.10);
+  --cat-chores-border: rgba(90, 122, 140, 0.25);
 
-  --cat-gifts: #a86824;
-  --cat-gifts-bg: rgba(168, 104, 36, 0.08);
-  --cat-gifts-border: rgba(168, 104, 36, 0.24);
+  --cat-gifts: #A87554;
+  --cat-gifts-bg: rgba(168, 117, 84, 0.12);
+  --cat-gifts-border: rgba(168, 117, 84, 0.28);
 
-  --cat-wishes: #8c5a84;
-  --cat-wishes-bg: rgba(140, 90, 132, 0.08);
-  --cat-wishes-border: rgba(140, 90, 132, 0.24);
+  --cat-wishes: #986588;
+  --cat-wishes-bg: rgba(152, 101, 136, 0.10);
+  --cat-wishes-border: rgba(152, 101, 136, 0.26);
 
-  --cat-memories: #4e7254;
-  --cat-memories-bg: rgba(78, 114, 84, 0.08);
-  --cat-memories-border: rgba(78, 114, 84, 0.24);
+  --cat-memories: #5B7E5F;
+  --cat-memories-bg: rgba(91, 126, 95, 0.10);
+  --cat-memories-border: rgba(91, 126, 95, 0.26);
 
   /* Urgency Levels */
-  --urgency-low: #047857;
-  --urgency-low-bg: rgba(4, 120, 87, 0.08);
-  --urgency-low-border: rgba(4, 120, 87, 0.24);
+  --urgency-low: #4C7C5D;
+  --urgency-low-bg: rgba(76, 124, 93, 0.10);
+  --urgency-low-border: rgba(76, 124, 93, 0.24);
 
-  --urgency-medium: #b45309;
-  --urgency-medium-bg: rgba(180, 83, 9, 0.08);
-  --urgency-medium-border: rgba(180, 83, 9, 0.24);
+  --urgency-medium: #A87554;
+  --urgency-medium-bg: rgba(168, 117, 84, 0.14);
+  --urgency-medium-border: rgba(168, 117, 84, 0.28);
 
-  --urgency-high: #da0038;
-  --urgency-high-bg: rgba(218, 0, 56, 0.08);
-  --urgency-high-border: rgba(218, 0, 56, 0.28);
+  --urgency-high: #C92D48;
+  --urgency-high-bg: rgba(201, 45, 72, 0.10);
+  --urgency-high-border: rgba(201, 45, 72, 0.28);
 
-  /* Radii Scale (Unified Geometries) */
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
+  /* Radii Scale (Soft Scrapbook Paper Corners) */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
   --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-xl: 24px;
   --radius-pill: 9999px;
   --radius-full: 9999px;
 
-  /* Spacing Scale (Unified Vertical Rhythm) */
+  /* Spacing Scale */
   --space-3xs: 2px;
   --space-2xs: 4px;
   --space-xs: 8px;
   --space-sm: 12px;
   --space-md: 16px;
   --space-lg: 20px;
-  --space-xl: 28px;
-  --space-2xl: 36px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
 
-  /* Typography Scale (Rounded Friendly Nunito + Handwritten Caveat) */
+  /* Typography Scale (Shantell Sans Handwritten + Nunito Body) */
   --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'Segoe UI', Roboto, sans-serif;
-  --font-handwritten: 'Caveat', cursive, sans-serif;
+  --font-handwritten: 'Shantell Sans', cursive, sans-serif;
   --font-family: var(--font-sans);
   --font-size-2xs: 11px;
   --font-size-xs: 12px;
@@ -162,25 +195,24 @@
   --font-size-2xl: 24px;
   --font-size-3xl: 28px;
 
-  /* Transitions & Motion Design System (Telegram & iOS Physics) */
+  /* Transitions & Motion Design System (Light 60fps Telegram Physics) */
   --ease-telegram: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-tactile: cubic-bezier(0.22, 1, 0.36, 1);
-  --duration-sheet: 280ms;
-  --duration-tactile: 140ms;
+  --duration-sheet: 260ms;
+  --duration-tactile: 130ms;
 
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --duration-fast: 140ms;
-  --duration-normal: 240ms;
-  --duration-slow: 350ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
 
-  /* --- Unified Motion Design Tokens --- */
-  --motion-micro: 140ms;        /* Micro-interactions: 120-180ms (buttons, icons, toggles) */
-  --motion-component: 240ms;    /* Component transitions: 200-260ms (tabs, cards, filters) */
-  --motion-modal: 280ms;        /* Modals & sheets: 260-300ms */
-  --motion-complex: 320ms;      /* Page & complex layout transitions: 240-360ms */
+  --motion-micro: 140ms;
+  --motion-component: 220ms;
+  --motion-modal: 260ms;
+  --motion-complex: 300ms;
   --motion-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --motion-ease-tactile: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
@@ -188,106 +220,244 @@
   --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   /* Safe Area / Mobile */
-  --nav-height: 64px;
+  --nav-height: 66px;
 }
 
 /* ==========================================================================
-   Dark Theme (Restrained Deep Graphite #171717 + Pure Neutral Surfaces)
+   Dark Theme — Warm Evening Cocoa (Cozy candlelit diary, zero cold gray)
    ========================================================================== */
 
 [data-theme='dark'] {
-  --bg-page: #171717;
-  --bg-app: #171717;
-  --bg-app-ambient: #171717;
+  --bg-paper: #221A17;
+  --bg-page: #221A17;
+  --bg-app: #221A17;
+  --bg-app-ambient: none;
 
-  /* Surfaces (Warm Deep Charcoal) */
-  /* Legacy test assertion: --bg-card: #27141b; */
-  --bg-card: #22201f;
-  --bg-elevated: #282625;
-  --bg-surface: #22201f;
-  --bg-surface-hover: #2d2b29;
-  --bg-surface-subtle: #292725;
-  --bg-surface-elevated: #262626;
-  --bg-surface-pressed: #33312f;
-  --bg-surface-accent: rgba(227, 163, 180, 0.12);
+  --bg-card: #2D231F;
+  --bg-elevated: #362B26;
+  --bg-surface: #2D231F;
+  --bg-surface-hover: #382C27;
+  --bg-surface-subtle: #342823;
+  --bg-surface-elevated: #3A2D28;
+  --bg-surface-pressed: #42342E;
+  --bg-card-hover: #382C27;
 
-  /* Liquid Glass Dark */
-  --bg-glass: rgba(34, 32, 31, 0.88);
-  --bg-glass-card: rgba(34, 32, 31, 0.94);
-  --bg-glass-modal: rgba(34, 32, 31, 0.97);
-  --glass-blur: blur(20px) saturate(180%);
-  --glass-border: rgba(229, 229, 229, 0.1);
-  --glass-border-subtle: rgba(229, 229, 229, 0.06);
+  --bg-blush: #5D3C3A;
+  --accent-primary: #DF4B64;
+  --accent-primary-hover: #EA5D75;
+  --accent-primary-active: #C92D48;
+  --accent-soft: rgba(232, 185, 181, 0.14);
+  --accent-soft-light: rgba(232, 185, 181, 0.09);
+  --accent-shadow: rgba(223, 75, 100, 0.34);
+  --border-dashed: rgba(223, 75, 100, 0.42);
 
-  /* Borders (Quiet Pencil Outlines) */
-  --border-hairline: rgba(229, 229, 229, 0.08);
-  --border-subtle: rgba(229, 229, 229, 0.12);
-  --border-medium: rgba(229, 229, 229, 0.20);
-  --border-focus: #da0038;
+  --bg-blush-soft: var(--accent-soft);
+  --bg-blush-light: var(--accent-soft-light);
+  --bg-surface-accent: var(--accent-soft);
 
-  /* Text & Hierarchy (Ivory / Cream Text on Warm Charcoal) */
-  --text-primary: #efeae4;        /* Contrast 13.8:1 on #22201F */
-  --text-secondary: #a8a19b;      /* Contrast 6.4:1 on #22201F */
-  --text-tertiary: #7e7771;       /* Contrast 4.5:1 on #171717 */
-  --text-muted: #7e7771;
-  --text-on-accent: #ffffff;
-  --text-on-primary: #ffffff;
+  --accent-strawberry: var(--accent-primary);
+  --accent-strawberry-hover: var(--accent-primary-hover);
+  --accent-strawberry-active: var(--accent-primary-active);
+  --accent-caramel: #C99674;
+  --accent-caramel-soft: rgba(201, 150, 116, 0.16);
 
-  /* Accent Adjustments for Dark Backgrounds */
-  --color-primary: #da0038;
-  --color-primary-hover: #c40032;
-  --color-primary-active: #b0002d;
-  --color-primary-soft: rgba(227, 163, 180, 0.12);
-  --color-primary-tint: rgba(218, 0, 56, 0.14);
-  --color-primary-tint-hover: rgba(218, 0, 56, 0.22);
-  --color-primary-subtle-border: rgba(218, 0, 56, 0.32);
-  --color-accent-muted: #e3a3b4;
-  --color-accent-rose: #e3a3b4;
-  --color-accent-rose-soft: rgba(227, 163, 180, 0.12);
+  --text-cocoa: #F5EBE2;
+  --text-primary: #F5EBE2;
+  --text-secondary: #CDBCB2;
+  --text-tertiary: #A79388;
+  --text-muted: #A79388;
+  --text-placeholder: #8B776D;
+  --text-on-accent: #FFFFFF;
+  --text-on-primary: #FFFFFF;
 
-  --bg-nav: rgba(34, 32, 31, 0.94);
-  --nav-border: rgba(229, 229, 229, 0.12);
-  --bg-modal-overlay: rgba(0, 0, 0, 0.72);
+  --border-sketch: rgba(245, 235, 226, 0.14);
+  --border-dashed-cocoa: rgba(245, 235, 226, 0.22);
+  --border-hairline: rgba(245, 235, 226, 0.08);
+  --border-subtle: rgba(245, 235, 226, 0.13);
+  --border-medium: rgba(245, 235, 226, 0.22);
+  --border-focus: var(--accent-primary);
 
-  /* Tactile Sketch Shadows for Dark Mode */
-  --shadow-sketch: 0 3px 0 rgba(0, 0, 0, 0.35);
-  --shadow-sketch-pressed: 0 1px 0 rgba(0, 0, 0, 0.35);
-  --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 3px 0 rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 0 rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 6px 0 rgba(0, 0, 0, 0.5), 0 14px 36px rgba(0, 0, 0, 0.4);
+  --bg-glass: rgba(45, 35, 31, 0.94);
+  --bg-glass-card: rgba(45, 35, 31, 0.98);
+  --bg-glass-modal: #2D231F;
+  --glass-border: rgba(245, 235, 226, 0.12);
+  --glass-border-subtle: rgba(245, 235, 226, 0.08);
 
-  /* Dark Category Tints */
-  --cat-dates: #da0038;
-  --cat-dates-bg: rgba(218, 0, 56, 0.14);
-  --cat-dates-border: rgba(218, 0, 56, 0.32);
+  --color-primary: var(--accent-primary);
+  --color-primary-hover: var(--accent-primary-hover);
+  --color-primary-active: var(--accent-primary-active);
+  --color-primary-soft: var(--accent-soft);
+  --color-primary-tint: var(--accent-soft-light);
+  --color-primary-tint-hover: var(--accent-soft);
+  --color-primary-subtle-border: var(--border-dashed);
+  --color-accent-muted: var(--bg-blush);
+  --color-accent-rose: var(--bg-blush);
+  --color-accent-rose-soft: var(--accent-soft);
+  --color-danger: #DF4B64;
 
-  --cat-chores: #85a4c0;
-  --cat-chores-bg: rgba(133, 164, 192, 0.14);
-  --cat-chores-border: rgba(133, 164, 192, 0.3);
+  --bg-nav: #2D231F;
+  --nav-border: rgba(245, 235, 226, 0.14);
+  --bg-modal-overlay: rgba(16, 11, 9, 0.72);
 
-  --cat-gifts: #d99347;
-  --cat-gifts-bg: rgba(217, 147, 71, 0.14);
-  --cat-gifts-border: rgba(217, 147, 71, 0.3);
+  --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.30);
+  --shadow-polaroid: 0 8px 22px rgba(0, 0, 0, 0.38);
+  --shadow-sketch: 0 4px 18px rgba(0, 0, 0, 0.30);
+  --shadow-sketch-pressed: 0 1px 4px rgba(0, 0, 0, 0.35);
+  --shadow-xs: 0 2px 6px rgba(0, 0, 0, 0.26);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.30);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.50);
 
-  --cat-wishes: #b286ad;
-  --cat-wishes-bg: rgba(178, 134, 173, 0.14);
-  --cat-wishes-border: rgba(178, 134, 173, 0.3);
+  /* Dark Category Tints (Warm candlelit tones) */
+  --cat-dates: #DF4B64;
+  --cat-dates-bg: rgba(223, 75, 100, 0.16);
+  --cat-dates-border: rgba(223, 75, 100, 0.34);
 
-  --cat-memories: #7fa884;
-  --cat-memories-bg: rgba(127, 168, 132, 0.14);
-  --cat-memories-border: rgba(127, 168, 132, 0.3);
+  --cat-chores: #8BA9BC;
+  --cat-chores-bg: rgba(139, 169, 188, 0.16);
+  --cat-chores-border: rgba(139, 169, 188, 0.32);
 
-  /* Urgency Dark */
-  --urgency-low: #7fa884;
-  --urgency-low-bg: rgba(127, 168, 132, 0.14);
-  --urgency-low-border: rgba(127, 168, 132, 0.3);
+  --cat-gifts: #D6A17D;
+  --cat-gifts-bg: rgba(214, 161, 125, 0.16);
+  --cat-gifts-border: rgba(214, 161, 125, 0.32);
 
-  --urgency-medium: #d99347;
-  --urgency-medium-bg: rgba(217, 147, 71, 0.14);
-  --urgency-medium-border: rgba(217, 147, 71, 0.3);
+  --cat-wishes: #C194B3;
+  --cat-wishes-bg: rgba(193, 148, 179, 0.16);
+  --cat-wishes-border: rgba(193, 148, 179, 0.32);
 
-  --urgency-high: #da0038;
-  --urgency-high-bg: rgba(218, 0, 56, 0.16);
-  --urgency-high-border: rgba(218, 0, 56, 0.35);
+  --cat-memories: #8FB293;
+  --cat-memories-bg: rgba(143, 178, 147, 0.16);
+  --cat-memories-border: rgba(143, 178, 147, 0.32);
+
+  --urgency-low: #8FB293;
+  --urgency-low-bg: rgba(143, 178, 147, 0.16);
+  --urgency-low-border: rgba(143, 178, 147, 0.32);
+
+  --urgency-medium: #D6A17D;
+  --urgency-medium-bg: rgba(214, 161, 125, 0.16);
+  --urgency-medium-border: rgba(214, 161, 125, 0.32);
+
+  --urgency-high: #DF4B64;
+  --urgency-high-bg: rgba(223, 75, 100, 0.18);
+  --urgency-high-border: rgba(223, 75, 100, 0.38);
+}
+
+/* ==========================================================================
+   Customizable Scrapbook Accent Palettes (Light & Dark)
+   1. strawberry (default)
+   2. caramel
+   3. lavender
+   4. sage
+   5. sky
+   ========================================================================== */
+
+[data-accent='strawberry'] {
+  --accent-primary: #C92D48;
+  --accent-primary-hover: #B1243D;
+  --accent-primary-active: #961D33;
+  --accent-soft: rgba(232, 185, 181, 0.35);
+  --accent-soft-light: rgba(232, 185, 181, 0.18);
+  --accent-shadow: rgba(201, 45, 72, 0.28);
+  --border-dashed: rgba(201, 45, 72, 0.35);
+  --bg-blush: #E8B9B5;
+}
+
+[data-accent='caramel'] {
+  --accent-primary: #A87554;
+  --accent-primary-hover: #936446;
+  --accent-primary-active: #7E553A;
+  --accent-soft: rgba(168, 117, 84, 0.22);
+  --accent-soft-light: rgba(168, 117, 84, 0.12);
+  --accent-shadow: rgba(168, 117, 84, 0.28);
+  --border-dashed: rgba(168, 117, 84, 0.36);
+  --bg-blush: #DFC3AE;
+}
+
+[data-accent='lavender'] {
+  --accent-primary: #8E6BB8;
+  --accent-primary-hover: #7C5AA5;
+  --accent-primary-active: #6B4C91;
+  --accent-soft: rgba(142, 107, 184, 0.22);
+  --accent-soft-light: rgba(142, 107, 184, 0.12);
+  --accent-shadow: rgba(142, 107, 184, 0.28);
+  --border-dashed: rgba(142, 107, 184, 0.36);
+  --bg-blush: #D6C5E9;
+}
+
+[data-accent='sage'] {
+  --accent-primary: #4E8568;
+  --accent-primary-hover: #427359;
+  --accent-primary-active: #37614B;
+  --accent-soft: rgba(78, 133, 104, 0.22);
+  --accent-soft-light: rgba(78, 133, 104, 0.12);
+  --accent-shadow: rgba(78, 133, 104, 0.28);
+  --border-dashed: rgba(78, 133, 104, 0.36);
+  --bg-blush: #BCD5C7;
+}
+
+[data-accent='sky'] {
+  --accent-primary: #4A7BB7;
+  --accent-primary-hover: #3E6BA3;
+  --accent-primary-active: #345B8D;
+  --accent-soft: rgba(74, 123, 183, 0.22);
+  --accent-soft-light: rgba(74, 123, 183, 0.12);
+  --accent-shadow: rgba(74, 123, 183, 0.28);
+  --border-dashed: rgba(74, 123, 183, 0.36);
+  --bg-blush: #BDD0E7;
+}
+
+/* Dark theme overrides for each accent palette */
+[data-theme='dark'][data-accent='strawberry'] {
+  --accent-primary: #DF4B64;
+  --accent-primary-hover: #EA5D75;
+  --accent-primary-active: #C92D48;
+  --accent-soft: rgba(232, 185, 181, 0.16);
+  --accent-soft-light: rgba(232, 185, 181, 0.09);
+  --accent-shadow: rgba(223, 75, 100, 0.34);
+  --border-dashed: rgba(223, 75, 100, 0.42);
+  --bg-blush: #5D3C3A;
+}
+
+[data-theme='dark'][data-accent='caramel'] {
+  --accent-primary: #C8926E;
+  --accent-primary-hover: #D6A280;
+  --accent-primary-active: #A87554;
+  --accent-soft: rgba(200, 146, 110, 0.20);
+  --accent-soft-light: rgba(200, 146, 110, 0.12);
+  --accent-shadow: rgba(200, 146, 110, 0.32);
+  --border-dashed: rgba(200, 146, 110, 0.42);
+  --bg-blush: #534033;
+}
+
+[data-theme='dark'][data-accent='lavender'] {
+  --accent-primary: #A887D1;
+  --accent-primary-hover: #B89ADE;
+  --accent-primary-active: #8E6BB8;
+  --accent-soft: rgba(168, 135, 209, 0.20);
+  --accent-soft-light: rgba(168, 135, 209, 0.12);
+  --accent-shadow: rgba(168, 135, 209, 0.32);
+  --border-dashed: rgba(168, 135, 209, 0.42);
+  --bg-blush: #463A57;
+}
+
+[data-theme='dark'][data-accent='sage'] {
+  --accent-primary: #69A484;
+  --accent-primary-hover: #7BB495;
+  --accent-primary-active: #4E8568;
+  --accent-soft: rgba(105, 164, 132, 0.20);
+  --accent-soft-light: rgba(105, 164, 132, 0.12);
+  --accent-shadow: rgba(105, 164, 132, 0.32);
+  --border-dashed: rgba(105, 164, 132, 0.42);
+  --bg-blush: #324A3D;
+}
+
+[data-theme='dark'][data-accent='sky'] {
+  --accent-primary: #6999D1;
+  --accent-primary-hover: #7CA9DE;
+  --accent-primary-active: #4A7BB7;
+  --accent-soft: rgba(105, 153, 209, 0.20);
+  --accent-soft-light: rgba(105, 153, 209, 0.12);
+  --accent-shadow: rgba(105, 153, 209, 0.32);
+  --border-dashed: rgba(105, 153, 209, 0.42);
+  --bg-blush: #324459;
 }

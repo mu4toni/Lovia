@@ -5,13 +5,13 @@
   min-height: var(--tg-viewport-stable-height, 100dvh);
   overflow-x: clip;
   width: 100%;
+  max-width: 100%;
 }
 
 .main-content {
   flex: 1;
-  padding: calc(var(--space-md, 16px) + var(--tg-total-top-inset, env(safe-area-inset-top, 0px))) var(--space-lg, 20px);
-  /* Legacy test assertion: 100px 96px */
-  padding-bottom: calc(116px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  padding: calc(var(--space-md, 16px) + var(--tg-total-top-inset, env(safe-area-inset-top, 0px))) var(--space-md, 16px);
+  padding-bottom: calc(112px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
   max-width: 480px;
   width: 100%;
   margin: 0 auto;
@@ -21,7 +21,7 @@
 
 @media (max-width: 380px) {
   .main-content {
-    padding-left: var(--space-md, 16px);
-    padding-right: var(--space-md, 16px);
+    padding-left: 14px;
+    padding-right: 14px;
   }
 }

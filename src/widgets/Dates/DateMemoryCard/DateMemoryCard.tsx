@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DateMemory } from '../../../types/dates';
 import { Icon } from '../../../components/ui/Icon/Icon';
+import { PolaroidFrame } from '../../../components/ui/PolaroidFrame/PolaroidFrame';
 import { formatRussianDate } from '../../../utils/dateCalculations';
-import { normalizeMediaUrl } from '../../../utils/media';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DateMemoryCard.css';
 
 export interface DateMemoryCardProps {
   memory: DateMemory;
+  tilt?: 'left' | 'right' | 'none';
   onClick: (memory: DateMemory) => void;
   onEdit: (memory: DateMemory, e: React.MouseEvent) => void;
   onDelete: (memory: DateMemory, e: React.MouseEvent) => void;
@@ -15,20 +17,20 @@ export interface DateMemoryCardProps {
 
 export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
   memory,
+  tilt = 'left',
   onClick,
   onEdit,
   onDelete,
   onOpenPhotoLightbox,
 }) => {
+  const { isFriendship } = useSpaceMode();
   const { title, date, place, location, story, photos } = memory;
   const effectivePlace = location?.placeName || place;
   const hasPhotos = Boolean(photos && photos.length > 0);
-
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close actions menu on outside click or Escape
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleDocumentClick = (e: MouseEvent) => {
@@ -72,45 +74,6 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
       role="button"
       aria-label={`Воспоминание: ${title}, дата: ${formatRussianDate(date)}`}
     >
-      {/* 1. Hero Photo Header with smooth bottom fade (or blurred background icon if no photo) */}
-      {hasPhotos && photos && photos.length > 0 ? (
-        <div className="date-memory-card__hero-photo-wrap">
-          <img
-            src={normalizeMediaUrl(photos[0])}
-            alt={`${title} - фото`}
-            className="date-memory-card__hero-img date-memory-card__photo-img"
-            loading="lazy"
-            onClick={(e) => {
-              if (onOpenPhotoLightbox) {
-                e.stopPropagation();
-                onOpenPhotoLightbox(photos, 0);
-              }
-            }}
-          />
-
-          {photos.length > 1 && (
-            <div
-              className="date-memory-card__photo-count-badge"
-              aria-label={`Всего фотографий: ${photos.length}`}
-            >
-              <Icon name="image" size={13} />
-              <span>1 / {photos.length}</span>
-            </div>
-          )}
-
-          {/* Structural nodes preserved for test compatibility */}
-          <div className="date-memory-card__photo-single" style={{ display: 'none' }} />
-          <div className="date-memory-card__photos-dual" style={{ display: 'none' }} />
-          <div className="date-memory-card__photos-multi" style={{ display: 'none' }}>
-            <div className="date-memory-card__photo-badge">+{photos.length - 1}</div>
-          </div>
-        </div>
-      ) : (
-        <div className="date-memory-card__stat-bg-icon" aria-hidden="true">
-          <Icon name="calendar" size={52} strokeWidth={1.5} />
-        </div>
-      )}
-
       {/* Floating Three-Dots Actions Menu */}
       <div
         ref={menuRef}
@@ -157,28 +120,60 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
         )}
       </div>
 
-      {/* 2. Text Content (Over lower dissolved gradient / on card surface) */}
+      {/* 1. Polaroid Photo Header (when photos exist) */}
+      {hasPhotos && photos && photos.length > 0 && (
+        <div className="date-memory-card__polaroid-wrap">
+          <PolaroidFrame
+            src={photos[0]}
+            alt={`${title} - фото`}
+            aspectRatio="landscape"
+            tilt={tilt}
+            sticker={isFriendship ? 'tape' : 'heart'}
+            className="date-memory-card__polaroid"
+            onClick={(e) => {
+              if (onOpenPhotoLightbox) {
+                e.stopPropagation();
+                onOpenPhotoLightbox(photos, 0);
+              }
+            }}
+          />
+
+          {photos.length > 1 && (
+            <div
+              className="date-memory-card__photo-count-badge"
+              aria-label={`Всего фотографий: ${photos.length}`}
+            >
+              <Icon name="image" size={13} />
+              <span>1 / {photos.length}</span>
+            </div>
+          )}
+
+          {/* Structural nodes preserved for test compatibility */}
+          <div className="date-memory-card__photo-single" style={{ display: 'none' }} />
+          <div className="date-memory-card__photos-dual" style={{ display: 'none' }} />
+          <div className="date-memory-card__photos-multi" style={{ display: 'none' }}>
+            <div className="date-memory-card__photo-badge">+{photos.length - 1}</div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Paper Note Content */}
       <div className="date-memory-card__content">
-        {/* Compact Clean Meta Line: Date & Location */}
+        {/* Blush Date Sticker Pill & Location */}
         <div className="date-memory-card__meta-line">
-          <span className="date-memory-card__meta-item">
+          <span className="date-memory-card__date-pill">
             <Icon name="calendar" size={12} className="date-meta-icon" />
             <span>{formatRussianDate(date)}</span>
           </span>
           {effectivePlace && (
-            <>
-              <span className="date-memory-card__meta-sep" aria-hidden="true">
-                ·
-              </span>
-              <span className="date-memory-card__meta-item date-place-text" title={effectivePlace}>
-                <Icon name="pin" size={12} className="date-meta-icon" />
-                <span>{effectivePlace}</span>
-              </span>
-            </>
+            <span className="date-memory-card__place-pill" title={effectivePlace}>
+              <Icon name="pin" size={12} className="date-meta-icon" />
+              <span>{effectivePlace}</span>
+            </span>
           )}
         </div>
 
-        {/* Title */}
+        {/* Handwritten Title */}
         <h3 className="date-memory-card__title">{title}</h3>
 
         {/* Story */}
@@ -200,9 +195,9 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
           </div>
         )}
 
-        {/* Footer: Подробнее > */}
+        {/* Footer */}
         <div className="date-memory-card__footer">
-          <span className="date-memory-card__hint-text">Подробнее</span>
+          <span className="date-memory-card__hint-text">Открыть запись</span>
           <Icon name="chevron-right" size={14} className="date-memory-card__hint-icon" />
         </div>
       </div>

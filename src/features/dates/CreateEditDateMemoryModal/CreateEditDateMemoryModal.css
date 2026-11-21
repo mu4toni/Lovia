@@ -23,13 +23,13 @@
 
 .date-memory-form__label {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--text-cocoa);
 }
 
 .date-memory-form__hint {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -43,18 +43,22 @@
 
 .date-memory-form__photo-item {
   position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: var(--radius-md);
+  width: 78px;
+  height: 82px;
+  padding: 4px 4px 10px 4px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.04));
+  border: 1.5px solid var(--border-sketch);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-polaroid);
+  box-sizing: border-box;
 }
 
 .date-memory-form__photo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 4px;
 }
 
 .date-memory-form__remove-photo-btn {
@@ -75,7 +79,7 @@
 
 .date-memory-form__remove-photo-btn span,
 .date-memory-form__remove-photo-btn svg {
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(73, 55, 47, 0.78);
   color: #ffffff;
   border-radius: var(--radius-full);
   padding: 3px;
@@ -83,14 +87,14 @@
 }
 
 .date-memory-form__add-photo-btn {
-  width: 72px;
-  height: 72px;
+  width: 78px;
+  height: 82px;
   min-width: 44px;
   min-height: 44px;
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--border-subtle);
-  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.02));
-  color: var(--color-primary);
+  border-radius: 12px;
+  border: 1.5px dashed var(--border-dashed);
+  background: var(--accent-soft);
+  color: var(--accent-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -101,8 +105,8 @@
 }
 
 .date-memory-form__add-photo-btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-soft, rgba(200, 54, 73, 0.06));
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
 }
 
 .date-memory-form__add-photo-btn:disabled {
@@ -111,9 +115,9 @@
 }
 
 .date-memory-form__add-photo-text {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-cocoa);
   text-align: center;
   line-height: 1.1;
 }

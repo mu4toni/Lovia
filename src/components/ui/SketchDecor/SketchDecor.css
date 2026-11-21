@@ -1,6 +1,5 @@
 /* ==========================================================================
    LOVIA — Hand-drawn / Sketch Vector Decor & Tactile Dividers
-   Organic diary flourishes, pen doodles, and dashed dividers
    ========================================================================== */
 
 .sketch-underline {
@@ -9,7 +8,7 @@
   pointer-events: none;
   user-select: none;
   opacity: 0.85;
-  color: var(--color-primary, #da0038);
+  color: var(--accent-strawberry, #C92D48);
 }
 
 .sketch-doodle {
@@ -19,21 +18,28 @@
   pointer-events: none;
   user-select: none;
   flex-shrink: 0;
-  color: var(--color-primary, #da0038);
+  color: var(--accent-strawberry, #C92D48);
 }
 
-.sketch-doodle--heart {
-  color: var(--color-primary, #da0038);
+.sketch-doodle--heart,
+.sketch-doodle--heart-filled {
+  color: var(--accent-strawberry, #C92D48);
 }
 
 .sketch-doodle--star,
 .sketch-doodle--sparkle {
-  color: var(--color-accent-rose, #e3a3b4);
+  color: var(--accent-caramel, #A87554);
 }
 
-[data-theme='dark'] .sketch-doodle--star,
-[data-theme='dark'] .sketch-doodle--sparkle {
-  color: var(--color-accent-rose, #e3a3b4);
+.sketch-rays {
+  position: absolute;
+  inset: -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 16px);
+  pointer-events: none;
+  user-select: none;
+  color: var(--accent-strawberry, #C92D48);
+  opacity: 0.85;
 }
 
 /* Tactile Notebook Dashed Divider */
@@ -41,7 +47,7 @@
   width: 100%;
   height: 0;
   border: none;
-  border-top: 1.5px dashed var(--border-subtle);
+  border-top: 1.5px dashed var(--border-dashed, rgba(201, 45, 72, 0.35));
   margin: var(--space-sm, 12px) 0;
   opacity: 0.85;
 }

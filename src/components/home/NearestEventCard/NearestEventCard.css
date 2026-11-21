@@ -1,0 +1,97 @@
+/* ==========================================================================
+   LOVIA — Scrapbook Nearest Event Card (Blush Paper + Bean with Heart)
+   ========================================================================== */
+
+.nearest-event-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  background: var(--bg-blush-soft);
+  border: 1.5px solid var(--border-sketch);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--duration-fast) var(--ease-tactile),
+              border-color var(--duration-fast) ease;
+}
+
+.nearest-event-card:active {
+  transform: scale(0.98);
+}
+
+.nearest-event-card__icon-box {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-sketch);
+  color: var(--accent-caramel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nearest-event-card__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nearest-event-card__kicker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-strawberry);
+}
+
+.nearest-event-card__title {
+  margin: 0;
+  font-family: var(--font-handwritten);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nearest-event-card__date {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nearest-event-card__right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.nearest-event-card__mascot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  margin-right: -2px;
+}
+
+.nearest-event-card__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-cocoa);
+  opacity: 0.7;
+}

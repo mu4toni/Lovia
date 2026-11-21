@@ -65,7 +65,7 @@ export interface IconProps extends React.SVGAttributes<SVGElement> {
 export const Icon: React.FC<IconProps> = ({
   name,
   size = 20,
-  strokeWidth = 1.85,
+  strokeWidth = 1.75,
   className = '',
   ...props
 }) => {
@@ -74,8 +74,8 @@ export const Icon: React.FC<IconProps> = ({
       case 'home':
         return (
           <>
-            <path d="M4 11.2a1.8 1.8 0 01.5-1.2l6-5.4a2.2 2.2 0 013 0l6 5.4a1.8 1.8 0 01.5 1.2V18.5a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5V11.2z" />
-            <path d="M9.5 21v-5.5a2 2 0 012-2h1a2 2 0 012 2V21" />
+            <path d="M3.6 11.4c0-.5.2-.9.6-1.3l6.2-5.4c.9-.8 2.3-.8 3.2 0l6.2 5.4c.4.4.6.8.6 1.3v6.8c0 1.5-1.1 2.6-2.6 2.6H6.2c-1.5 0-2.6-1.1-2.6-2.6v-6.8z" />
+            <path d="M9.6 20.8v-5.2c0-1.1.9-2 2-2h.8c1.1 0 2 .9 2 2v5.2" />
           </>
         );
 
@@ -83,24 +83,24 @@ export const Icon: React.FC<IconProps> = ({
       case 'gift':
         return (
           <>
-            <rect x="3" y="8" width="18" height="4" rx="1.5" />
-            <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7" />
-            <path d="M12 8v13" />
-            <path d="M12 8H7.5a2.5 2.5 0 010-5C11 3 12 8 12 8z" />
-            <path d="M12 8h4.5a2.5 2.5 0 000-5C13 3 12 8 12 8z" />
+            <rect x="3.2" y="8.2" width="17.6" height="4" rx="1.6" />
+            <path d="M4.4 12.2v6.5c0 1.3 1 2.2 2.2 2.2h10.8c1.2 0 2.2-.9 2.2-2.2v-6.5" />
+            <path d="M12 8.2v12.7" />
+            <path d="M12 8.2H7.8c-1.5 0-2.5-1-2.5-2.3s1-2.3 2.4-2.3c2.4 0 4.3 4.6 4.3 4.6z" />
+            <path d="M12 8.2h4.2c1.5 0 2.5-1 2.5-2.3s-1-2.3-2.4-2.3c-2.4 0-4.3 4.6-4.3 4.6z" />
           </>
         );
 
       case 'relationship':
       case 'heart':
         return (
-          <path d="M12 20.3s-7-4.4-9.2-8.3C1.2 9 2.4 5.5 5.5 4.5c2.4-.8 5 .3 6.5 2.2 1.5-1.9 4.1-3 6.5-2.2 3.1 1 4.3 4.5 2.7 7.5-2.2 3.9-9.2 8.3-9.2 8.3z" />
+          <path d="M12 20.2c-.6-.4-7-4.5-9.1-8.2-1.5-2.8-.4-6.3 2.7-7.3 2.3-.8 4.9.3 6.4 2.2 1.5-1.9 4.1-3 6.4-2.2 3.1 1 4.2 4.5 2.7 7.3-2.1 3.7-8.5 7.8-9.1 8.2z" />
         );
 
       case 'heart-filled':
         return (
           <path
-            d="M12 20.3s-7-4.4-9.2-8.3C1.2 9 2.4 5.5 5.5 4.5c2.4-.8 5 .3 6.5 2.2 1.5-1.9 4.1-3 6.5-2.2 3.1 1 4.3 4.5 2.7 7.5-2.2 3.9-9.2 8.3-9.2 8.3z"
+            d="M12 20.2c-.6-.4-7-4.5-9.1-8.2-1.5-2.8-.4-6.3 2.7-7.3 2.3-.8 4.9.3 6.4 2.2 1.5-1.9 4.1-3 6.4-2.2 3.1 1 4.2 4.5 2.7 7.3-2.1 3.7-8.5 7.8-9.1 8.2z"
             fill="currentColor"
             stroke="none"
           />
@@ -110,13 +110,11 @@ export const Icon: React.FC<IconProps> = ({
       case 'calendar':
         return (
           <>
-            <rect x="3.5" y="5" width="17" height="15.5" rx="3.5" />
-            <path d="M16 2.8v3.5" />
-            <path d="M8 2.8v3.5" />
-            <path d="M3.5 10.2h17" />
-            <circle cx="8" cy="14" r=".9" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="14" r=".9" fill="currentColor" stroke="none" />
-            <circle cx="16" cy="14" r=".9" fill="currentColor" stroke="none" />
+            <rect x="3.5" y="5.2" width="17" height="15.3" rx="3.8" />
+            <path d="M16 3v3.6" />
+            <path d="M8 3v3.6" />
+            <path d="M3.8 10.2h16.4" />
+            <path d="M12 17.6s-2.6-1.6-3.3-3c-.5-1-.1-2.2 1-2.5.8-.3 1.7.1 2.3.8.6-.7 1.5-1.1 2.3-.8 1.1.3 1.5 1.5 1 2.5-.7 1.4-3.3 3-3.3 3z" strokeWidth="1.5" />
           </>
         );
 

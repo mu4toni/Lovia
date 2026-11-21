@@ -1,13 +1,13 @@
 .glass-card {
   position: relative;
-  border-radius: var(--radius-lg);
-  color: var(--text-primary);
-  background: var(--bg-surface);
-  border: 1.5px solid var(--border-subtle);
-  box-shadow: var(--shadow-sketch, var(--shadow-sm));
-  transition: transform var(--duration-fast) var(--ease-spring),
+  border-radius: 20px;
+  color: var(--text-cocoa);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-sketch);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--duration-fast) var(--ease-tactile),
               box-shadow var(--duration-normal) var(--ease-smooth),
-              background var(--duration-normal) var(--ease-smooth),
+              background-color var(--duration-normal) var(--ease-smooth),
               border-color var(--duration-normal) var(--ease-smooth);
 }
 
@@ -25,23 +25,18 @@
   padding: 24px;
 }
 
-/* Default / Solid Clean Card */
+/* Default / Solid Paper Card */
 .glass-card--glass,
 .glass-card--solid {
-  background: var(--bg-surface);
-  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-sketch);
 }
 
-/* Subtle Accent Highlight Card (Warm cream/sand with delicate ruby border) */
+/* Highlight / Blush Scrapbook Note Card */
 .glass-card--highlight {
-  background: var(--bg-surface-accent);
-  border: 1.5px solid rgba(200, 54, 73, 0.18);
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme='dark'] .glass-card--highlight {
-  background: var(--bg-surface-accent);
-  border: 1.5px solid rgba(216, 71, 92, 0.28);
+  background: var(--bg-blush-soft);
+  border: 1.5px dashed var(--border-dashed);
+  box-shadow: var(--shadow-card);
 }
 
 /* Interactive Card */
@@ -51,15 +46,13 @@
 }
 
 .glass-card--interactive:hover {
-  background: var(--bg-surface-hover);
+  background: var(--bg-card-hover);
   border-color: var(--border-medium);
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
 }
 
 .glass-card--interactive:active {
-  transform: translateY(1.5px) scale(0.975);
-  box-shadow: var(--shadow-sketch-pressed, var(--shadow-xs));
+  transform: scale(0.98);
+  box-shadow: var(--shadow-xs);
   transition: transform 100ms var(--ease-tactile);
-  background: var(--bg-surface-pressed);
 }

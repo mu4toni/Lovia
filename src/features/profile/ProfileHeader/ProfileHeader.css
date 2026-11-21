@@ -8,24 +8,16 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 16px 16px 6px;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  padding: 22px 18px 18px;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border-dashed);
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
   overflow: visible;
 }
 
 .profile-hero-card__glow {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(200, 54, 73, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .profile-hero-card__body {
@@ -48,19 +40,19 @@
 }
 
 .profile-hero-card__avatar-frame {
-  width: 96px;
-  height: 96px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  padding: 3px;
-  background: var(--bg-card);
-  border: 2px solid var(--border-subtle);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  padding: 4px;
+  background: var(--bg-blush-soft);
+  border: 2px dashed var(--border-dashed);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   outline: none;
-  transition: transform var(--motion-micro) var(--ease-telegram), border-color var(--duration-fast) ease;
+  transition: transform var(--motion-micro) var(--ease-tactile), border-color var(--duration-fast) ease;
 }
 
 .profile-hero-card__avatar-frame:active {
@@ -158,10 +150,11 @@
 
 .profile-hero-card__name {
   margin: 0;
-  font-size: 24px;
+  font-family: var(--font-handwritten);
+  font-size: 25px;
   font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
+  color: var(--text-cocoa);
+  letter-spacing: -0.01em;
   line-height: 1.25;
   text-align: center;
   word-break: break-word;

@@ -1,0 +1,1087 @@
+/* ==========================================================================
+   LOVIA — Scrapbook Layer
+   Hand-drawn wobbly borders, paper tags, tape, polaroids, paper texture.
+   Loaded LAST (main.tsx). Selectors are prefixed with `body` to win over
+   per-component CSS regardless of chunk load order.
+   NEVER put transform/rotate on page containers or modals.
+   ========================================================================== */
+
+:root {
+  --sketch-border: rgba(73, 55, 47, 0.28);
+  --sketch-shadow: rgba(73, 55, 47, 0.08);
+  --tape-bg: rgba(232, 185, 181, 0.45);
+  --polaroid-bg: #FFFDF9;
+  --paper-dot: rgba(73, 55, 47, 0.045);
+  --tag-shadow: rgba(0, 0, 0, 0.08);
+  --polaroid-shadow: rgba(0, 0, 0, 0.12);
+  --radius-sketch: 24px 19px 23px 18px / 18px 23px 19px 24px;
+  --radius-sketch-pill: 255px 22px 225px 25px / 25px 225px 22px 255px;
+  --radius-sketch-tag: 12px 16px 11px 15px / 14px 11px 15px 12px;
+}
+
+[data-theme='dark'] {
+  --sketch-border: rgba(248, 241, 233, 0.22);
+  --sketch-shadow: rgba(0, 0, 0, 0.35);
+  --tape-bg: rgba(248, 241, 233, 0.14);
+  --polaroid-bg: #3A2D28;
+  --paper-dot: rgba(248, 241, 233, 0.05);
+  --tag-shadow: rgba(0, 0, 0, 0.3);
+  --polaroid-shadow: rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   1. No decorative underlines under titles / names
+   -------------------------------------------------------------------------- */
+body .sketch-underline,
+body .home-header__days-underline,
+body .relationship-page__title-underline,
+body .dates-header__title-underline,
+body .anniversary-showcase__title-underline,
+body .wishlist-header__title-underline {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Sketch cards (organic border, offset paper shadow, paper dots)
+   -------------------------------------------------------------------------- */
+body .sketch-card,
+body .home-header__together-card,
+body .nearest-event-card,
+body .bean-advice-card,
+body .request-card,
+body .wish-card,
+body .timeline-node__card,
+body .relationship-hero-card,
+body .anniversary-showcase,
+body .profile-hero-card,
+body .partner-info-card,
+body .date-memory-card,
+body .dates-header__stats-card,
+body .appearance-accents,
+body .glass-card {
+  background-color: var(--bg-card);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1.2px);
+  background-size: 12px 12px;
+  border: 2px solid var(--sketch-border);
+  border-radius: var(--radius-sketch);
+  box-shadow: 3px 4px 0 var(--sketch-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+body .sketch-card--dashed,
+body .wishlist-header__owner-card,
+body .memorable-timeline-empty,
+body .home-header__together-card,
+body .anniversary-showcase {
+  border: 2px dashed var(--border-dashed);
+  box-shadow: 3px 4px 0 var(--sketch-shadow);
+}
+
+/* soft blur glows are not part of the paper look */
+body .relationship-hero-card__glow,
+body .profile-hero-card__glow {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. Sketch pills (buttons, tabs, chips)
+   -------------------------------------------------------------------------- */
+body .sketch-pill,
+body .btn,
+body .bottom-action-btn,
+body .requests-tab,
+body .wishlist-header__tab-btn,
+body .dates-header__year-pill,
+body .dates-header__sort-btn,
+body .wish-modal-submit-btn,
+body .create-request-submit-btn {
+  border-radius: var(--radius-sketch-pill) !important;
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--sketch-border);
+  box-shadow: 2px 3px 0 var(--sketch-shadow);
+}
+
+body .btn--primary,
+body .bottom-action-btn,
+body .requests-tab--active,
+body .wishlist-header__tab-btn--active,
+body .dates-header__year-pill--active,
+body .wish-modal-submit-btn,
+body .create-request-submit-btn {
+  border-color: var(--accent-primary-active) !important;
+  box-shadow: 2px 3px 0 var(--accent-shadow) !important;
+}
+
+body .btn--secondary,
+body .btn--outline {
+  border-color: var(--sketch-border);
+}
+
+body .btn--ghost {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+body .sketch-pill:active,
+body .btn:active:not(:disabled),
+body .bottom-action-btn:active,
+body .requests-tab:active,
+body .wishlist-header__tab-btn:active,
+body .dates-header__year-pill:active,
+body .dates-header__sort-btn:active,
+body .wish-modal-submit-btn:active:not(:disabled),
+body .create-request-submit-btn:active:not(:disabled) {
+  transform: translate(2px, 2px) !important;
+  box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Paper tags (date plates, price, badges)
+   -------------------------------------------------------------------------- */
+body .paper-tag,
+body .home-header__date-chip,
+body .timeline-node__date-sticker,
+body .timeline-node__annual-badge,
+body .wish-card__price,
+body .wish-card__category-tag,
+body .date-memory-card__date-pill,
+body .date-memory-card__place-pill,
+body .anniversary-showcase__date-chip,
+body .relationship-hero-card__start-date-pill,
+body .date-memory-detail__date-badge,
+body .date-memory-detail__place-badge {
+  background: var(--accent-soft);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: var(--radius-sketch-tag);
+  box-shadow: 2px 2px 0 var(--tag-shadow);
+  transform: rotate(-1.2deg);
+}
+
+body .paper-tag:nth-child(even),
+body .home-header__date-chip:nth-child(even),
+body .timeline-node:nth-child(even) .timeline-node__date-sticker,
+body .wish-card__price:nth-child(even),
+body .date-memory-card__date-pill:nth-child(even),
+body .date-memory-card__place-pill:nth-child(even) {
+  transform: rotate(1deg);
+}
+
+/* --------------------------------------------------------------------------
+   5. Polaroid (no tape anywhere)
+   -------------------------------------------------------------------------- */
+body .wish-card__tape,
+body .polaroid-frame__tape {
+  display: none !important;
+}
+body .polaroid-frame {
+  padding: 6px 6px 16px 6px;
+  background: var(--polaroid-bg);
+  border: 1.5px solid var(--sketch-border);
+  box-shadow: 3px 4px 0 var(--polaroid-shadow);
+  transform: rotate(-1.5deg);
+}
+
+body .polaroid-frame--tilt-right {
+  transform: rotate(1.5deg);
+}
+
+body .polaroid-frame--tilt-none {
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. Memorable dates timeline
+   -------------------------------------------------------------------------- */
+body .memorable-timeline__track {
+  border-left: 2px dashed var(--accent-primary);
+}
+
+body .timeline-node__marker {
+  border-radius: 50% 46% 52% 48% / 48% 52% 46% 50%;
+  border-width: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   7. Typography: handwriting only for headings / names / big numbers.
+      Everything else is clean rounded Nunito.
+   -------------------------------------------------------------------------- */
+body .btn,
+body .bottom-action-btn,
+body .requests-tab,
+body .wishlist-header__tab-btn,
+body .dates-header__year-pill,
+body .dates-header__sort-btn,
+body .paper-tag,
+body .home-header__date-chip,
+body .timeline-node__date-sticker,
+body .timeline-node__annual-badge,
+body .timeline-node__desc,
+body .timeline-node__footer-pill,
+body .wish-card__price,
+body .wish-card__category-tag,
+body .wish-card__desc,
+body .date-memory-card__date-pill,
+body .date-memory-card__place-pill,
+body .date-memory-card__story,
+body .anniversary-showcase__date-chip,
+body .relationship-hero-card__start-date-pill,
+body .home-header__greeting-subtitle,
+body .home-header__together-note,
+body .home-header__together-kicker,
+body .appearance-accents__current,
+body .request-card__desc,
+body .request-card__meta-row,
+body .nearest-event-card__date,
+body .nearest-event-card__kicker,
+body .modal-sheet__body {
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+body .timeline-node__desc,
+body .wish-card__desc,
+body .date-memory-card__story,
+body .request-card__desc,
+body .modal-sheet__body {
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   8. Space for floating "+ add" button above the TabBar
+   -------------------------------------------------------------------------- */
+body .home-page,
+body .relationship-page,
+body .dates-page,
+body .wishlist-page,
+body .profile-page,
+body .dates-list,
+body .memorable-timeline {
+  padding-bottom: calc(130px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+}
+
+body .memorable-timeline {
+  padding-bottom: 130px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .sketch-pill:active,
+  body .btn:active:not(:disabled),
+  body .bottom-action-btn:active {
+    transform: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9. Home calendar (hand-drawn scrapbook look)
+   -------------------------------------------------------------------------- */
+body .home-calendar__header {
+  border-bottom: 1.5px dashed var(--sketch-border);
+}
+
+body .home-calendar__arrow-btn {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 50% 46% 52% 48% / 48% 52% 46% 50%;
+  background: var(--bg-card);
+  color: var(--text-cocoa);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+body .home-calendar__arrow-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+body .home-calendar__view-switch {
+  background: var(--bg-card);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: var(--radius-sketch-pill);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+body .home-calendar__view-btn {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sketch-pill);
+  color: var(--text-muted);
+}
+
+body .home-calendar__view-btn[class*='--active'],
+body .home-calendar__view-btn[aria-pressed='true'],
+body .home-calendar__view-btn[aria-selected='true'] {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  box-shadow: none !important;
+}
+
+/* day cells: mini paper cards */
+body .calendar-day,
+body .home-calendar__month-cell {
+  background: var(--bg-card);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 14px 11px 13px 12px / 12px 14px 11px 13px;
+  box-shadow: none;
+}
+
+body .calendar-day--today,
+body .home-calendar__month-cell--today {
+  border-color: var(--accent-primary);
+}
+
+body .calendar-day--selected,
+body .home-calendar__month-cell--selected {
+  background: var(--accent-primary) !important;
+  border: 2px solid var(--sketch-border) !important;
+  box-shadow: 2px 3px 0 var(--sketch-shadow) !important;
+  color: #ffffff;
+}
+
+body .calendar-day--selected .calendar-day__weekday,
+body .calendar-day--selected .calendar-day__number,
+body .home-calendar__month-cell--selected .home-calendar__month-num {
+  color: #ffffff !important;
+}
+
+/* event marks: heart (relationship) / star (friendship) instead of dots */
+body .calendar-day__dot,
+body .home-calendar__cell-dot {
+  width: auto !important;
+  height: auto !important;
+  min-width: 0;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--accent-primary);
+}
+
+body .calendar-day--selected .calendar-day__dot,
+body .home-calendar__month-cell--selected .home-calendar__cell-dot {
+  color: #ffffff;
+}
+
+/* events block */
+body .home-calendar__events-count {
+  background: var(--accent-soft);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: var(--radius-sketch-tag);
+  box-shadow: 2px 2px 0 var(--tag-shadow);
+  padding: 2px 10px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--text-cocoa);
+  transform: rotate(-1deg);
+}
+
+body .home-calendar__empty-events {
+  background: var(--accent-soft);
+  border: 1.5px dashed var(--border-dashed);
+  border-radius: 18px 15px 17px 16px / 16px 18px 15px 17px;
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   10. Modals / pickers (unified scrapbook look). No transform on backdrop
+       or the fixed container. No tape, no glow.
+   -------------------------------------------------------------------------- */
+body .modal-sheet {
+  background-color: var(--bg-card);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1.2px);
+  background-size: 12px 12px;
+  border: 2px solid var(--sketch-border);
+  border-bottom: none;
+  border-radius: 26px 22px 0 0;
+  box-shadow: 0 8px 0 var(--sketch-shadow), 0 16px 32px rgba(0, 0, 0, 0.28);
+  max-height: min(88dvh, calc(100dvh - var(--tg-total-top-inset, env(safe-area-inset-top, 0px)) - 16px));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+body .modal-sheet::before,
+body .modal-sheet::after,
+body .modal-sheet__header::after,
+body .modal-sheet__title::after {
+  content: none;
+  display: none;
+}
+
+body .modal-sheet__header {
+  border-bottom: 1.5px dashed var(--sketch-border);
+}
+
+body .modal-sheet__footer {
+  border-top: 1.5px dashed var(--sketch-border);
+  background: transparent;
+}
+
+body .modal-sheet__title {
+  font-family: var(--font-handwritten);
+}
+
+body .modal-sheet__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+body .modal-sheet__close {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border: 1.5px solid var(--sketch-border) !important;
+  border-radius: 50% 46% 52% 48% / 48% 52% 46% 50% !important;
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+body .modal-sheet__close:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* inputs: bare controls get their own frame; wrapped controls frame the wrapper */
+body .modal-sheet input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(.input-field__control):not(.wish-modal-field__input),
+body .modal-sheet textarea:not(.input-field__control),
+body .modal-sheet select {
+  background-color: var(--bg-surface-subtle);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 16px 13px 15px 14px / 14px 16px 13px 15px;
+  color: var(--text-cocoa);
+  font-family: var(--font-sans);
+}
+
+body .modal-sheet input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(.input-field__control):not(.wish-modal-field__input):focus,
+body .modal-sheet textarea:not(.input-field__control):focus,
+body .modal-sheet select:focus,
+body .modal-sheet .input-field__container:focus-within,
+body .modal-sheet .wish-modal-field__input-wrap:focus-within {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 2px 3px 0 var(--accent-soft) !important;
+  outline: none;
+}
+
+body .modal-sheet .input-field__container,
+body .modal-sheet .wish-modal-field__input-wrap {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 16px 13px 15px 14px / 14px 16px 13px 15px;
+}
+
+/* upload / preview zones */
+body .modal-sheet .wish-photo-box:not(.wish-photo-box--success),
+body .modal-sheet .date-memory-form__add-photo-btn {
+  border: 2px dashed var(--border-dashed);
+  border-radius: var(--radius-sketch);
+  background: var(--accent-soft);
+}
+
+body .modal-sheet .wish-photo-box--success,
+body .modal-sheet .date-memory-form__photo-item,
+body .modal-sheet .wish-detail-modal__media,
+body .modal-sheet .date-memory-detail__hero-photo-wrap,
+body .modal-sheet .avatar-cropper__canvas-wrap {
+  background: var(--polaroid-bg);
+  border: 1.5px solid var(--sketch-border);
+  box-shadow: 3px 4px 0 var(--polaroid-shadow);
+}
+
+/* toggles / tags / choice buttons */
+body .modal-sheet .create-cat-chip,
+body .modal-sheet .create-target-btn,
+body .modal-sheet .create-time-preset,
+body .modal-sheet .create-remind-chip,
+body .modal-sheet .create-urgency-btn,
+body .modal-sheet .deadline-chip,
+body .modal-sheet .deadline-time-preset,
+body .modal-sheet .create-advanced-toggle,
+body .modal-sheet .wish-photo-box__upload-btn,
+body .modal-sheet .wish-photo-box__skip-btn,
+body .modal-sheet .wish-fetch-link-btn,
+body .modal-sheet .avatar-cropper__tool-btn,
+body .modal-sheet .wish-detail-modal__store-btn {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: var(--radius-sketch-pill);
+  background: var(--bg-card);
+  color: var(--text-cocoa);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+body .modal-sheet .create-cat-chip--active,
+body .modal-sheet .create-target-btn--active,
+body .modal-sheet .create-time-preset--active,
+body .modal-sheet .create-remind-chip--active,
+body .modal-sheet .create-urgency-btn--active,
+body .modal-sheet .deadline-chip--active,
+body .modal-sheet .deadline-time-preset--active {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  box-shadow: 2px 2px 0 var(--sketch-shadow) !important;
+}
+
+/* primary action */
+body .modal-sheet .btn--primary,
+body .modal-sheet .wish-modal-submit-btn,
+body .modal-sheet .create-request-submit-btn,
+body .modal-sheet .wish-detail-modal__btn--reserve,
+body .modal-sheet .wish-photo-box__manual-url-btn--submit,
+body .modal-sheet .milestones-modal__action-btn,
+body .modal-sheet .partner-quick-modal__btn--primary {
+  background: var(--accent-primary) !important;
+  color: #ffffff !important;
+  border: 2px solid var(--sketch-border) !important;
+  border-radius: var(--radius-sketch-pill) !important;
+  box-shadow: 2px 3px 0 var(--sketch-shadow) !important;
+}
+
+body .modal-sheet .btn--primary:active:not(:disabled),
+body .modal-sheet .wish-modal-submit-btn:active:not(:disabled),
+body .modal-sheet .create-request-submit-btn:active:not(:disabled),
+body .modal-sheet .wish-detail-modal__btn--reserve:active,
+body .modal-sheet .milestones-modal__action-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: none !important;
+}
+
+/* secondary / cancel */
+body .modal-sheet .btn--secondary,
+body .modal-sheet .btn--outline,
+body .modal-sheet .btn--ghost,
+body .modal-sheet .wish-detail-modal__btn--edit,
+body .modal-sheet .wish-photo-box__manual-url-btn--cancel {
+  background: var(--bg-card);
+  color: var(--text-cocoa);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: var(--radius-sketch-pill);
+}
+
+body .modal-sheet .create-request-cancel-link {
+  color: var(--text-muted);
+}
+
+/* DatePicker popup: same language as the Home calendar */
+body .date-picker__modal,
+body .date-picker__dropdown {
+  background-color: var(--bg-card);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1.2px);
+  background-size: 12px 12px;
+  border: 2px solid var(--sketch-border);
+  border-radius: 26px 22px 24px 20px / 22px 26px 20px 24px;
+  box-shadow: 0 8px 0 var(--sketch-shadow), 0 16px 32px rgba(0, 0, 0, 0.28);
+}
+
+body .date-picker__nav-btn {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 50% 46% 52% 48% / 48% 52% 46% 50%;
+  background: var(--bg-card);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+body .date-picker__nav-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+body .date-picker__select,
+body .date-picker__trigger {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 16px 13px 15px 14px / 14px 16px 13px 15px;
+}
+
+body .date-picker__footer {
+  border-top: 1.5px dashed var(--sketch-border);
+}
+
+body .date-picker__day-btn {
+  background: var(--bg-card);
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 14px 11px 13px 12px / 12px 14px 11px 13px;
+}
+
+body .date-picker__day-btn--today {
+  border-color: var(--accent-primary);
+}
+
+body .date-picker__day-btn--selected {
+  background: var(--accent-primary) !important;
+  border: 2px solid var(--sketch-border) !important;
+  box-shadow: 2px 3px 0 var(--sketch-shadow) !important;
+  color: #ffffff !important;
+}
+
+body .date-picker__quick-btn,
+body .date-picker__close-btn {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: var(--radius-sketch-pill);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+/* Place picker window */
+body .place-picker-window {
+  border: 2px solid var(--sketch-border);
+  box-shadow: 0 8px 0 var(--sketch-shadow), 0 16px 32px rgba(0, 0, 0, 0.28);
+}
+
+/* --------------------------------------------------------------------------
+   11. Global fields, rows and checkmarks
+   -------------------------------------------------------------------------- */
+body input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.input-field__control):not(.wish-modal-field__input):not(.place-picker-search-input),
+body textarea:not(.input-field__control),
+body select {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 16px 13px 15px 14px / 14px 16px 13px 15px;
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+  font-family: var(--font-sans);
+}
+
+body input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.input-field__control):not(.wish-modal-field__input):not(.place-picker-search-input):focus,
+body textarea:not(.input-field__control):focus,
+body select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 2px 3px 0 var(--accent-soft);
+  outline: none;
+}
+
+/* wrapped controls: frame lives on the wrapper */
+body .input-field__container,
+body .wish-modal-field__input-wrap,
+body .place-picker-search-field {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 16px 13px 15px 14px / 14px 16px 13px 15px;
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+body .input-field__container:focus-within,
+body .wish-modal-field__input-wrap:focus-within,
+body .place-picker-search-field:focus-within {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 2px 3px 0 var(--accent-soft) !important;
+  outline: none;
+}
+
+/* standalone row cards */
+body .category-item-card,
+body .notification-settings__card,
+body .partner-info-card__action-btn {
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 18px 14px 17px 15px / 15px 18px 14px 17px;
+  box-shadow: 2px 3px 0 var(--sketch-shadow);
+}
+
+/* rows inside one shared card: dashed separators, soft highlight */
+body .shared-space-row,
+body .dates-quick-list__item,
+body .milestones-modal__item {
+  border-bottom: 1.5px dashed var(--sketch-border);
+  transition: background-color var(--duration-fast) ease;
+}
+
+body .shared-space-row:last-child,
+body .dates-quick-list__item:last-child,
+body .milestones-modal__item:last-child {
+  border-bottom: none;
+}
+
+body .shared-space-row:hover,
+body .shared-space-row:active,
+body .category-item-card:hover,
+body .partner-info-card__action-btn:hover,
+body .partner-info-card__action-btn:active {
+  background-color: var(--accent-soft);
+}
+
+/* checkmarks: drawn square, filled with accent when checked */
+body .request-card__check-btn {
+  border: 2px solid var(--sketch-border);
+  border-radius: 9px 7px 8px 8px / 8px 9px 7px 8px;
+  background: var(--bg-card);
+}
+
+body .request-card__check-btn--checked {
+  background: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  color: #ffffff;
+}
+
+body .danger-modal-confirm-checkbox input[type='checkbox'],
+body .danger-modal-confirm-checkbox input[type='radio'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 2px solid var(--sketch-border);
+  border-radius: 8px 6px 7px 7px / 7px 8px 6px 7px;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+body .danger-modal-confirm-checkbox input[type='checkbox']:checked,
+body .danger-modal-confirm-checkbox input[type='radio']:checked {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+/* --------------------------------------------------------------------------
+   12. "Next milestone" card (AnniversaryCard) — large hero widget
+   -------------------------------------------------------------------------- */
+body .anniversary-showcase.anniversary-showcase {
+  width: 100%;
+  min-height: 240px;
+  padding: 26px;
+  gap: 22px;
+  border-radius: 28px 24px 27px 25px / 25px 28px 24px 27px;
+  background-color: var(--bg-card);
+  background-image:
+    radial-gradient(var(--paper-dot) 1px, transparent 1.2px),
+    linear-gradient(145deg, var(--bg-card) 0%, var(--accent-soft) 100%);
+  background-size: 12px 12px, 100% 100%;
+  border: 2px dashed var(--border-dashed);
+  box-shadow:
+    inset 0 0 36px var(--accent-soft-light),
+    3px 5px 0 var(--sketch-shadow),
+    0 14px 28px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+}
+
+[data-theme='dark'] body .anniversary-showcase.anniversary-showcase,
+body[data-theme='dark'] .anniversary-showcase.anniversary-showcase,
+[data-theme='dark'] .anniversary-showcase.anniversary-showcase {
+  background-image:
+    radial-gradient(var(--paper-dot) 1px, transparent 1.2px),
+    linear-gradient(145deg, #2a1f1b 0%, #4a3329 100%);
+}
+
+body .anniversary-showcase__header {
+  align-items: center;
+  gap: 18px;
+}
+
+body .anniversary-showcase__title-wrap {
+  gap: 8px;
+}
+
+body .anniversary-showcase__kicker {
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: var(--accent-primary);
+}
+
+body .anniversary-showcase__title {
+  font-size: clamp(24px, 6.4vw, 31px);
+  line-height: 1.15;
+  color: var(--text-cocoa);
+  overflow-wrap: anywhere;
+}
+
+body .anniversary-showcase__header-side {
+  flex-direction: column;
+  gap: 12px;
+}
+
+body .anniversary-showcase__hero-badge {
+  min-width: 108px;
+  padding: 12px 18px 10px;
+  border-radius: 22px 18px 21px 19px / 19px 22px 18px 21px;
+  background: var(--accent-soft);
+  border: 2px dashed var(--accent-primary);
+  box-shadow: 2px 3px 0 var(--sketch-shadow);
+}
+
+body .anniversary-hero-num {
+  font-size: clamp(46px, 12vw, 60px);
+  line-height: 0.95;
+  color: var(--accent-primary);
+}
+
+body .anniversary-hero-unit {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--accent-primary);
+}
+
+/* progress: thicker, softly glowing fill */
+body .anniversary-showcase .anniversary-progress {
+  gap: 10px;
+}
+
+body .anniversary-showcase .anniversary-progress__track {
+  height: 8px;
+  overflow: visible;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--sketch-border);
+  box-sizing: content-box;
+}
+
+body .anniversary-showcase .anniversary-progress__fill {
+  min-width: 8px;
+  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent-primary) 100%);
+  box-shadow: 0 0 10px var(--accent-shadow);
+}
+
+body .anniversary-showcase .anniversary-progress__marker {
+  width: 10px;
+  height: 10px;
+  right: -1px;
+  border: 2px solid var(--accent-primary);
+}
+
+body .anniversary-showcase .anniversary-progress__caption-row {
+  font-size: 13px;
+}
+
+body .anniversary-showcase .anniversary-progress__percent {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* footer */
+body .anniversary-showcase__footer {
+  padding-top: 18px;
+  gap: 12px;
+  border-top: 1.5px dashed var(--sketch-border);
+}
+
+body .anniversary-showcase__date-chip {
+  padding: 7px 16px;
+  font-size: 13px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1.5px solid var(--sketch-border);
+  box-shadow: 2px 2px 0 var(--tag-shadow);
+  transform: none;
+  color: var(--text-cocoa);
+}
+
+body .anniversary-showcase__footer-right {
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  background: var(--bg-surface-subtle);
+  border: 1.5px dashed var(--sketch-border);
+}
+
+body .anniversary-showcase__hint {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-cocoa);
+  white-space: nowrap;
+}
+
+body .anniversary-showcase__chevron {
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #ffffff;
+  opacity: 1;
+}
+
+body .anniversary-showcase:hover .anniversary-showcase__chevron {
+  color: #ffffff;
+}
+
+@media (max-width: 420px) {
+  body .anniversary-showcase.anniversary-showcase {
+    padding: 22px 18px;
+    gap: 18px;
+    min-height: 0;
+  }
+  body .anniversary-showcase__header {
+    gap: 12px;
+  }
+  body .anniversary-showcase__hero-badge {
+    min-width: 92px;
+    padding: 10px 12px 8px;
+  }
+  body .anniversary-showcase__footer {
+    justify-content: center;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   13. AnniversaryCard re-layout (solid sketch outline, tear-off sticker)
+   -------------------------------------------------------------------------- */
+body .anniversary-showcase.anniversary-showcase {
+  min-height: 0;
+  padding: 36px 22px 22px;
+  gap: 18px;
+  border: 2px solid var(--sketch-border);
+  border-radius: var(--radius-sketch);
+  box-shadow: 3px 4px 0 var(--sketch-shadow);
+}
+
+body .anniversary-showcase__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+body .anniversary-showcase__title-wrap {
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+body .anniversary-showcase__kicker.paper-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 11px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent-primary);
+  transform: rotate(-1deg);
+}
+
+body .anniversary-showcase__title {
+  font-family: var(--font-handwritten);
+  font-size: clamp(22px, 6vw, 24px);
+  line-height: 1.15;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* tear-off calendar sticker */
+body .anniversary-showcase__hero-badge {
+  position: relative;
+  width: 88px;
+  min-width: 88px;
+  flex-shrink: 0;
+  padding: 20px 6px 8px;
+  gap: 0;
+  background: var(--bg-card);
+  border: 2px solid var(--sketch-border);
+  border-radius: 16px 14px 18px 15px;
+  box-shadow: 3px 3px 0 var(--sketch-shadow);
+  transform: rotate(2deg);
+  overflow: visible;
+}
+
+body .anniversary-showcase__hero-cap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: var(--accent-primary);
+  border-radius: 13px 11px 0 0 / 12px 11px 0 0;
+}
+
+body .anniversary-showcase__hero-badge .anniversary-showcase__mascot {
+  position: absolute;
+  top: -28px;
+  right: -6px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+body .anniversary-hero-num {
+  font-size: 38px;
+  line-height: 1;
+  color: var(--accent-primary);
+}
+
+body .anniversary-hero-unit {
+  margin-top: 2px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+/* progress */
+body .anniversary-showcase .anniversary-progress__track {
+  height: 10px;
+  border: 1.5px solid var(--sketch-border);
+  border-radius: 999px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+body .anniversary-showcase .anniversary-progress__fill {
+  box-shadow: none;
+}
+
+body .anniversary-showcase .anniversary-progress__marker {
+  display: none;
+}
+
+body .anniversary-showcase .anniversary-progress__caption-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+body .anniversary-showcase .anniversary-progress__percent {
+  color: var(--accent-primary);
+}
+
+/* footer */
+body .anniversary-showcase__footer {
+  justify-content: space-between;
+  border-top: 1.5px dashed var(--sketch-border);
+  padding-top: 16px;
+}
+
+body .anniversary-showcase__date-chip.paper-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  transform: rotate(-1deg);
+}
+
+body .anniversary-showcase__date-mark {
+  color: var(--accent-primary);
+  font-size: 12px;
+  line-height: 1;
+}
+
+body .anniversary-showcase__footer-right.sketch-pill {
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--sketch-border);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+body .anniversary-showcase__footer-right.sketch-pill:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+@media (max-width: 420px) {
+  body .anniversary-showcase.anniversary-showcase {
+    padding: 36px 16px 18px;
+  }
+  body .anniversary-showcase__hero-badge {
+    width: 88px;
+    min-width: 88px;
+    padding: 20px 6px 8px;
+  }
+  body .anniversary-showcase__footer {
+    justify-content: space-between;
+  }
+}

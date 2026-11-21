@@ -4,6 +4,7 @@ import { UserCategory } from '../../../types/category';
 import { Card } from '../../ui/Card/Card';
 import { DateBadge } from '../../ui/CalendarStrip/DateBadge';
 import { Icon } from '../../ui/Icon/Icon';
+import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import { getCardColorStyles } from '../../../utils/colorContrast';
 import {
   formatLocalDate,
@@ -41,6 +42,8 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
   onSelectDate,
   className = '',
 }) => {
+  const { isFriendship } = useSpaceMode();
+  const eventMark = isFriendship ? '✦' : '♥';
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
 
   // Navigation viewing month (independent from selectedDate)
@@ -396,14 +399,10 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
                     <span className="calendar-day__number">{date.getDate()}</span>
                     {colors.length > 0 && (
                       <div className="calendar-day__dots" aria-hidden="true">
-                        {colors.slice(0, 2).map((col, idx) => (
-                          <span
-                            key={idx}
-                            className="calendar-day__dot"
-                            style={{
-                              backgroundColor: isSel ? '#ffffff' : col || 'var(--color-primary)',
-                            }}
-                          />
+                        {colors.slice(0, 2).map((_col, idx) => (
+                          <span key={idx} className="calendar-day__dot">
+                            {eventMark}
+                          </span>
                         ))}
                       </div>
                     )}
@@ -452,14 +451,10 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
                     <span className="home-calendar__month-num">{cell.dayNumber}</span>
                     {reminderColors.length > 0 && (
                       <div className="home-calendar__cell-dots" aria-hidden="true">
-                        {reminderColors.slice(0, 3).map((col, i) => (
-                          <span
-                            key={i}
-                            className="home-calendar__cell-dot"
-                            style={{
-                              backgroundColor: isSel ? '#ffffff' : col || 'var(--color-primary)',
-                            }}
-                          />
+                        {reminderColors.slice(0, 3).map((_col, i) => (
+                          <span key={i} className="home-calendar__cell-dot">
+                            {eventMark}
+                          </span>
                         ))}
                       </div>
                     )}
