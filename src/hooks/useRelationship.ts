@@ -13,6 +13,7 @@ import {
   calculateDaysTogether,
   getAnniversaryInfo,
 } from '../utils/dateCalculations';
+import { capture } from '../lib/posthog';
 
 export function useRelationship() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -88,9 +89,12 @@ export function useRelationship() {
     refreshData();
   }, [refreshData]);
 
-  const addMemorableDate = useCallback((input: CreateMemorableDateInput) => {
-    const created = relationshipService.addMemorableDate(input);
+  const addMemorableDate = useCallback(async (input: CreateMemorableDateInput) => {
+    const created = await relationshipService.addMemorableDate(input);
     refreshData();
+    capture('memorable_date_created', {
+      is_annual: created.isAnnual,
+    });
     return created;
   }, [refreshData]);
 
@@ -100,9 +104,12 @@ export function useRelationship() {
     return updated;
   }, [refreshData]);
 
-  const deleteMemorableDate = useCallback((id: string) => {
-    const success = relationshipService.deleteMemorableDate(id);
+  const deleteMemorableDate = useCallback(async (id: string) => {
+    const success = await relationshipService.deleteMemorableDate(id);
     refreshData();
+    if (success) {
+      capture('memorable_date_deleted');
+    }
     return success;
   }, [refreshData]);
 

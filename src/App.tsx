@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
@@ -7,6 +7,7 @@ import { DevBanner } from './components/DevBanner';
 import { ToastProvider, PageSkeleton, SubscriptionGate } from './components/ui';
 import { coupleService } from './services/coupleService';
 import { telegramService } from './services/telegramService';
+import posthog, { posthogLogger } from './lib/posthog';
 
 // Code Splitting: второстепенные страницы подгружаются по требованию
 const WishlistPage = lazy(() =>
@@ -88,6 +89,43 @@ export function App() {
   const [channelUrl, setChannelUrl] = useState(() =>
     coupleService.getRequiredChannelUrl()
   );
+  const identifiedUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const identifyActiveUser = () => {
+      const user = coupleService.getActiveUser();
+      if (!user.id || identifiedUserId.current === user.id) return;
+
+      try {
+        if (identifiedUserId.current) {
+          posthog.reset();
+        }
+        posthog.identify(user.id, user.name ? { name: user.name } : undefined);
+        identifiedUserId.current = user.id;
+        posthogLogger.info('active_user_identified');
+      } catch (error) {
+        console.warn('[PostHog] Failed to identify active user:', error);
+      }
+    };
+
+    const resetIdentity = () => {
+      try {
+        posthog.reset();
+      } catch (error) {
+        console.warn('[PostHog] Failed to reset user identity:', error);
+      }
+      identifiedUserId.current = null;
+    };
+
+    identifyActiveUser();
+    window.addEventListener('lovia_couple_updated', identifyActiveUser);
+    window.addEventListener('lovia_account_deleted', resetIdentity);
+
+    return () => {
+      window.removeEventListener('lovia_couple_updated', identifyActiveUser);
+      window.removeEventListener('lovia_account_deleted', resetIdentity);
+    };
+  }, []);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('lovia_theme') as 'light' | 'dark' | null;
