@@ -9,6 +9,12 @@ export interface AvatarCropModalProps {
   imageSrc: string;
   onClose: () => void;
   onCropComplete: (croppedDataUrl: string) => void;
+  /** Stencil shape shown while cropping. Output is always a square JPEG. */
+  shape?: 'circle' | 'square';
+  /** Output size in px (square). */
+  outputSize?: number;
+  title?: string;
+  hint?: string;
 }
 
 const CANVAS_SIZE = 300;
@@ -19,6 +25,10 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   imageSrc,
   onClose,
   onCropComplete,
+  shape = 'circle',
+  outputSize = 400,
+  title = 'Редактирование фото',
+  hint,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -84,14 +94,23 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     ctx.fillStyle = 'rgba(15, 15, 15, 0.68)';
     ctx.beginPath();
     ctx.rect(0, 0, W, H);
-    ctx.arc(cx, cy, CROP_RADIUS, 0, Math.PI * 2, true);
-    ctx.fill();
+    if (shape === 'square') {
+      ctx.rect(cx - CROP_RADIUS, cy - CROP_RADIUS, CROP_RADIUS * 2, CROP_RADIUS * 2);
+      ctx.fill('evenodd');
+    } else {
+      ctx.arc(cx, cy, CROP_RADIUS, 0, Math.PI * 2, true);
+      ctx.fill();
+    }
 
     // 3. Circular guide ring with subtle glow
     ctx.strokeStyle = 'rgba(229, 229, 229, 0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(cx, cy, CROP_RADIUS, 0, Math.PI * 2);
+    if (shape === 'square') {
+      ctx.rect(cx - CROP_RADIUS, cy - CROP_RADIUS, CROP_RADIUS * 2, CROP_RADIUS * 2);
+    } else {
+      ctx.arc(cx, cy, CROP_RADIUS, 0, Math.PI * 2);
+    }
     ctx.stroke();
 
     // 4. Subtle center guidelines
@@ -106,7 +125,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     ctx.lineTo(cx, cy + 14);
     ctx.stroke();
     ctx.restore();
-  }, [zoom, rotation, pan, isImageLoaded]);
+  }, [zoom, rotation, pan, isImageLoaded, shape]);
 
   useEffect(() => {
     redraw();
@@ -164,7 +183,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     if (!img) return;
 
     // Render cropped image to 400x400 output canvas
-    const OUTPUT_SIZE = 400;
+    const OUTPUT_SIZE = outputSize;
     const outCanvas = document.createElement('canvas');
     outCanvas.width = OUTPUT_SIZE;
     outCanvas.height = OUTPUT_SIZE;
@@ -194,10 +213,10 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Редактирование фото">
+    <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="avatar-cropper">
         <p className="avatar-cropper__hint">
-          Перемещайте и масштабируйте фото. В профиле отобразится круглая область.
+          {hint ?? 'Перемещайте и масштабируйте фото. В профиле отобразится круглая область.'}
         </p>
 
         {/* Canvas Workspace */}

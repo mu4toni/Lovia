@@ -11,7 +11,7 @@
 }
 
 .modal-backdrop--closing {
-  animation: fadeOut 220ms var(--ease-telegram) forwards !important;
+  animation: fadeOut 280ms var(--ease-telegram) forwards !important;
   pointer-events: none;
 }
 
@@ -34,7 +34,7 @@
 }
 
 .modal-sheet--closing {
-  animation: slideDownSheet 240ms var(--ease-telegram) forwards !important;
+  animation: slideDownSheet 280ms var(--ease-telegram) forwards !important;
   pointer-events: none;
 }
 

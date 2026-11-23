@@ -23,6 +23,25 @@ export interface PartnerNotificationPayload {
   [key: string]: any;
 }
 
+const DEDUP_WINDOW_MS = 10_000;
+const recentEvents = new Map<string, number>();
+
+function isDuplicateEvent(eventType: string, title?: string, coupleId?: string): boolean {
+  const now = Date.now();
+  for (const [key, ts] of recentEvents) {
+    if (now - ts > DEDUP_WINDOW_MS) {
+      recentEvents.delete(key);
+    }
+  }
+  const key = `${eventType}:${title ?? ''}:${coupleId ?? ''}`;
+  const prevTs = recentEvents.get(key);
+  if (prevTs !== undefined && now - prevTs <= DEDUP_WINDOW_MS) {
+    return true;
+  }
+  recentEvents.set(key, now);
+  return false;
+}
+
 /**
  * Неблокирующая отправка мгновенного Telegram-уведомления партнёру/другу
  * о действиях в общем пространстве Lovia.
@@ -56,6 +75,11 @@ export async function sendPartnerNotification(
 
     // Если нет ни id пары, ни прямого id партнёра — отправка невозможна
     if (!coupleId && !partnerId) {
+      return;
+    }
+
+    // Защита от дублей (повторный рендер / двойной клик) с окном 10 секунд
+    if (isDuplicateEvent(eventType, payload?.title, coupleId)) {
       return;
     }
 

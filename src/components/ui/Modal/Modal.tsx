@@ -28,6 +28,7 @@ export const Modal: React.FC<ModalProps> = ({
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
+  const [closeFromY, setCloseFromY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -39,12 +40,18 @@ export const Modal: React.FC<ModalProps> = ({
     pointerId: -1,
   });
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const shouldRenderRef = useRef(shouldRender);
+  shouldRenderRef.current = shouldRender;
+
   const isClosingRef = useRef(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const startCloseSequence = useCallback(() => {
+  const runCloseAnimation = useCallback((notifyParent: boolean, fromY = 0) => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
+    setCloseFromY(Math.max(0, fromY));
     setIsClosing(true);
     setIsDragging(false);
     setIsResetting(false);
@@ -52,26 +59,40 @@ export const Modal: React.FC<ModalProps> = ({
 
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      // isClosingRef stays true until the modal is re-opened (inside `if (isOpen)`),
+      // so the parent flipping isOpen=false cannot start a second close animation.
       setShouldRender(false);
       setIsClosing(false);
-      isClosingRef.current = false;
-      onClose();
+      setCloseFromY(0);
+      if (notifyParent) {
+        onCloseRef.current();
+      }
     }, 280);
-  }, [onClose]);
+  }, []);
+
+  const startCloseSequence = useCallback(() => {
+    runCloseAnimation(true, 0);
+  }, [runCloseAnimation]);
 
   // Sync with prop isOpen
   useEffect(() => {
     if (isOpen) {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
       isClosingRef.current = false;
       setShouldRender(true);
       setIsClosing(false);
+      setCloseFromY(0);
       setDragOffset(0);
       setIsDragging(false);
       setIsResetting(false);
-    } else if (shouldRender && !isClosingRef.current) {
-      startCloseSequence();
+    } else if (shouldRenderRef.current && !isClosingRef.current) {
+      runCloseAnimation(false, 0);
     }
-  }, [isOpen, shouldRender, startCloseSequence]);
+  }, [isOpen, runCloseAnimation]);
 
   useEffect(() => {
     return () => {
@@ -160,7 +181,7 @@ export const Modal: React.FC<ModalProps> = ({
     // Dismiss threshold: dragged down > 80px OR quick downward swipe (> 0.45 px/ms with > 20px drag)
     if (totalDy > 80 || (velocity > 0.45 && totalDy > 20)) {
       telegramService.hapticImpact('light');
-      startCloseSequence();
+      runCloseAnimation(true, totalDy);
     } else {
       // Spring back to 0
       setIsResetting(true);
@@ -190,10 +211,13 @@ export const Modal: React.FC<ModalProps> = ({
       ? { opacity: Math.max(0.1, 1 - dragOffset / 320) }
       : undefined;
 
-  // Calculate sheet transform during drag or reset
-  const sheetStyle: React.CSSProperties = {};
+  // Calculate sheet transform during drag, reset, or swipe-close
+  const sheetStyle: React.CSSProperties & { '--modal-close-from'?: string } = {};
   if (isDragging || dragOffset !== 0) {
     sheetStyle.transform = `translateY(${Math.max(-40, dragOffset)}px)`;
+  }
+  if (isClosing && closeFromY > 0) {
+    sheetStyle['--modal-close-from'] = `${closeFromY}px`;
   }
 
   const sheetClasses = [

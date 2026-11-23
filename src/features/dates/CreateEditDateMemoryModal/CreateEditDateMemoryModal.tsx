@@ -16,7 +16,7 @@ import './CreateEditDateMemoryModal.css';
 export interface CreateEditDateMemoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (input: CreateDateMemoryInput) => void;
+  onSubmit: (input: CreateDateMemoryInput) => void | Promise<void>;
   initialMemory?: DateMemory | null;
 }
 
@@ -39,8 +39,10 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
   const [photos, setPhotos] = useState<string[]>([]);
   const [isReadingFiles, setIsReadingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    setIsSubmitting(false);
     if (initialMemory) {
       setTitle(initialMemory.title || '');
       setDate(initialMemory.date || '');
@@ -109,8 +111,9 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
     setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     const cleanTitle = title.trim();
     if (!cleanTitle) {
@@ -133,15 +136,20 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
     }
 
     setError(null);
-    onSubmit({
-      title: cleanTitle,
-      date,
-      place: selectedPlace?.placeName || place.trim() || undefined,
-      location: selectedPlace || undefined,
-      story: story.trim() || undefined,
-      photos,
-    });
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        title: cleanTitle,
+        date,
+        place: selectedPlace?.placeName || place.trim() || undefined,
+        location: selectedPlace || undefined,
+        story: story.trim() || undefined,
+        photos,
+      });
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -283,7 +291,7 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
             <Button type="button" variant="ghost" onClick={onClose}>
               Отмена
             </Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" disabled={isSubmitting}>
               Сохранить воспоминание
             </Button>
           </div>

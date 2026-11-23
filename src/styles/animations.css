@@ -86,7 +86,7 @@
 
 @keyframes slideDownSheet {
   from {
-    transform: translateY(0);
+    transform: translateY(var(--modal-close-from, 0px));
   }
   to {
     transform: translateY(100%);

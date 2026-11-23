@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS public.couples (
   user2_id TEXT REFERENCES public.users(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'waiting_partner' CHECK (status IN ('waiting_partner', 'connected', 'dissolved')),
   start_date DATE,
+  couple_photo_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
   dissolved_at TIMESTAMPTZ
 );

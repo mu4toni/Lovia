@@ -286,6 +286,7 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
   // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!title.trim()) {
       setTitleError('Пожалуйста, укажите название желания');

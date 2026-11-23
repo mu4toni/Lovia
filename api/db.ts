@@ -252,7 +252,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 3. Helper: гарантируем создание/обновление пользователя в public.users
+    // 3. Helper: создаём запись пользователя в public.users ТОЛЬКО при первом входе,
+    // не перезаписывая кастомные name и avatar_url существующего пользователя данными из Telegram.
     async function ensureServerUser(
       client: any,
       targetActorId: string,
@@ -264,51 +265,88 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         coupleId?: string | null;
       }
     ) {
+      const { data: existingUser } = await client
+        .from('users')
+        .select('*')
+        .eq('id', targetActorId)
+        .maybeSingle();
+
+      const nowIso = new Date().toISOString();
+
+      if (existingUser) {
+        // Пользователь уже существует — НЕ перезатираем name и avatar_url данными из Telegram
+        const updatePatch: any = {};
+        if (!existingUser.telegram_id && targetTgUser?.id) {
+          updatePatch.telegram_id = Number(targetTgUser.id);
+        }
+        if (overrides?.coupleId !== undefined && existingUser.couple_id !== overrides.coupleId) {
+          updatePatch.couple_id = overrides.coupleId;
+        }
+        if (overrides?.gender !== undefined && overrides.gender !== null && !existingUser.gender) {
+          updatePatch.gender = overrides.gender;
+        }
+
+        if (Object.keys(updatePatch).length === 0) {
+          return existingUser;
+        }
+
+        updatePatch.updated_at = nowIso;
+        const { data: updatedUser, error: updateErr } = await client
+          .from('users')
+          .update(updatePatch)
+          .eq('id', targetActorId)
+          .select()
+          .maybeSingle();
+
+        if (updateErr) {
+          console.error('[ensureServerUser] Failed to update existing user:', updateErr);
+          return existingUser;
+        }
+        return updatedUser || existingUser;
+      }
+
+      // Первый вход: создаём запись с данными из Telegram (ignoreDuplicates защищает от гонки)
       const defaultName =
         [targetTgUser?.first_name, targetTgUser?.last_name].filter(Boolean).join(' ').trim() ||
         targetTgUser?.first_name ||
         'Пользователь';
 
-      const patch: any = {
+      const newRow: any = {
         id: targetActorId,
         telegram_id: targetTgUser?.id ? Number(targetTgUser.id) : null,
-        updated_at: new Date().toISOString(),
+        name: overrides?.name?.trim() || defaultName,
+        avatar_url: overrides?.avatarUrl || targetTgUser?.photo_url || null,
+        updated_at: nowIso,
       };
 
-      if (overrides?.name !== undefined && overrides.name.trim()) {
-        patch.name = overrides.name.trim();
-      } else if (!overrides) {
-        patch.name = defaultName;
-      } else if (overrides && overrides.name === undefined) {
-        patch.name = defaultName;
-      }
-
       if (overrides?.gender !== undefined) {
-        patch.gender = overrides.gender;
+        newRow.gender = overrides.gender;
       }
-
-      if (overrides?.avatarUrl !== undefined && overrides.avatarUrl) {
-        patch.avatar_url = overrides.avatarUrl;
-      } else if (!overrides && targetTgUser?.photo_url) {
-        patch.avatar_url = targetTgUser.photo_url;
-      } else if (overrides && overrides.avatarUrl === undefined && targetTgUser?.photo_url) {
-        patch.avatar_url = targetTgUser.photo_url;
-      }
-
       if (overrides?.coupleId !== undefined) {
-        patch.couple_id = overrides.coupleId;
+        newRow.couple_id = overrides.coupleId;
       }
 
-      const { data: user, error } = await client
+      const { data: insertedUser, error: insertErr } = await client
         .from('users')
-        .upsert(patch, { onConflict: 'id' })
+        .upsert(newRow, { onConflict: 'id', ignoreDuplicates: true })
         .select()
         .maybeSingle();
 
-      if (error) {
-        console.error('[ensureServerUser] Failed to upsert user:', error);
+      if (insertErr) {
+        console.error('[ensureServerUser] Failed to insert user:', insertErr);
       }
-      return user;
+
+      if (insertedUser) {
+        return insertedUser;
+      }
+
+      // Если параллельный запрос успел создать запись раньше (ignoreDuplicates вернул null)
+      const { data: racedUser } = await client
+        .from('users')
+        .select('*')
+        .eq('id', targetActorId)
+        .maybeSingle();
+      return racedUser;
     }
 
     const { action, payload } = req.body || {};
@@ -379,14 +417,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const coupleRow = coupleRes.data;
-      let userRow = userRes.data;
-
-      // Если в public.users ещё нет строки (первый вход) - создаём через ensureServerUser
-      if (!userRow) {
-        userRow = await ensureServerUser(supabase, actorId, tgUser);
-      }
+      const existingUserRow = userRes.data;
 
       if (!coupleRow) {
+        // Если в public.users ещё нет строки (первый вход) — создаём через ensureServerUser
+        const userRow = existingUserRow || (await ensureServerUser(supabase, actorId, tgUser));
         return res.status(200).json({
           ok: true,
           data: {
@@ -404,13 +439,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const partnerId =
         coupleRow.user1_id === actorId ? coupleRow.user2_id : coupleRow.user1_id;
 
+      // Все независимые запросы к таблицам выполняем параллельно в Promise.all
       const [
+        userRow,
         partnerRes,
         remindersRes,
         wishlistRes,
         memorableDatesRes,
         dateMemoriesRes,
       ] = await Promise.all([
+        existingUserRow
+          ? Promise.resolve(existingUserRow)
+          : ensureServerUser(supabase, actorId, tgUser),
         partnerId
           ? supabase.from('users').select('*').eq('id', partnerId).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -466,11 +506,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // -------------------------------------------------------------
-    // ДЕЙСТВИЕ 2: update_profile
+    // ДЕЙСТВИЕ 2: update_profile (единственное место обновления name / avatar_url)
     // -------------------------------------------------------------
     if (action === 'update_profile') {
+      // Гарантируем существование строки, не перезатирая данные существующего пользователя
+      await ensureServerUser(supabase, actorId, tgUser);
+
       const patch: any = { updated_at: new Date().toISOString() };
-      if (payload?.name !== undefined) patch.name = payload.name.trim();
+      if (payload?.name !== undefined && String(payload.name).trim()) {
+        patch.name = String(payload.name).trim();
+      }
       if (payload?.gender !== undefined) patch.gender = payload.gender;
       if (payload?.avatarUrl !== undefined) patch.avatar_url = payload.avatarUrl;
       if (payload?.notificationsEnabled !== undefined) {
@@ -482,14 +527,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: updatedUser, error } = await supabase
         .from('users')
-        .upsert(
-          {
-            id: actorId,
-            telegram_id: tgUser?.id ? Number(tgUser.id) : null,
-            ...patch,
-          },
-          { onConflict: 'id' }
-        )
+        .update(patch)
+        .eq('id', actorId)
         .select()
         .maybeSingle();
 
@@ -510,6 +549,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         payload?.id && typeof payload.id === 'string' && payload.id.trim()
           ? payload.id.trim()
           : `couple-${crypto.randomUUID()}`;
+
+      // Гарантируем существование пользователя до вставки пары (FK user1_id -> users.id)
+      await ensureServerUser(supabase, actorId, tgUser, {
+        name: payload?.name,
+        gender: payload?.gender,
+        avatarUrl: payload?.avatarUrl,
+      });
 
       const { data: newCouple, error } = await supabase
         .from('couples')
@@ -533,9 +579,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       await ensureServerUser(supabase, actorId, tgUser, {
-        name: payload?.name || tgUser?.first_name,
         gender: payload?.gender,
-        avatarUrl: payload?.avatarUrl || tgUser?.photo_url,
         coupleId: newCouple.id,
       });
 
@@ -569,6 +613,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ ok: false, error: 'Нельзя подключиться к собственной паре' });
       }
 
+      await ensureServerUser(supabase, actorId, tgUser, {
+        name: payload?.name,
+        gender: payload?.gender,
+        avatarUrl: payload?.avatarUrl,
+      });
+
       const { data: updatedCouple, error: updateErr } = await supabase
         .from('couples')
         .update({
@@ -585,9 +635,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       await ensureServerUser(supabase, actorId, tgUser, {
-        name: payload?.name || tgUser?.first_name,
         gender: payload?.gender,
-        avatarUrl: payload?.avatarUrl || tgUser?.photo_url,
         coupleId: couple.id,
       });
 
@@ -686,17 +734,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               `💔 <b>Ваша пара в Lovia была расформирована партнёром.</b>\n\n` +
               `Вы можете создать новую пару или присоединиться по коду приглашения в @${botUsername}.`;
 
-            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: partnerTgId,
-                text: partnerNotice,
-                parse_mode: 'HTML',
-              }),
-            }).catch((e) => {
+            try {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: partnerTgId,
+                  text: partnerNotice,
+                  parse_mode: 'HTML',
+                }),
+              });
+            } catch (e) {
               console.warn('[dissolve_couple] Failed to notify partner:', e);
-            });
+            }
           }
         }
       }
@@ -717,6 +767,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: updated, error } = await supabase
         .from('couples')
         .update({ start_date: startDate })
+        .eq('id', coupleId)
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ ok: false, error: error.message });
+      }
+
+      return res.status(200).json({ ok: true, data: updated });
+    }
+
+    // -------------------------------------------------------------
+    // ДЕЙСТВИЕ 6b: update_couple_photo (общее фото пары / друзей)
+    // -------------------------------------------------------------
+    if (action === 'update_couple_photo') {
+      const { coupleId, photoUrl } = payload || {};
+      const isAllowed = await verifyUserCouple(coupleId);
+      if (!isAllowed) {
+        return res.status(403).json({ ok: false, error: 'Нет доступа к этой паре' });
+      }
+      if (photoUrl !== null && typeof photoUrl !== 'string') {
+        return res.status(400).json({ ok: false, error: 'photoUrl должен быть строкой или null' });
+      }
+
+      const { data: updated, error } = await supabase
+        .from('couples')
+        .update({ couple_photo_url: photoUrl || null })
         .eq('id', coupleId)
         .select()
         .single();
@@ -1179,7 +1256,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-      const fileType = type === 'avatar' ? 'avatar' : 'date';
+      const fileType = type === 'avatar' ? 'avatar' : type === 'couple' ? 'couple' : 'date';
       const filePath = `${actorId}/${fileType}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
 
       // Пробуем бакет lovia-media, затем lovia_media
@@ -1374,17 +1451,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 `Ваш партнёр удалил свой аккаунт. Совместные напоминания, вишлисты и воспоминания были удалены.\n\n` +
                 `Вы можете создать новую пару или подключиться к новому пространству в любой момент.`;
 
-              fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: partnerUser.telegram_id,
-                  text: partnerNotice,
-                  parse_mode: 'HTML',
-                }),
-              }).catch((e) => {
+              try {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: partnerUser.telegram_id,
+                    text: partnerNotice,
+                    parse_mode: 'HTML',
+                  }),
+                });
+              } catch (e) {
                 console.warn('[confirm_account_deletion] Failed to notify partner:', e);
-              });
+              }
             }
           }
         }

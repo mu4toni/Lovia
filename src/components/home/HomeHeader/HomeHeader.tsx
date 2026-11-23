@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CoupleProfile } from '../../../types';
-import { Avatar } from '../../ui/Avatar/Avatar';
 import { Icon } from '../../ui/Icon/Icon';
 import { PolaroidFrame } from '../../ui/PolaroidFrame/PolaroidFrame';
 import { formatDateRu } from '../../../utils/helpers';
@@ -20,6 +19,7 @@ import { telegramService } from '../../../services/telegramService';
 import { Mascot } from '../../ui/Mascot/Mascot';
 import { SketchUnderline } from '../../ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
+import { useCouplePhotoUrl, useCouplePhotoPicker } from '../../../features/couple/useCouplePhoto';
 import './HomeHeader.css';
 
 interface HomeHeaderProps {
@@ -36,6 +36,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const navigate = useNavigate();
   const { isFriendship } = useSpaceMode();
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const couplePhotoUrl = useCouplePhotoUrl();
+  const { openPicker, picker: couplePhotoPicker } = useCouplePhotoPicker();
 
   const today = new Date();
   const formattedDate = formatDateRu(today);
@@ -85,10 +87,10 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     }
   };
 
-  const handleUserClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+  const handlePolaroidClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     telegramService.hapticImpact('light');
-    navigate('/profile');
+    openPicker();
   };
 
   const handlePartnerClick = (e: React.MouseEvent | React.KeyboardEvent) => {
@@ -157,64 +159,22 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               : `Вместе ${daysTogether} ${daysLabel}. Перейти в раздел Отношения.`
           }
         >
-          {/* Left: Tilted Polaroid with Couple Mini-Avatars */}
+          {/* Left: Tilted Polaroid with ONE shared couple/friends photo */}
           <PolaroidFrame
             tilt="left"
             sticker={isFriendship ? 'star' : 'heart'}
             className="home-header__polaroid"
-          >
-            <div className="home-header__polaroid-avatars">
-              <div
-                className="home-header__polaroid-avatar-btn home-header__polaroid-avatar-btn--user"
-                role="button"
-                tabIndex={0}
-                onClick={handleUserClick}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleUserClick(e);
-                  }
-                }}
-                title="Мой профиль"
-                aria-label={`Мой профиль: ${userName}`}
-              >
-                <Avatar
-                  name={userName}
-                  src={profile.user.avatarUrl}
-                  size="md"
-                  className="home-header__mini-avatar"
-                />
+            src={couplePhotoUrl}
+            alt={isFriendship ? 'Совместное фото друзей' : 'Совместное фото пары'}
+            aspectRatio="square"
+            onClick={handlePolaroidClick}
+            fallback={
+              <div className="home-header__polaroid-empty" aria-hidden="true">
+                <Icon name="camera" size={22} />
+                <span className="home-header__polaroid-empty-text">Добавить фото</span>
               </div>
-
-              <div
-                className="home-header__polaroid-avatar-btn home-header__polaroid-avatar-btn--partner"
-                role="button"
-                tabIndex={0}
-                onClick={handlePartnerClick}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handlePartnerClick(e);
-                  }
-                }}
-                title={hasPartner ? partnerName : isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
-                aria-label={hasPartner ? partnerName : isFriendship ? 'Пригласить друга' : 'Пригласить партнёра'}
-              >
-                {hasPartner ? (
-                  <Avatar
-                    name={partnerName}
-                    src={profile.partner!.avatarUrl}
-                    size="md"
-                    className="home-header__mini-avatar"
-                  />
-                ) : (
-                  <span className="home-header__polaroid-plus" aria-hidden="true">
-                    <Icon name="plus" size={16} />
-                  </span>
-                )}
-              </div>
-            </div>
-          </PolaroidFrame>
+            }
+          />
 
           {/* Right: Handwritten Days Counter & Warm Caption */}
           <div className="home-header__together-info">
@@ -272,6 +232,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           </div>
         </div>
       </header>
+
+      {couplePhotoPicker}
 
       {/* Partner Quick Info Modal */}
       {hasPartner && profile.partner && (

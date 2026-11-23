@@ -15,8 +15,8 @@ import './CreateRequestModal.css';
 interface CreateRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (input: CreateReminderInput) => void;
-  onUpdate?: (id: string, input: Partial<CreateReminderInput>) => void;
+  onSubmit: (input: CreateReminderInput) => void | Promise<void>;
+  onUpdate?: (id: string, input: Partial<CreateReminderInput>) => void | Promise<void>;
   editingReminder?: CoupleReminder | null;
   partnerName: string;
   categories?: UserCategory[];
@@ -53,6 +53,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   const [description, setDescription] = useState('');
   const [rewardNote, setRewardNote] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Local synced categories from service
   const [savedCategories, setSavedCategories] = useState<UserCategory[]>(() =>
@@ -77,6 +78,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   // Prefill when editingReminder is present or reset when opening fresh
   useEffect(() => {
     if (!isOpen) return;
+    setIsSubmitting(false);
 
     if (editingReminder) {
       setTitle(editingReminder.title || '');
@@ -181,8 +183,9 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     });
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isSubmitting) return;
     if (!title.trim()) {
       setError('Пожалуйста, укажите название напоминания');
       return;
@@ -230,13 +233,17 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       rewardNote: rewardNote.trim() || undefined,
     };
 
-    if (editingReminder && onUpdate) {
-      onUpdate(editingReminder.id, payload);
-    } else {
-      onSubmit(payload);
+    setIsSubmitting(true);
+    try {
+      if (editingReminder && onUpdate) {
+        await onUpdate(editingReminder.id, payload);
+      } else {
+        await onSubmit(payload);
+      }
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   const urgencies: { key: UrgencyLevel; label: string; dotClass: string }[] = [
@@ -257,6 +264,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             fullWidth
             onClick={() => handleSubmit()}
             type="button"
+            disabled={isSubmitting}
             className="create-request-submit-btn"
           >
             {editingReminder ? 'Сохранить изменения' : 'Создать напоминание'}

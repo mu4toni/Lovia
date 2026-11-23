@@ -204,12 +204,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error('Failed to query memorable_dates: ' + datesError.message);
     }
 
-    // 7. Загрузка уже отправленных логов уведомлений для дедупликации
-    const { data: existingLogs } = await supabase
-      .from('notification_logs')
-      .select('id');
+    // 7. Загрузка уже отправленных логов уведомлений с фильтром по дате:
+    // 30 дней для напоминаний и 400 дней для годовых годовщин / памятных дат
+    const nowMs = Date.now();
+    const reminderLogsCutoffIso = new Date(nowMs - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const annualLogsCutoffIso = new Date(nowMs - 400 * 24 * 60 * 60 * 1000).toISOString();
 
-    const sentLogIds = new Set<string>((existingLogs || []).map((l: any) => l.id));
+    const [reminderLogsRes, annualLogsRes] = await Promise.all([
+      supabase
+        .from('notification_logs')
+        .select('id')
+        .in('couple_id', coupleIds)
+        .like('notification_type', 'reminder_%')
+        .gte('sent_at', reminderLogsCutoffIso),
+      supabase
+        .from('notification_logs')
+        .select('id')
+        .in('couple_id', coupleIds)
+        .not('notification_type', 'like', 'reminder_%')
+        .gte('sent_at', annualLogsCutoffIso),
+    ]);
+
+    if (reminderLogsRes.error) {
+      console.warn('[cron/notifications] Failed to query reminder logs:', reminderLogsRes.error.message);
+    }
+    if (annualLogsRes.error) {
+      console.warn('[cron/notifications] Failed to query annual logs:', annualLogsRes.error.message);
+    }
+
+    const sentLogIds = new Set<string>([
+      ...(reminderLogsRes.data || []).map((l: any) => l.id),
+      ...(annualLogsRes.data || []).map((l: any) => l.id),
+    ]);
 
     const newLogsToInsert: Array<{
       id: string;
@@ -223,7 +249,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================================
     // А) ПРОВЕРКА НАПОМИНАНИЙ ЗА 1 ЧАС (reminder_1h)
     // ========================================================
-    const nowMs = Date.now();
 
     for (const reminder of (reminders || []) as ReminderRecord[]) {
       stats.remindersChecked++;

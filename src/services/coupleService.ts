@@ -52,6 +52,7 @@ export interface CoupleSpace {
   };
   status: 'waiting_partner' | 'connected' | 'dissolved';
   startDate?: string;
+  couplePhotoUrl?: string;
   createdAt: string;
   dissolvedAt?: string;
 }
@@ -652,6 +653,7 @@ class CoupleService {
         : undefined,
       status: coupleRow.status as 'waiting_partner' | 'connected' | 'dissolved',
       startDate: coupleRow.start_date || undefined,
+      couplePhotoUrl: coupleRow.couple_photo_url || undefined,
       createdAt: coupleRow.created_at,
       dissolvedAt: coupleRow.dissolved_at || undefined,
     };
@@ -801,6 +803,7 @@ class CoupleService {
           : undefined,
         status: coupleRow.status as 'waiting_partner' | 'connected' | 'dissolved',
         startDate: coupleRow.start_date || undefined,
+        couplePhotoUrl: coupleRow.couple_photo_url || undefined,
         createdAt: coupleRow.created_at,
         dissolvedAt: coupleRow.dissolved_at || undefined,
       };
@@ -1379,9 +1382,47 @@ class CoupleService {
   }
 
   /**
-   * 3. FULL DISSOLUTION / TEARDOWN OF SHARED SPACE
+   * Updates the shared couple/friends photo (polaroid on Home).
+   * Accepts a data URL (already compressed/cropped on the client) or an http(s)/proxy URL.
    */
-  async dissolveCouple(): Promise<{ success: boolean; error?: string }> {
+  async updateCouplePhoto(photo: string | null): Promise<void> {
+    this.init();
+    const user = this.users[this.activeUserId];
+    if (!user || !user.coupleId || !this.couples[user.coupleId]) return;
+    const couple = this.couples[user.coupleId];
+
+    let finalUrl: string | null = photo;
+    if (shouldUseServerDb()) {
+      if (photo && photo.startsWith('data:image')) {
+        const uploadRes = await callServerDb<{ publicUrl: string }>('upload_media', {
+          base64Data: photo,
+          type: 'couple',
+        });
+        if (!uploadRes?.publicUrl) {
+          throw new Error('Не удалось загрузить совместное фото на сервер');
+        }
+        finalUrl = uploadRes.publicUrl;
+      }
+      await callServerDb('update_couple_photo', {
+        coupleId: couple.id,
+        photoUrl: finalUrl,
+      });
+    }
+
+    couple.couplePhotoUrl = finalUrl || undefined;
+    this.saveToStorage();
+    if (couple.id && couple.id !== 'couple-1') {
+      updateSwrCache(couple.id, 'couple', couple);
+    }
+    this.notify();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('lovia_couple_updated'));
+    }
+  }
+
+  /**
+   * 3. FULL DISSOLUTION / TEARDOWN OF SHARED SPACE
+   */  async dissolveCouple(): Promise<{ success: boolean; error?: string }> {
     this.init();
     try {
       const user = this.getActiveUser();
@@ -1393,8 +1434,6 @@ class CoupleService {
       }
 
       const couple = this.couples[coupleId];
-      // Запоминаем ID партнёра ДО обнуления пары в базе и локальном хранилище!
-      const partnerId = couple.user1.id === user.id ? couple.user2?.id : couple.user1.id;
 
       if (shouldUseServerDb()) {
         await callServerDb('dissolve_couple', { coupleId });
@@ -1444,9 +1483,7 @@ class CoupleService {
         window.dispatchEvent(new CustomEvent('lovia_couple_dissolved'));
       }
 
-      if (partnerId) {
-        sendPartnerNotification('couple_dissolved', { partnerId, coupleId });
-      }
+      // Уведомление партнёру отправляет сервер (api/db.ts, dissolve_couple).
 
       return { success: true };
     } catch (err: unknown) {

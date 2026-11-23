@@ -12,7 +12,7 @@ import './CreateEditMemorableDateModal.css';
 export interface CreateEditMemorableDateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (input: CreateMemorableDateInput) => void;
+  onSubmit: (input: CreateMemorableDateInput) => void | Promise<void>;
   initialDate?: MemorableDate | null;
 }
 
@@ -29,8 +29,10 @@ export const CreateEditMemorableDateModal: React.FC<CreateEditMemorableDateModal
   const [description, setDescription] = useState('');
   const [isAnnual, setIsAnnual] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    setIsSubmitting(false);
     if (initialDate) {
       setTitle(initialDate.title || '');
       setDate(initialDate.date || '');
@@ -46,8 +48,9 @@ export const CreateEditMemorableDateModal: React.FC<CreateEditMemorableDateModal
     }
   }, [initialDate, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const cleanTitle = title.trim();
     if (!cleanTitle) {
       setError('Введите название памятной даты');
@@ -59,13 +62,18 @@ export const CreateEditMemorableDateModal: React.FC<CreateEditMemorableDateModal
     }
 
     setError(null);
-    onSubmit({
-      title: cleanTitle,
-      date,
-      description: description.trim() || undefined,
-      isAnnual,
-    });
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        title: cleanTitle,
+        date,
+        description: description.trim() || undefined,
+        isAnnual,
+      });
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -130,7 +138,7 @@ export const CreateEditMemorableDateModal: React.FC<CreateEditMemorableDateModal
           <Button type="button" variant="ghost" onClick={onClose}>
             Отмена
           </Button>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
             {isEditing ? 'Сохранить изменения' : 'Добавить дату'}
           </Button>
         </div>
