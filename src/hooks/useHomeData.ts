@@ -10,6 +10,7 @@ import { requestsService } from '../services/requestsService';
 import { categoriesService } from '../services/categoriesService';
 import { DemoStateMode } from '../components/home/DemoStateSwitcher/DemoStateSwitcher';
 import { initialCoupleProfile } from '../services/mockData';
+import { capture, posthogLogger } from '../lib/posthog';
 
 export function useHomeData() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -81,12 +82,23 @@ export function useHomeData() {
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: updated.status } : r))
       );
+      if (updated.status === 'completed') {
+        capture('reminder_completed');
+      }
     }
   };
 
   const handleCreateRequest = async (input: CreateReminderInput) => {
     const created = await requestsService.createRequest(input);
     setRequests((prev) => [created, ...prev]);
+    capture('reminder_created', {
+      urgency: created.urgency,
+      has_due_date: Boolean(created.dueDate),
+    });
+    posthogLogger.info('reminder_created', {
+      urgency: created.urgency,
+      has_due_date: Boolean(created.dueDate),
+    });
   };
 
   const handleUpdateRequest = async (id: string, input: Partial<CreateReminderInput>) => {
@@ -103,6 +115,7 @@ export function useHomeData() {
     const ok = await requestsService.deleteRequest(id);
     if (ok) {
       setRequests((prev) => prev.filter((r) => r.id !== id));
+      capture('reminder_deleted');
     }
   };
 

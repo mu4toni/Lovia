@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { telegramService } from './services/telegramService';
+import { posthogLogger } from './lib/posthog';
 import './styles/global.css';
 import './styles/scrapbook.css';
 
@@ -17,6 +18,7 @@ document.documentElement.setAttribute('data-accent', savedAccent);
 
 // Initialize Telegram Mini App SDK environment
 telegramService.init();
+posthogLogger.info('application_started', { runtime: 'browser' });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

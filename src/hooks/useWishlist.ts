@@ -3,6 +3,7 @@ import { WishItem, CreateWishInput, UpdateWishInput, WishlistTab } from '../type
 import { wishlistService } from '../services/wishlistService';
 import { requestsService } from '../services/requestsService';
 import { CoupleProfile, User } from '../types/couple';
+import { capture } from '../lib/posthog';
 
 export function useWishlist() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -122,6 +123,10 @@ export function useWishlist() {
     const created = await wishlistService.createWishItem(currentUserId, input);
     setItems((prev) => [created, ...prev]);
     setIsCreateModalOpen(false);
+    capture('wishlist_item_created', {
+      has_link: Boolean(created.linkUrl),
+      has_price: Boolean(created.estimatedPrice),
+    });
     return created;
   };
 
@@ -129,6 +134,7 @@ export function useWishlist() {
     const updated = await wishlistService.updateWishItem(id, currentUserId, input);
     setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
     setEditingWish(null);
+    capture('wishlist_item_updated');
     return updated;
   };
 
@@ -136,12 +142,16 @@ export function useWishlist() {
     await wishlistService.deleteWishItem(id, currentUserId);
     setItems((prev) => prev.filter((item) => item.id !== id));
     setDeletingWish(null);
+    capture('wishlist_item_deleted');
     return true;
   };
 
   const handleToggleReserve = async (id: string) => {
     const updated = await wishlistService.toggleReserveWishItem(id, currentUserId);
     setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    capture('wishlist_item_reservation_changed', {
+      reserved: Boolean(updated.isReserved),
+    });
     return updated;
   };
 

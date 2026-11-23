@@ -12,6 +12,7 @@ import { telegramService } from '../services/telegramService';
 import { getTodayDateString } from '../utils/dateCalculations';
 import { copyTextToClipboard } from '../utils/clipboard';
 import { getTelegramInviteLink, isLocalDevHost } from '../utils/env';
+import { capture } from '../lib/posthog';
 import './OnboardingPage.css';
 
 export function OnboardingPage() {
@@ -134,6 +135,9 @@ export function OnboardingPage() {
         startDate,
         spaceType,
       });
+      capture('shared_space_created', {
+        space_type: spaceType,
+      });
       telegramService.hapticNotification('success');
       setCurrentCouple(couple);
       showToast({
@@ -221,6 +225,7 @@ export function OnboardingPage() {
         name: validName,
         gender,
       });
+      capture('shared_space_joined');
       telegramService.hapticNotification('success');
 
       showToast({

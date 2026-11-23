@@ -5,6 +5,7 @@ import { relationshipService } from './relationshipService';
 import { dateMemoryService } from './dateMemoryService';
 import { telegramService } from './telegramService';
 import { clearCelebrationHistory } from './celebrationService';
+import { capture } from '../lib/posthog';
 import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache, clearSwrCache } from './swrCache';
@@ -1554,6 +1555,8 @@ class CoupleService {
       if (shouldUseServerDb()) {
         await callServerDb('confirm_account_deletion', { code: code.trim() });
       }
+
+      capture('account_deleted');
 
       // Полная очистка SWR-кэша и локального хранилища
       clearSwrCache();
