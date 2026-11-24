@@ -34,7 +34,7 @@
   font-size: 34px;
   font-weight: 800;
   line-height: 1.1;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }

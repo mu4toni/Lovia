@@ -15,7 +15,7 @@
 }
 
 .edit-start-date-form__note-icon {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   margin-top: 2px;
 }

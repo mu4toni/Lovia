@@ -44,7 +44,7 @@
 .dates-header__title-underline {
   margin-top: -2px;
   margin-bottom: 4px;
-  color: var(--color-primary, #da0038);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.65;
 }
 
@@ -56,11 +56,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .dates-header__kicker-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .dates-header__title {
@@ -154,7 +154,7 @@
 }
 
 .dates-header__stat-pill-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   position: relative;
   z-index: 1;

@@ -30,7 +30,7 @@
 
   /* --- Customizable Accent Color System (Default: Strawberry) --- */
   --accent-primary: #C92D48;
-  --accent-text: #C92D48;
+  --accent-text: #B8233D;
   --accent-primary-hover: #B1243D;
   --accent-primary-active: #961D33;
   --accent-soft: #F7DDE0;
@@ -260,10 +260,10 @@
   --bg-card-hover: #382C27;
 
   --bg-blush: #5D3C3A;
-  --accent-primary: #DF4B64;
+  --accent-primary: #D43854;
   --accent-text: #FF879C;
-  --accent-primary-hover: #EA5D75;
-  --accent-primary-active: #C92D48;
+  --accent-primary-hover: #E14B66;
+  --accent-primary-active: #B8233D;
   --accent-soft: rgba(223, 75, 100, 0.22);
   --accent-soft-light: rgba(223, 75, 100, 0.13);
   --accent-shadow: rgba(223, 75, 100, 0.32);
@@ -374,7 +374,7 @@
 
 [data-accent='strawberry'] {
   --accent-primary: #C92D48;
-  --accent-text: #C92D48;
+  --accent-text: #B8233D;
   --accent-primary-hover: #B1243D;
   --accent-primary-active: #961D33;
   --accent-soft: #F7DDE0;
@@ -385,110 +385,110 @@
 }
 
 [data-accent='caramel'] {
-  --accent-primary: #A87554;
-  --accent-text: #966343;
-  --accent-primary-hover: #936446;
-  --accent-primary-active: #7E553A;
+  --accent-primary: #9B6846;
+  --accent-text: #875637;
+  --accent-primary-hover: #88593A;
+  --accent-primary-active: #744B30;
   --accent-soft: #F2E4D9;
   --accent-soft-light: rgba(242, 228, 217, 0.55);
-  --accent-shadow: rgba(168, 117, 84, 0.22);
-  --border-dashed: rgba(168, 117, 84, 0.30);
+  --accent-shadow: rgba(155, 104, 70, 0.22);
+  --border-dashed: rgba(155, 104, 70, 0.30);
   --bg-blush: #DFC3AE;
 }
 
 [data-accent='lavender'] {
-  --accent-primary: #8E6BB8;
-  --accent-text: #7A56A6;
-  --accent-primary-hover: #7C5AA5;
-  --accent-primary-active: #6B4C91;
+  --accent-primary: #7E5AA8;
+  --accent-text: #6E4A99;
+  --accent-primary-hover: #6E4C96;
+  --accent-primary-active: #5F4083;
   --accent-soft: #ECE3F6;
   --accent-soft-light: rgba(236, 227, 246, 0.55);
-  --accent-shadow: rgba(142, 107, 184, 0.22);
-  --border-dashed: rgba(142, 107, 184, 0.30);
+  --accent-shadow: rgba(126, 90, 168, 0.22);
+  --border-dashed: rgba(126, 90, 168, 0.30);
   --bg-blush: #D6C5E9;
 }
 
 [data-accent='sage'] {
-  --accent-primary: #4E8568;
-  --accent-text: #3F7257;
-  --accent-primary-hover: #427359;
-  --accent-primary-active: #37614B;
+  --accent-primary: #437A5D;
+  --accent-text: #36684E;
+  --accent-primary-hover: #38694F;
+  --accent-primary-active: #2E5842;
   --accent-soft: #DFEDE5;
   --accent-soft-light: rgba(223, 237, 229, 0.55);
-  --accent-shadow: rgba(78, 133, 104, 0.22);
-  --border-dashed: rgba(78, 133, 104, 0.30);
+  --accent-shadow: rgba(67, 122, 93, 0.22);
+  --border-dashed: rgba(67, 122, 93, 0.30);
   --bg-blush: #BCD5C7;
 }
 
 [data-accent='sky'] {
-  --accent-primary: #4A7BB7;
-  --accent-text: #3B6AA3;
-  --accent-primary-hover: #3E6BA3;
-  --accent-primary-active: #345B8D;
+  --accent-primary: #4070AB;
+  --accent-text: #336098;
+  --accent-primary-hover: #356096;
+  --accent-primary-active: #2C5180;
   --accent-soft: #DFEAF6;
   --accent-soft-light: rgba(223, 234, 246, 0.55);
-  --accent-shadow: rgba(74, 123, 183, 0.22);
-  --border-dashed: rgba(74, 123, 183, 0.30);
+  --accent-shadow: rgba(64, 112, 171, 0.22);
+  --border-dashed: rgba(64, 112, 171, 0.30);
   --bg-blush: #BDD0E7;
 }
 
-/* Dark theme overrides for each accent palette */
+/* Dark theme overrides for each accent palette (WCAG AA >= 4.5:1 on both buttons & cards) */
 [data-theme='dark'][data-accent='strawberry'] {
-  --accent-primary: #DF4B64;
+  --accent-primary: #D43854;
   --accent-text: #FF879C;
-  --accent-primary-hover: #EA5D75;
-  --accent-primary-active: #C92D48;
-  --accent-soft: rgba(223, 75, 100, 0.22);
-  --accent-soft-light: rgba(223, 75, 100, 0.13);
-  --accent-shadow: rgba(223, 75, 100, 0.32);
-  --border-dashed: rgba(255, 135, 156, 0.42);
+  --accent-primary-hover: #E14B66;
+  --accent-primary-active: #B8233D;
+  --accent-soft: rgba(212, 56, 84, 0.24);
+  --accent-soft-light: rgba(212, 56, 84, 0.14);
+  --accent-shadow: rgba(212, 56, 84, 0.34);
+  --border-dashed: rgba(255, 135, 156, 0.44);
   --bg-blush: #5D3C3A;
 }
 
 [data-theme='dark'][data-accent='caramel'] {
-  --accent-primary: #C8926E;
+  --accent-primary: #9A6644;
   --accent-text: #EBBF9F;
-  --accent-primary-hover: #D6A280;
-  --accent-primary-active: #A87554;
+  --accent-primary-hover: #AB7552;
+  --accent-primary-active: #845537;
   --accent-soft: rgba(200, 146, 110, 0.22);
   --accent-soft-light: rgba(200, 146, 110, 0.13);
-  --accent-shadow: rgba(200, 146, 110, 0.32);
+  --accent-shadow: rgba(154, 102, 68, 0.34);
   --border-dashed: rgba(235, 191, 159, 0.44);
   --bg-blush: #534033;
 }
 
 [data-theme='dark'][data-accent='lavender'] {
-  --accent-primary: #A887D1;
+  --accent-primary: #7E59AB;
   --accent-text: #CDB6F2;
-  --accent-primary-hover: #B89ADE;
-  --accent-primary-active: #8E6BB8;
+  --accent-primary-hover: #8E69BC;
+  --accent-primary-active: #6B4994;
   --accent-soft: rgba(168, 135, 209, 0.22);
   --accent-soft-light: rgba(168, 135, 209, 0.13);
-  --accent-shadow: rgba(168, 135, 209, 0.32);
+  --accent-shadow: rgba(126, 89, 171, 0.34);
   --border-dashed: rgba(205, 182, 242, 0.44);
   --bg-blush: #463A57;
 }
 
 [data-theme='dark'][data-accent='sage'] {
-  --accent-primary: #69A484;
+  --accent-primary: #437A5D;
   --accent-text: #94D8B4;
-  --accent-primary-hover: #7BB495;
-  --accent-primary-active: #4E8568;
+  --accent-primary-hover: #508B6C;
+  --accent-primary-active: #37664D;
   --accent-soft: rgba(105, 164, 132, 0.22);
   --accent-soft-light: rgba(105, 164, 132, 0.13);
-  --accent-shadow: rgba(105, 164, 132, 0.32);
+  --accent-shadow: rgba(67, 122, 93, 0.34);
   --border-dashed: rgba(148, 216, 180, 0.44);
   --bg-blush: #324A3D;
 }
 
 [data-theme='dark'][data-accent='sky'] {
-  --accent-primary: #6999D1;
+  --accent-primary: #3F6EA8;
   --accent-text: #98C6F8;
-  --accent-primary-hover: #7CA9DE;
-  --accent-primary-active: #4A7BB7;
+  --accent-primary-hover: #4C7DB9;
+  --accent-primary-active: #335C8F;
   --accent-soft: rgba(105, 153, 209, 0.22);
   --accent-soft-light: rgba(105, 153, 209, 0.13);
-  --accent-shadow: rgba(105, 153, 209, 0.32);
+  --accent-shadow: rgba(63, 110, 168, 0.34);
   --border-dashed: rgba(152, 198, 248, 0.44);
   --bg-blush: #324459;
 }

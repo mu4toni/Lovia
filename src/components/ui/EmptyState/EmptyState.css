@@ -29,7 +29,7 @@
   justify-content: center;
   font-size: 30px;
   margin-bottom: 12px;
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .empty-state__title {

@@ -1,0 +1,659 @@
+/* ==========================================================================
+   LOVIA — Scrapbook Streak Modal («Ваш огонёк»)
+   Full Light & Dark theme + 5 custom accent themes via CSS tokens
+   ========================================================================== */
+
+:root {
+  --streak-checked-bg: #E4F4EA;
+  --streak-checked-text: #166534;
+  --streak-checked-border: rgba(22, 101, 52, 0.28);
+  --streak-note-bg: #FFF9E6;
+  --streak-note-border: rgba(168, 117, 84, 0.34);
+  --streak-note-text: #5A4132;
+  --streak-muted-top: #DAD3CD;
+  --streak-muted-bottom: #BDB4AD;
+  --streak-muted-core-top: #ECE6E1;
+  --streak-muted-core-bottom: #D3CBC4;
+  --streak-muted-stroke: #8C827B;
+}
+
+[data-theme='dark'] {
+  --streak-checked-bg: rgba(52, 211, 153, 0.16);
+  --streak-checked-text: #86EFAC;
+  --streak-checked-border: rgba(134, 239, 172, 0.34);
+  --streak-note-bg: #3C3028;
+  --streak-note-border: rgba(227, 181, 147, 0.34);
+  --streak-note-text: #F6E6D6;
+  --streak-muted-top: #726862;
+  --streak-muted-bottom: #524A46;
+  --streak-muted-core-top: #8A7F79;
+  --streak-muted-core-bottom: #665D58;
+  --streak-muted-stroke: #9E938D;
+}
+
+.streak-modal .modal-sheet__body {
+  padding-top: 10px;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+.streak-modal__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Subtitle */
+.streak-modal__subtitle {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-on-light-tint-secondary, var(--text-secondary));
+  text-wrap: balance;
+}
+
+[data-theme='dark'] .streak-modal__subtitle {
+  color: var(--text-secondary);
+}
+
+/* Central Large Illustrated SVG Flame (60fps GPU-only) */
+.streak-modal__hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 0;
+}
+
+.streak-modal__hero-halo {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  border-radius: 56% 44% 52% 48% / 48% 54% 46% 52%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface-subtle);
+  border: 1.6px dashed var(--border-dashed-cocoa);
+  box-shadow: inset 0 0 0 3px var(--bg-card);
+  transition: background-color 240ms ease, border-color 240ms ease;
+}
+
+.streak-modal__hero--lit .streak-modal__hero-halo {
+  background: var(--accent-soft-light);
+  border-color: var(--border-dashed);
+}
+
+.streak-modal__hero--black .streak-modal__hero-halo {
+  background: var(--bg-surface-subtle);
+  border-color: var(--streak-black-stroke);
+}
+
+.streak-hero-flame {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.streak-hero-flame__pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, opacity;
+  animation: heroFlamePulse 2.4s ease-in-out infinite;
+}
+
+.streak-hero-flame__svg {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 92px;
+  height: 92px;
+  overflow: visible;
+}
+
+/* Lit state: live smooth 2-layer burning + rising sparks (transform & opacity only) */
+.streak-hero-flame--lit .streak-hero-flame__outer-layer {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  will-change: transform;
+  animation: heroFlameOuter 2.05s ease-in-out infinite;
+}
+
+.streak-hero-flame--lit .streak-hero-flame__inner-layer {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+  animation: heroFlameInner 1.45s ease-in-out -0.35s infinite;
+}
+
+.streak-hero-flame__spark {
+  will-change: transform, opacity;
+}
+
+.streak-hero-flame__spark--1 {
+  animation: heroFlameSpark 2.1s ease-out 0s infinite;
+}
+
+.streak-hero-flame__spark--2 {
+  animation: heroFlameSpark 2.45s ease-out 0.7s infinite;
+}
+
+.streak-hero-flame__spark--3 {
+  animation: heroFlameSpark 2.75s ease-out 1.35s infinite;
+}
+
+/* Warm (waiting for partner): muted gray with barely-there gentle breath */
+.streak-hero-flame--warm .streak-hero-flame__outer-layer,
+.streak-hero-flame--warm .streak-hero-flame__inner-layer {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+  animation: heroFlameBreath 3.2s ease-in-out infinite;
+}
+
+/* Black risk: dark charcoal flame with subtle nervous tremble */
+.streak-hero-flame--black .streak-hero-flame__svg {
+  transform-origin: bottom center;
+  will-change: transform;
+  animation: heroFlameTremble 1.85s ease-in-out infinite;
+}
+
+@keyframes heroFlamePulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.52;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.92;
+  }
+}
+
+@keyframes heroFlameOuter {
+  0%, 100% {
+    transform: scaleX(1) scaleY(1) rotate(-1.5deg);
+  }
+  33% {
+    transform: scaleX(1.035) scaleY(1.055) rotate(1.6deg);
+  }
+  68% {
+    transform: scaleX(0.975) scaleY(1.025) rotate(-0.9deg);
+  }
+}
+
+@keyframes heroFlameInner {
+  0%, 100% {
+    transform: scaleX(1) scaleY(1) translateY(0) rotate(0.8deg);
+    opacity: 0.95;
+  }
+  45% {
+    transform: scaleX(0.94) scaleY(1.075) translateY(-1.5px) rotate(-1.6deg);
+    opacity: 1;
+  }
+  78% {
+    transform: scaleX(1.04) scaleY(0.97) translateY(0.5px) rotate(1.1deg);
+    opacity: 0.92;
+  }
+}
+
+@keyframes heroFlameSpark {
+  0% {
+    transform: translateY(2px) scale(0.7);
+    opacity: 0;
+  }
+  28% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-14px) scale(0.35);
+    opacity: 0;
+  }
+}
+
+@keyframes heroFlameBreath {
+  0%, 100% {
+    transform: scaleY(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scaleY(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes heroFlameTremble {
+  0%, 72%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  78% {
+    transform: translateX(-1.5px) rotate(-1.6deg);
+  }
+  84% {
+    transform: translateX(1.5px) rotate(1.6deg);
+  }
+  90% {
+    transform: translateX(-1px) rotate(-1deg);
+  }
+  95% {
+    transform: translateX(1px) rotate(1deg);
+  }
+}
+
+/* Inner Scrapbook Status Card */
+body .streak-modal__status-card.sketch-card {
+  width: 100%;
+  padding: 15px 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  background-color: var(--bg-paper);
+  border-color: var(--sketch-border);
+  box-shadow: 2.5px 3.5px 0 var(--sketch-shadow);
+}
+
+body .streak-modal__status-card.streak-modal__status-card--blush {
+  background-color: var(--bg-card);
+  background-image: linear-gradient(135deg, var(--accent-soft-light) 0%, var(--accent-soft) 100%);
+  border-color: var(--border-dashed);
+}
+
+body .streak-modal__status-card.streak-modal__status-card--black {
+  border-color: var(--streak-black-stroke);
+}
+
+.streak-modal__status-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.streak-modal__status-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.streak-modal__count-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.streak-modal__counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.streak-modal__count-num {
+  font-family: var(--font-handwritten);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.streak-modal__count-unit {
+  font-family: var(--font-handwritten);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--text-cocoa);
+  line-height: 1;
+}
+
+.streak-modal__caption {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-on-light-tint-secondary, var(--text-secondary));
+  overflow-wrap: break-word;
+}
+
+[data-theme='dark'] .streak-modal__caption {
+  color: var(--text-secondary);
+}
+
+.streak-modal__caption--urgent {
+  color: var(--accent-text, var(--accent-primary)) !important;
+  font-weight: 700;
+}
+
+/* Tilted Scrapbook Sticky Note */
+.streak-modal__note {
+  position: relative;
+  flex-shrink: 0;
+  padding: 6px 10px 5px;
+  border-radius: 10px 13px 9px 12px / 12px 9px 13px 10px;
+  background: var(--streak-note-bg);
+  border: 1.4px solid var(--streak-note-border);
+  box-shadow: 1.5px 2.5px 0 var(--tag-shadow, rgba(73, 55, 47, 0.08));
+  transform: rotate(3.2deg);
+  margin-top: 2px;
+  max-width: 126px;
+}
+
+.streak-modal__note--lit {
+  background: var(--bg-card);
+  border-color: var(--border-dashed);
+}
+
+.streak-modal__note--urgent {
+  background: var(--accent-soft);
+  border-color: var(--border-dashed);
+}
+
+.streak-modal__note-text {
+  display: block;
+  font-family: var(--font-handwritten);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--streak-note-text);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.streak-modal__note--lit .streak-modal__note-text,
+.streak-modal__note--urgent .streak-modal__note-text {
+  color: var(--accent-text, var(--accent-primary));
+}
+
+/* Dashed divider */
+.streak-modal__divider {
+  width: 100%;
+  border-top: 1.5px dashed var(--border-dashed-cocoa);
+}
+
+/* Two-column participants section */
+.streak-modal__participants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.streak-modal__person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 16px 13px 15px 14px / 14px 16px 13px 15px;
+  background: var(--bg-card);
+  border: 1.4px solid var(--border-sketch);
+  min-width: 0;
+}
+
+.streak-modal__avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 2px;
+  border: 1.8px solid transparent;
+}
+
+.streak-modal__avatar-wrap--checked {
+  border-color: var(--streak-checked-border);
+}
+
+.streak-modal__avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface-subtle);
+  border: 1.5px dashed var(--border-dashed-cocoa);
+  color: var(--text-secondary);
+}
+
+.streak-modal__avatar-check {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--streak-checked-text);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-card);
+}
+
+[data-theme='dark'] .streak-modal__avatar-check {
+  background: #22C55E;
+  color: #0B1F14;
+}
+
+.streak-modal__person-name {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  line-height: 1.25;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.streak-modal__status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.streak-modal__status-pill--checked {
+  background: var(--streak-checked-bg);
+  color: var(--streak-checked-text);
+  border: 1.2px solid var(--streak-checked-border);
+}
+
+.streak-modal__status-pill--waiting {
+  background: var(--bg-surface-subtle);
+  color: var(--text-on-light-tint-secondary, var(--text-secondary));
+  border: 1.2px solid var(--border-sketch);
+}
+
+[data-theme='dark'] .streak-modal__status-pill--waiting {
+  color: var(--text-secondary);
+}
+
+/* Bottom Primary CTA & Footnote */
+.streak-modal__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+body .streak-modal__cta.sketch-pill {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-fast) var(--ease-tactile),
+              background-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease,
+              opacity var(--duration-fast) ease;
+}
+
+.streak-modal__cta-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Active ignite button */
+body .streak-modal__cta.streak-modal__cta--ignite {
+  background: var(--accent-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--sketch-border-strong, rgba(73, 55, 47, 0.28)) !important;
+  box-shadow: 2px 3px 0 var(--sketch-btn-shadow, rgba(73, 55, 47, 0.14)) !important;
+}
+
+body .streak-modal__cta.streak-modal__cta--ignite:hover:not(:disabled) {
+  background: var(--accent-primary-hover) !important;
+}
+
+body .streak-modal__cta.streak-modal__cta--ignite:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+/* Waiting button */
+body .streak-modal__cta.streak-modal__cta--waiting {
+  background: var(--bg-surface-subtle) !important;
+  color: var(--text-cocoa) !important;
+  border-color: var(--sketch-border) !important;
+  box-shadow: 1.5px 2px 0 var(--sketch-shadow) !important;
+  cursor: default;
+  opacity: 0.92;
+}
+
+body .streak-modal__cta.streak-modal__cta--waiting:active {
+  transform: none !important;
+  box-shadow: 1.5px 2px 0 var(--sketch-shadow) !important;
+}
+
+/* Warm celebratory badge when both checked in */
+body .streak-modal__cta.streak-modal__cta--lit {
+  background: var(--accent-soft) !important;
+  color: var(--accent-text, var(--accent-primary)) !important;
+  border-color: var(--border-dashed) !important;
+  box-shadow: 2px 2.5px 0 var(--sketch-shadow) !important;
+  cursor: default;
+}
+
+body .streak-modal__cta.streak-modal__cta--lit:active {
+  transform: none !important;
+  box-shadow: 2px 2.5px 0 var(--sketch-shadow) !important;
+}
+
+.streak-modal__footnote {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-on-light-tint-secondary, var(--text-secondary));
+}
+
+[data-theme='dark'] .streak-modal__footnote {
+  color: var(--text-tertiary);
+}
+
+/* Flame large size helper */
+.streak-flame--lg {
+  width: 28px;
+  height: 32px;
+}
+
+/* Compact screens (<= 365px) */
+@media (max-width: 365px) {
+  .streak-modal__hero-halo {
+    width: 112px;
+    height: 112px;
+  }
+
+  .streak-hero-flame,
+  .streak-hero-flame__svg {
+    width: 84px;
+    height: 84px;
+  }
+
+  body .streak-modal__status-card.sketch-card {
+    padding: 13px 12px 14px;
+  }
+
+  .streak-modal__count-num {
+    font-size: 30px;
+  }
+
+  .streak-modal__count-unit {
+    font-size: 18.5px;
+  }
+
+  .streak-modal__note {
+    padding: 5px 8px 4px;
+  }
+
+  .streak-modal__note-text {
+    font-size: 12px;
+  }
+
+  .streak-modal__participants {
+    gap: 8px;
+  }
+
+  .streak-modal__person {
+    padding: 9px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-hero-flame__pulse,
+  .streak-hero-flame--lit .streak-hero-flame__outer-layer,
+  .streak-hero-flame--lit .streak-hero-flame__inner-layer,
+  .streak-hero-flame__spark,
+  .streak-hero-flame--warm .streak-hero-flame__outer-layer,
+  .streak-hero-flame--warm .streak-hero-flame__inner-layer,
+  .streak-hero-flame--black .streak-hero-flame__svg {
+    animation: none !important;
+  }
+}

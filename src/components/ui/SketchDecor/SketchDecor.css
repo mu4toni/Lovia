@@ -8,7 +8,7 @@
   pointer-events: none;
   user-select: none;
   opacity: 0.85;
-  color: var(--accent-strawberry, #C92D48);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .sketch-doodle {
@@ -18,12 +18,12 @@
   pointer-events: none;
   user-select: none;
   flex-shrink: 0;
-  color: var(--accent-strawberry, #C92D48);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .sketch-doodle--heart,
 .sketch-doodle--heart-filled {
-  color: var(--accent-strawberry, #C92D48);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .sketch-doodle--star,
@@ -38,7 +38,7 @@
   height: calc(100% + 16px);
   pointer-events: none;
   user-select: none;
-  color: var(--accent-strawberry, #C92D48);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.85;
 }
 

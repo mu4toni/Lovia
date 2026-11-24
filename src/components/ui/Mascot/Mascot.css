@@ -54,7 +54,7 @@
 .lovia-mascot__float-heart {
   position: absolute;
   top: 10%;
-  color: var(--accent-primary, #C92D48);
+  color: var(--accent-text, var(--accent-primary));
   font-family: var(--font-handwritten);
   pointer-events: none;
   user-select: none;

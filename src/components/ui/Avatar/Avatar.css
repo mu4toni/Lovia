@@ -101,5 +101,5 @@
 }
 
 .couple-avatar__heart-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }

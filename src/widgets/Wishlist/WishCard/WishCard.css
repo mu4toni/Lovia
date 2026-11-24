@@ -76,7 +76,7 @@
   justify-content: center;
   background: var(--bg-card);
   border: 1.5px dashed var(--border-dashed);
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* Owner Action Buttons */
@@ -249,7 +249,7 @@
   border: 1px dashed var(--border-dashed);
   font-size: 13.5px;
   font-weight: 800;
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;

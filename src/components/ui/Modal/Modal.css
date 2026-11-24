@@ -105,7 +105,7 @@
 
 .modal-sheet__title-mark {
   font-size: 14px;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.88;
   transform: rotate(8deg);
   display: inline-block;
@@ -141,7 +141,7 @@
 .modal-sheet__close:hover {
   background: var(--accent-soft) !important;
   border-color: var(--border-dashed) !important;
-  color: var(--accent-primary) !important;
+  color: var(--accent-text, var(--accent-primary)) !important;
 }
 
 .modal-sheet__close:active {

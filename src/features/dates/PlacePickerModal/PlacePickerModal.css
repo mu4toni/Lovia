@@ -101,7 +101,7 @@
 
 .place-picker-close-btn:hover {
   background: var(--accent-soft);
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .place-picker-search-row {
@@ -135,7 +135,7 @@
 }
 
 .place-picker-search-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   margin-right: 8px;
 }
@@ -199,7 +199,7 @@
   border-radius: var(--radius-pill);
   background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.04));
   border: 1px solid var(--border-subtle);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,7 +263,7 @@
 }
 
 .place-picker-dropdown-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -279,12 +279,14 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .place-picker-dropdown-address {
   font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 /* Map Area */
@@ -332,7 +334,7 @@
 }
 
 .place-picker-summary-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -348,12 +350,14 @@
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .place-picker-summary-address {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .place-picker-actions {

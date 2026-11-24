@@ -21,7 +21,7 @@
   height: 36px;
   border-radius: var(--radius-full);
   background: var(--color-primary-soft, #f4dde2);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +55,7 @@
   border-radius: var(--radius-full);
   background: transparent;
   border: none;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,7 +124,7 @@
 }
 
 .place-card-selected__pin-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -219,7 +219,7 @@
   height: 32px;
   border-radius: 50%;
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -261,7 +261,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;

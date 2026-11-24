@@ -51,7 +51,7 @@
 }
 
 .bean-advice-card__doodle {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .bean-advice-card__text {

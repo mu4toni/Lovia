@@ -36,7 +36,7 @@
 }
 
 .detail-meta-icon {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .date-memory-detail__title {
@@ -66,7 +66,7 @@
 }
 
 .date-memory-detail__story-quote-icon {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.7;
   flex-shrink: 0;
   margin-top: 2px;
@@ -249,7 +249,7 @@
   background: var(--bg-surface-subtle);
   border: 1.5px solid var(--border-sketch);
   border-radius: 999px;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;

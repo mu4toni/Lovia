@@ -211,7 +211,7 @@
 }
 
 .relationship-hero-card__heart {
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -240,7 +240,7 @@
 
 .relationship-hero-card__start-date-pill:hover {
   border-color: var(--border-medium);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .relationship-hero-card__start-date-pill:active {
@@ -248,7 +248,7 @@
 }
 
 .start-date-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.9;
 }
 
@@ -269,7 +269,7 @@
 }
 
 .relationship-hero-card__edit-btn:hover {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   transform: scale(1.1);
 }
 

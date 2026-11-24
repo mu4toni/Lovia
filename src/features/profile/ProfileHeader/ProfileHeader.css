@@ -187,7 +187,7 @@
 }
 
 .profile-hero-card__edit-btn:hover {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .profile-hero-card__edit-btn:active {
@@ -286,7 +286,7 @@
 .profile-hero-card__badge--connected {
   background: var(--color-primary-soft, rgba(200, 54, 73, 0.08));
   border-color: rgba(200, 54, 73, 0.22);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   cursor: pointer;
   outline: none;
   transition: transform var(--motion-micro) var(--ease-telegram), border-color var(--duration-fast) ease;
@@ -320,7 +320,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* Centered Registration Date */

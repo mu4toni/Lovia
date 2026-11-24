@@ -222,7 +222,7 @@
 }
 
 .requests-overdue-banner__icon {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -556,7 +556,7 @@
 }
 
 .requests-empty-icon {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* Airy Empty State on Home (Scrapbook paper card, soft handwritten title) */

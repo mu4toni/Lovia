@@ -223,7 +223,7 @@
 .danger-resend-btn {
   background: none;
   border: none;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -255,7 +255,7 @@
   height: 48px;
   border-radius: var(--radius-full);
   background: var(--color-primary-soft, rgba(200, 54, 73, 0.08));
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,7 +293,7 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   letter-spacing: 0.05em;
 }
 

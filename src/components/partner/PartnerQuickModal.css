@@ -51,7 +51,7 @@
 }
 
 .partner-quick-modal__days-box strong {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -121,7 +121,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .partner-quick-modal__chevron {

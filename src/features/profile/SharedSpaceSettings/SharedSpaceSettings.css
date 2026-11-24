@@ -21,7 +21,7 @@
 }
 
 .shared-space-settings__icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .shared-space-settings__title {
@@ -81,7 +81,7 @@
   font-family: monospace;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   background: var(--color-primary-soft, rgba(200, 54, 73, 0.08));
   padding: 2px 6px;
   border-radius: var(--radius-sm);

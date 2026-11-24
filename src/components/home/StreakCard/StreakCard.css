@@ -28,9 +28,23 @@
   position: relative;
   overflow: hidden;
   border-radius: 22px 18px 21px 17px / 18px 21px 17px 22px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   transition: background-color 260ms ease,
               border-color 260ms ease,
-              box-shadow 260ms ease;
+              box-shadow 160ms ease,
+              transform 140ms var(--ease-tactile);
+}
+
+.streak-card.sketch-card:active:not(:has(button:active)) {
+  transform: translate(1px, 1.5px);
+  box-shadow: 1.5px 2px 0 var(--sketch-shadow);
+}
+
+.streak-card.sketch-card:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 /* Milky card surface when nobody lit yet */
@@ -214,19 +228,14 @@ body .streak-card__pill.streak-card__pill--support:disabled {
   cursor: wait;
 }
 
-/* Waiting pill: soft light surface with clock icon (disabled) */
+/* Waiting pill: soft light surface with clock icon (opens streak details modal) */
 body .streak-card__pill.streak-card__pill--waiting {
   background: var(--bg-card) !important;
   color: var(--text-cocoa) !important;
   border-color: var(--sketch-border, rgba(73, 55, 47, 0.24)) !important;
   box-shadow: 1.5px 2px 0 var(--sketch-shadow, rgba(73, 55, 47, 0.08)) !important;
-  opacity: 0.92;
-  cursor: default;
-}
-
-body .streak-card__pill.streak-card__pill--waiting:active {
-  transform: none !important;
-  box-shadow: 1.5px 2px 0 var(--sketch-shadow, rgba(73, 55, 47, 0.08)) !important;
+  opacity: 0.96;
+  cursor: pointer;
 }
 
 /* Flame SVG + 60fps GPU-only Animations */

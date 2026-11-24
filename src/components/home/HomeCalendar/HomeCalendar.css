@@ -113,7 +113,7 @@
 }
 
 .home-calendar__month-notice-icon {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   flex-shrink: 0;
 }
 
@@ -513,7 +513,7 @@
 .home-calendar__events-count--has-items {
   background: var(--accent-soft);
   border-color: transparent;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .home-calendar__events-list {

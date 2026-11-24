@@ -58,7 +58,7 @@
   gap: 6px;
   font-size: 14px;
   pointer-events: none;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.85;
 }
 
@@ -88,11 +88,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .anniversary-kicker-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .anniversary-showcase__title {
@@ -106,7 +106,7 @@
 
 .anniversary-showcase__title-underline {
   margin-top: 2px;
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
   opacity: 0.7;
 }
 
@@ -140,14 +140,14 @@
   font-family: var(--font-handwritten);
   font-size: 25px;
   font-weight: 700;
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
   line-height: 1;
 }
 
 .anniversary-hero-unit {
   font-size: 10px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   text-transform: lowercase;
 }
 
@@ -155,7 +155,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .anniversary-showcase__progress-wrap {
@@ -186,12 +186,12 @@
 }
 
 .anniversary-date-heart {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   margin-left: 1px;
 }
 
 .date-chip-icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .anniversary-showcase__footer-right {
@@ -217,7 +217,7 @@
 .anniversary-showcase:hover .anniversary-showcase__chevron {
   opacity: 1;
   transform: translateX(2px);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* Dark Theme */

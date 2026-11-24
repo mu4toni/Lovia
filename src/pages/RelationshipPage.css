@@ -41,7 +41,7 @@
 }
 
 .relationship-page__title-mark {
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .relationship-page__title-underline {

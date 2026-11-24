@@ -39,7 +39,7 @@
 }
 
 .notification-settings__icon {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 .notification-settings__text {

@@ -271,7 +271,7 @@
 
 .date-picker__day-btn--today {
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-weight: 700;
 }
 
@@ -320,7 +320,7 @@
 }
 
 .date-picker__quick-btn:hover:not(:disabled) {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   border-color: var(--accent-primary);
   background: var(--accent-soft);
 }

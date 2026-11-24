@@ -37,7 +37,7 @@
 /* Primary */
 .glass-badge--primary {
   background: var(--color-primary-tint);
-  color: var(--color-primary);
+  color: var(--accent-text, var(--accent-primary));
   border-color: var(--color-primary-subtle-border);
 }
 

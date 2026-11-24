@@ -120,7 +120,7 @@
 
 .btn--danger {
   background: var(--color-primary-tint);
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-primary));
   border: 1.5px dashed var(--border-dashed);
 }
 

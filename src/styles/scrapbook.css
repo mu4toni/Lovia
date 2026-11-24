@@ -598,7 +598,7 @@ body .modal-sheet .deadline-chip--active,
 body .modal-sheet .deadline-time-preset--active {
   background: var(--accent-soft) !important;
   border-color: var(--accent-primary) !important;
-  color: var(--accent-primary) !important;
+  color: var(--accent-text, var(--accent-primary)) !important;
   box-shadow: 2px 2px 0 var(--sketch-shadow) !important;
 }
 
@@ -842,7 +842,7 @@ body .anniversary-showcase__title-wrap {
 body .anniversary-showcase__kicker {
   font-size: 12.5px;
   letter-spacing: 0.06em;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 body .anniversary-showcase__title {
@@ -869,7 +869,7 @@ body .anniversary-showcase__hero-badge {
 body .anniversary-hero-num {
   font-size: clamp(46px, 12vw, 60px);
   line-height: 0.95;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 body .anniversary-hero-unit {
@@ -877,7 +877,7 @@ body .anniversary-hero-unit {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* progress: thicker, softly glowing fill */
@@ -1018,7 +1018,7 @@ body .anniversary-showcase__kicker.paper-tag {
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   transform: rotate(-1deg);
 }
 
@@ -1070,7 +1070,7 @@ body .anniversary-hero-num {
   font-size: 38px;
   font-weight: 600;
   line-height: 1;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 body .anniversary-hero-unit {
@@ -1108,7 +1108,7 @@ body .anniversary-showcase .anniversary-progress__caption-row {
 }
 
 body .anniversary-showcase .anniversary-progress__percent {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* footer */
@@ -1130,7 +1130,7 @@ body .anniversary-showcase__date-chip.paper-tag {
 }
 
 body .anniversary-showcase__date-mark {
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-size: 12px;
   line-height: 1;
 }

@@ -166,7 +166,7 @@
   padding: 8px;
   box-sizing: border-box;
   text-align: center;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   background: var(--accent-soft);
   border: 1.5px dashed var(--border-dashed);
   border-radius: 5px;

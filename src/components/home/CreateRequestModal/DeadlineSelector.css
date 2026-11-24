@@ -30,7 +30,7 @@
 }
 
 .deadline-status-pill--active {
-  color: var(--color-primary, #da0038);
+  color: var(--accent-text, var(--accent-primary));
   font-weight: 600;
 }
 
@@ -113,7 +113,7 @@
 .deadline-chip--active {
   background: var(--accent-soft);
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-weight: 700;
   box-shadow: 0 2px 8px var(--accent-shadow);
 }
@@ -137,14 +137,14 @@
 [data-theme='dark'] .deadline-chip--active {
   background: var(--accent-soft);
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
   font-weight: 700;
   box-shadow: 0 2px 8px var(--accent-shadow);
 }
 
 .deadline-chip__icon {
   flex-shrink: 0;
-  color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
 }
 
 /* Custom wrap (DatePicker + Time Block) */
@@ -201,7 +201,7 @@
 .deadline-time-clear-btn {
   background: none;
   border: none;
-  color: var(--color-primary, #da0038);
+  color: var(--accent-text, var(--accent-primary));
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
