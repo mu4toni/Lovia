@@ -1,4 +1,5 @@
 import React from 'react';
+import { captureException } from '@/lib/posthog';
 import { Mascot } from '../Mascot/Mascot';
 import './ErrorBoundary.css';
 
@@ -21,6 +22,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    captureException(error, {
+      component_stack: errorInfo.componentStack,
+    });
     console.error('[ErrorBoundary] Uncaught render error:', error, errorInfo);
   }
 

@@ -7,6 +7,7 @@ import {
 } from '../types/dates';
 import { dateMemoryService } from '../services/dateMemoryService';
 import { parseDateComponents } from '../utils/dateCalculations';
+import { captureEvent } from '../lib/posthog';
 
 export function useDateMemories() {
   const [allMemories, setAllMemories] = useState<DateMemory[]>(() =>
@@ -100,6 +101,7 @@ export function useDateMemories() {
 
   const createMemory = useCallback(async (input: CreateDateMemoryInput) => {
     const created = await dateMemoryService.createDateMemory(input);
+    captureEvent('date_memory_created');
     setAllMemories(dateMemoryService.getDateMemories());
     return created;
   }, []);
@@ -112,6 +114,7 @@ export function useDateMemories() {
 
   const deleteMemory = useCallback(async (id: string) => {
     const ok = await dateMemoryService.deleteDateMemory(id);
+    if (ok) captureEvent('date_memory_deleted');
     setAllMemories(dateMemoryService.getDateMemories());
     return ok;
   }, []);

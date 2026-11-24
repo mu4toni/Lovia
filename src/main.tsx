@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { ErrorBoundary } from './components/ui/ErrorBoundary/ErrorBoundary';
 import { telegramService } from './services/telegramService';
+import { coupleService } from './services/coupleService';
+import { identifyUser } from './lib/posthog';
 import './styles/global.css';
 import './styles/scrapbook.css';
 
@@ -18,6 +20,7 @@ document.documentElement.setAttribute('data-accent', savedAccent);
 
 // Initialize Telegram Mini App SDK environment
 telegramService.init();
+identifyUser(coupleService.getActiveUser());
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -9,6 +9,7 @@ import {
 import { requestsService } from '../services/requestsService';
 import { categoriesService } from '../services/categoriesService';
 import { initialCoupleProfile } from '../services/mockData';
+import { captureEvent, posthogLogger } from '../lib/posthog';
 
 export type DemoStateMode =
   | 'normal'
@@ -89,6 +90,7 @@ export function useHomeData() {
   const handleToggleStatus = useCallback(async (id: string) => {
     const updated = await requestsService.toggleStatus(id);
     if (updated) {
+      captureEvent('reminder_status_changed', { status: updated.status });
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: updated.status } : r))
       );
@@ -97,6 +99,8 @@ export function useHomeData() {
 
   const handleCreateRequest = useCallback(async (input: CreateReminderInput) => {
     const created = await requestsService.createRequest(input);
+    captureEvent('reminder_created');
+    posthogLogger.info('reminder created');
     setRequests((prev) =>
       prev.some((r) => r.id === created.id)
         ? prev.map((r) => (r.id === created.id ? created : r))
@@ -118,6 +122,7 @@ export function useHomeData() {
   const handleDeleteRequest = useCallback(async (id: string) => {
     const ok = await requestsService.deleteRequest(id);
     if (ok) {
+      captureEvent('reminder_deleted');
       setRequests((prev) => prev.filter((r) => r.id !== id));
     }
   }, []);

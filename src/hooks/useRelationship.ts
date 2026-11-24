@@ -13,6 +13,7 @@ import {
   calculateDaysTogether,
   getAnniversaryInfo,
 } from '../utils/dateCalculations';
+import { captureEvent } from '../lib/posthog';
 
 export function useRelationship() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -126,6 +127,7 @@ export function useRelationship() {
   const addMemorableDate = useCallback(
     async (input: CreateMemorableDateInput) => {
       const created = await relationshipService.addMemorableDate(input);
+      captureEvent('memorable_date_created');
       syncLocalDerived();
       return created;
     },
