@@ -1,8 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '../components/ui/Card/Card';
-import { Button } from '../components/ui/Button/Button';
-import { Icon } from '../components/ui/Icon/Icon';
 import { useToast } from '../components/ui/Toast/ToastContext';
 import {
   ProfileHeader,
@@ -15,11 +11,9 @@ import {
 import { profileService, UserProfileData, PartnerProfileData } from '../services/profileService';
 import { relationshipService } from '../services/relationshipService';
 import { telegramService } from '../services/telegramService';
-import { isLocalDevHost } from '../utils/env';
 import './ProfilePage.css';
 
 export function ProfilePage() {
-  const navigate = useNavigate();
   const { showToast } = useToast();
 
   const [user, setUser] = useState<UserProfileData>(() => profileService.getUserProfile());
@@ -139,26 +133,7 @@ export function ProfilePage() {
         onPartnerStatusChanged={handlePartnerStatusChanged}
       />
 
-      {/* 7. Developer Tools Card: Link to design system */}
-      {isLocalDevHost() && (
-        <Card variant="solid" className="profile-dev-card">
-          <div className="profile-dev-card__header">
-            <Icon name="sparkles" size={17} className="profile-dev-card__icon" />
-            <h3 className="profile-dev-card__title">Инструменты разработчика</h3>
-          </div>
-          <Button
-            variant="secondary"
-            fullWidth
-            size="md"
-            leftIcon={<Icon name="sparkles" size={16} />}
-            onClick={() => navigate('/design')}
-          >
-            Дизайн-система Lovia
-          </Button>
-        </Card>
-      )}
-
-      {/* 8. Danger Zone: Bottom account deletion with clear policies */}
+      {/* 6. Danger Zone: Bottom account deletion with clear policies */}
       <DangerZone />
     </div>
   );

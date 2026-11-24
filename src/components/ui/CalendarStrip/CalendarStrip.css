@@ -7,10 +7,8 @@
   width: 52px;
   height: 52px;
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border-sketch);
   box-shadow: var(--shadow-sm);
   user-select: none;
 }
@@ -32,12 +30,12 @@
 
 .glass-date-badge--highlight {
   background: var(--color-primary-soft);
-  border-color: rgba(255, 51, 102, 0.35);
+  border-color: var(--border-dashed);
 }
 
 .glass-date-badge--highlight .glass-date-badge__month,
 .glass-date-badge--highlight .glass-date-badge__day {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--color-primary));
 }
 
 /* CalendarStrip */
@@ -69,10 +67,8 @@
   min-height: 58px;
   padding: 10px 4px;
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border-sketch);
   cursor: pointer;
   user-select: none;
   position: relative;

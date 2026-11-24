@@ -26,6 +26,7 @@ export const DeleteDateMemoryDialog: React.FC<DeleteDateMemoryDialogProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isFriendship ? 'Удалить встречу?' : 'Удалить свидание?'}
+      zIndex={1200}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>

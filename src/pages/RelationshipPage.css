@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 20px;
   padding-top: 2px;
-  padding-bottom: calc(108px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+  padding-bottom: 24px;
   overflow-x: clip;
   animation: pageEntrance var(--duration-normal) var(--ease-telegram) backwards;
 }
@@ -89,7 +89,7 @@
   white-space: nowrap;
   flex-shrink: 0;
   background: var(--bg-blush-soft);
-  color: var(--accent-strawberry);
+  color: var(--accent-text, var(--accent-strawberry));
   border: 1px solid var(--border-sketch);
   border-radius: 999px;
   padding: 2px 9px;

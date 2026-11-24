@@ -85,11 +85,10 @@
   position: absolute;
   inset: 3px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(28, 20, 17, 0.56);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(2px);
   z-index: 3;
 }
 

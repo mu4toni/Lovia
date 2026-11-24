@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRelationship } from '../hooks/useRelationship';
 import { CoupleInfoCard } from '../widgets/Relationship/CoupleInfoCard/CoupleInfoCard';
 import { AnniversaryCard } from '../widgets/Relationship/AnniversaryCard/AnniversaryCard';
@@ -83,6 +83,15 @@ export function RelationshipPage() {
     }
   };
 
+  const handleEditDate = useCallback((date: MemorableDate) => {
+    setEditingDate(date);
+    setIsCreateModalOpen(true);
+  }, []);
+
+  const handleDeleteDate = useCallback((date: MemorableDate) => {
+    setDeletingDate(date);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="relationship-page">
@@ -147,11 +156,8 @@ export function RelationshipPage() {
 
         <MemorableDatesList
           dates={memorableDates}
-          onEdit={(date) => {
-            setEditingDate(date);
-            setIsCreateModalOpen(true);
-          }}
-          onDelete={(date) => setDeletingDate(date)}
+          onEdit={handleEditDate}
+          onDelete={handleDeleteDate}
         />
       </section>
 

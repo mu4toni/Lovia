@@ -2,13 +2,17 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
-import { OnboardingPage } from './pages/OnboardingPage';
 import { DevBanner } from './components/DevBanner';
-import { ToastProvider, PageSkeleton, SubscriptionGate } from './components/ui';
+import { ToastProvider } from './components/ui/Toast/ToastContext';
+import { PageSkeleton } from './components/ui/PageSkeleton/PageSkeleton';
+import { SubscriptionGate } from './components/ui/SubscriptionGate/SubscriptionGate';
 import { coupleService } from './services/coupleService';
 import { telegramService } from './services/telegramService';
 
-// Code Splitting: второстепенные страницы подгружаются по требованию
+// Code Splitting: при входе грузится только Главная, остальные экраны подгружаются по требованию
+const OnboardingPage = lazy(() =>
+  import('./pages/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))
+);
 const WishlistPage = lazy(() =>
   import('./pages/WishlistPage').then((m) => ({ default: m.WishlistPage }))
 );
@@ -20,9 +24,6 @@ const DatesPage = lazy(() =>
 );
 const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
-);
-const DesignSystemPage = lazy(() =>
-  import('./pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage }))
 );
 
 function ProtectedCoupleRoute() {
@@ -135,8 +136,15 @@ export function App() {
       <TelegramBackButtonSync />
       <DevBanner />
       <Routes>
-        {/* Registration & Couple Connect (Outside MainLayout) */}
-        <Route path="/connect" element={<OnboardingPage />} />
+        {/* Registration & Couple Connect (Outside MainLayout, lazy loaded) */}
+        <Route
+          path="/connect"
+          element={
+            <Suspense fallback={<PageSkeleton />}>
+              <OnboardingPage />
+            </Suspense>
+          }
+        />
         <Route path="/onboarding" element={<Navigate to="/connect" replace />} />
 
         {/* Protected Navigation Tabs (Requires active connected couple) */}
@@ -185,16 +193,6 @@ export function App() {
             />
           </Route>
         </Route>
-
-        {/* Design System & Showcase (Accessible anytime) */}
-        <Route
-          path="/design"
-          element={
-            <Suspense fallback={<PageSkeleton />}>
-              <DesignSystemPage />
-            </Suspense>
-          }
-        />
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

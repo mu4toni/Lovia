@@ -1,13 +1,23 @@
+import { useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useHomeData } from '../hooks';
-import { HomeHeader, HomeCalendar, RequestsList, UnpairedBanner } from '../widgets';
+import { useHomeData } from '../hooks/useHomeData';
+import { HomeHeader } from '../components/home/HomeHeader/HomeHeader';
+import { HomeCalendar } from '../components/home/HomeCalendar/HomeCalendar';
+import { RequestsList } from '../components/home/RequestsList/RequestsList';
+import { UnpairedBanner } from '../components/home/UnpairedBanner/UnpairedBanner';
 import { StreakCard } from '../components/home/StreakCard/StreakCard';
 import { BeanAdviceCard } from '../components/home/BeanAdviceCard/BeanAdviceCard';
-import { CreateRequestModal } from '../features/create-reminder';
-import { Card, Button, Skeleton, Mascot, useToast, BottomActionButton } from '../shared';
+import { CreateRequestModal } from '../components/home/CreateRequestModal/CreateRequestModal';
+import { Card } from '../components/ui/Card/Card';
+import { Button } from '../components/ui/Button/Button';
+import { Skeleton } from '../components/ui/Loading/Skeleton';
+import { Mascot } from '../components/ui/Mascot/Mascot';
+import { useToast } from '../components/ui/Toast/ToastContext';
+import { BottomActionButton } from '../components/ui/BottomActionButton/BottomActionButton';
 import { telegramService } from '../services/telegramService';
 import { coupleService } from '../services/coupleService';
 import { isLocalDevHost } from '../utils/env';
+import type { CoupleReminder } from '../types';
 import './HomePage.css';
 
 export function HomePage() {
@@ -35,6 +45,19 @@ export function HomePage() {
   } = useHomeData();
 
   const { showToast } = useToast();
+
+  const handleEditRequest = useCallback(
+    (req: CoupleReminder) => {
+      setEditingRequest(req);
+      setIsCreateModalOpen(true);
+    },
+    [setEditingRequest, setIsCreateModalOpen]
+  );
+
+  const handleOpenCreate = useCallback(() => {
+    setEditingRequest(null);
+    setIsCreateModalOpen(true);
+  }, [setEditingRequest, setIsCreateModalOpen]);
 
   if (!coupleService.isConnected()) {
     return <Navigate to="/connect" replace />;
@@ -209,14 +232,8 @@ export function HomePage() {
             currentUserId={profile.user.id}
             onToggleStatus={handleToggleWithToast}
             onDeleteRequest={handleDeleteWithToast}
-            onEditRequest={(req) => {
-              setEditingRequest(req);
-              setIsCreateModalOpen(true);
-            }}
-            onCreateClick={() => {
-              setEditingRequest(null);
-              setIsCreateModalOpen(true);
-            }}
+            onEditRequest={handleEditRequest}
+            onCreateClick={handleOpenCreate}
           />
 
           {/* 5. Bean Advises Card */}

@@ -75,6 +75,8 @@ export const WishDetailModal: React.FC<WishDetailModalProps> = ({
               src={resolvedImageSrc}
               alt={item.title}
               className="wish-detail-modal__image"
+              loading="lazy"
+              decoding="async"
               referrerPolicy="no-referrer"
               onError={handleImageError}
             />

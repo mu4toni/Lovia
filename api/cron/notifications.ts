@@ -1,5 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+let cachedCronSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
+
+function getCronSupabaseClient(url: string, key: string): SupabaseClient {
+  if (cachedCronSupabase && cachedCronSupabase.url === url && cachedCronSupabase.key === key) {
+    return cachedCronSupabase.client;
+  }
+  const client = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  cachedCronSupabase = { url, key, client };
+  return client;
+}
 
 interface TelegramUser {
   id: string;
@@ -135,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getCronSupabaseClient(supabaseUrl, supabaseKey);
 
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const host = req.headers.host || '';
@@ -153,10 +166,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
-    // 3. Загрузка активных подключённых пар
+    // 3. Загрузка активных подключённых пар (только нужные поля)
     const { data: couples, error: couplesError } = await supabase
       .from('couples')
-      .select('*')
+      .select(
+        'id, space_type, user1_id, user2_id, status, start_date, streak_count, streak_last_date, streak_ping_date, streak_ping_users'
+      )
       .eq('status', 'connected');
 
     if (couplesError) {
@@ -176,53 +191,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     stats.connectedCouples = couples.length;
     const coupleIds = couples.map((c: CoupleRecord) => c.id);
+    const couplesMap = new Map<string, CoupleRecord>(
+      (couples as CoupleRecord[]).map((c) => [c.id, c])
+    );
+    const activeUserIds = Array.from(
+      new Set(
+        (couples as CoupleRecord[])
+          .flatMap((c) => [c.user1_id, c.user2_id])
+          .filter((id): id is string => Boolean(id))
+      )
+    );
 
-    // 4. Загрузка пользователей с telegram_id и включенными уведомлениями
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('*')
-      .not('telegram_id', 'is', null)
-      .neq('notifications_enabled', false);
-
-    if (usersError) {
-      throw new Error('Failed to query users: ' + usersError.message);
-    }
-
-    const usersMap = new Map<string, TelegramUser>();
-    for (const u of (users || []) as TelegramUser[]) {
-      usersMap.set(u.id, u);
-    }
-
-    // 5. Загрузка активных напоминаний с датой
-    const { data: reminders, error: remindersError } = await supabase
-      .from('reminders')
-      .select('*')
-      .in('couple_id', coupleIds)
-      .neq('status', 'completed')
-      .not('due_date', 'is', null);
-
-    if (remindersError) {
-      throw new Error('Failed to query reminders: ' + remindersError.message);
-    }
-
-    // 6. Загрузка ежегодных памятных дат
-    const { data: memorableDates, error: datesError } = await supabase
-      .from('memorable_dates')
-      .select('*')
-      .in('couple_id', coupleIds)
-      .eq('is_annual', true);
-
-    if (datesError) {
-      throw new Error('Failed to query memorable_dates: ' + datesError.message);
-    }
-
-    // 7. Загрузка уже отправленных логов уведомлений с фильтром по дате:
-    // 30 дней для напоминаний и 400 дней для годовых годовщин / памятных дат
+    // 4–7. Параллельная загрузка пользователей активных пар, напоминаний, памятных дат и логов
+    // Ограничение логов по sent_at: 30 дней для напоминаний и 400 дней для годовых событий
     const nowMs = Date.now();
     const reminderLogsCutoffIso = new Date(nowMs - 30 * 24 * 60 * 60 * 1000).toISOString();
     const annualLogsCutoffIso = new Date(nowMs - 400 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [reminderLogsRes, annualLogsRes] = await Promise.all([
+    const [usersRes, remindersRes, datesRes, reminderLogsRes, annualLogsRes] = await Promise.all([
+      activeUserIds.length > 0
+        ? supabase
+            .from('users')
+            .select('id, telegram_id, name, timezone_offset, notifications_enabled')
+            .in('id', activeUserIds)
+            .not('telegram_id', 'is', null)
+            .neq('notifications_enabled', false)
+        : Promise.resolve({ data: [], error: null }),
+      supabase
+        .from('reminders')
+        .select('*')
+        .in('couple_id', coupleIds)
+        .neq('status', 'completed')
+        .not('due_date', 'is', null),
+      supabase
+        .from('memorable_dates')
+        .select('id, couple_id, title, date, is_annual')
+        .in('couple_id', coupleIds)
+        .eq('is_annual', true),
       supabase
         .from('notification_logs')
         .select('id')
@@ -237,11 +242,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .gte('sent_at', annualLogsCutoffIso),
     ]);
 
+    if (usersRes.error) {
+      throw new Error('Failed to query users: ' + usersRes.error.message);
+    }
+    if (remindersRes.error) {
+      throw new Error('Failed to query reminders: ' + remindersRes.error.message);
+    }
+    if (datesRes.error) {
+      throw new Error('Failed to query memorable_dates: ' + datesRes.error.message);
+    }
     if (reminderLogsRes.error) {
       console.warn('[cron/notifications] Failed to query reminder logs:', reminderLogsRes.error.message);
     }
     if (annualLogsRes.error) {
       console.warn('[cron/notifications] Failed to query annual logs:', annualLogsRes.error.message);
+    }
+
+    const usersMap = new Map<string, TelegramUser>();
+    for (const u of (usersRes.data || []) as TelegramUser[]) {
+      usersMap.set(u.id, u);
+    }
+
+    const reminders = (remindersRes.data || []) as ReminderRecord[];
+    const memorableDatesByCouple = new Map<string, MemorableDateRecord[]>();
+    for (const mDate of (datesRes.data || []) as MemorableDateRecord[]) {
+      const list = memorableDatesByCouple.get(mDate.couple_id);
+      if (list) list.push(mDate);
+      else memorableDatesByCouple.set(mDate.couple_id, [mDate]);
     }
 
     const sentLogIds = new Set<string>([
@@ -294,7 +321,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const eventDay = parseInt(dStr, 10);
       if (isNaN(eventYear) || isNaN(eventMonth) || isNaN(eventDay)) continue;
 
-      const couple = couples.find((c: CoupleRecord) => c.id === reminder.couple_id);
+      const couple = couplesMap.get(reminder.couple_id);
       if (!couple) continue;
 
       // Определение целевых пользователей для напоминания
@@ -514,9 +541,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // ----------------------------------------------------
         // Б.2. Ежегодные памятные даты (memorable_dates)
         // ----------------------------------------------------
-        const coupleDates = (memorableDates || []).filter(
-          (m: MemorableDateRecord) => m.couple_id === couple.id
-        ) as MemorableDateRecord[];
+        const coupleDates = memorableDatesByCouple.get(couple.id) || [];
 
         for (const mDate of coupleDates) {
           const [mYStr, mMStr, mDStr] = mDate.date.split('-');

@@ -5,6 +5,7 @@ import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { productScraperService } from '../../../services/productScraperService';
 import { normalizeMediaUrl, getProxyImageUrl } from '../../../utils/media';
+import { compressImageFile } from '../../../utils/imageCompressor';
 import './CreateEditWishModal.css';
 
 export interface CreateEditWishModalProps {
@@ -258,8 +259,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     triggerScrape(trimmed, currentReqId);
   };
 
-  // Handle manual photo file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle manual photo file selection (compressed before upload to Supabase Storage)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -268,18 +269,19 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const dataUrl = uploadEvent.target?.result as string;
-      setImageUrl(dataUrl);
+    try {
+      const compressedDataUrl = await compressImageFile(file, 1080, 1080, 0.82);
+      setImageUrl(compressedDataUrl);
       setPhotoState('success');
       setIsAutoFetched(false);
       setIsBlockedByProtection(false);
       setUseProxyFallback(false);
       setPhotoErrorMsg('');
       setIsManualUrlOpen(false);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setPhotoState('error');
+      setPhotoErrorMsg('Не удалось обработать выбранное изображение');
+    }
   };
 
   // Apply manual direct image URL
@@ -493,6 +495,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
                   src={displayImageUrl}
                   alt={title || 'Фотография желания'}
                   className="wish-photo-box__image"
+                  loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   onError={handlePreviewImageError}
                   onClick={() => setIsZoomOpen(true)}
@@ -765,6 +769,7 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
                     src={displayImageUrl}
                     alt={title || 'Фотография товара'}
                     className="wish-lightbox-img"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     onError={handlePreviewImageError}
                   />

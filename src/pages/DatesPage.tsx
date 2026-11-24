@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useDateMemories } from '../hooks/useDateMemories';
 import { DatesHeader } from '../widgets/Dates/DatesHeader/DatesHeader';
 import { DateMemoryCard } from '../widgets/Dates/DateMemoryCard/DateMemoryCard';
@@ -124,11 +124,26 @@ export function DatesPage() {
     setDeletingMemory(null);
   };
 
-  const openLightbox = (photos: string[], index: number) => {
+  const openLightbox = useCallback((photos: string[], index: number) => {
     setLightboxPhotos(photos);
     setLightboxIndex(index);
     setIsLightboxOpen(true);
-  };
+  }, []);
+
+  const handleSelectMemory = useCallback((mem: DateMemory) => {
+    setSelectedMemory(mem);
+  }, []);
+
+  const handleEditMemoryCard = useCallback((mem: DateMemory, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingMemory(mem);
+    setIsCreateModalOpen(true);
+  }, []);
+
+  const handleDeleteMemoryCard = useCallback((mem: DateMemory, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingMemory(mem);
+  }, []);
 
   return (
     <div className="dates-page">
@@ -194,16 +209,9 @@ export function DatesPage() {
               key={memory.id}
               memory={memory}
               tilt={idx % 2 === 0 ? 'left' : 'right'}
-              onClick={(mem) => setSelectedMemory(mem)}
-              onEdit={(mem, e) => {
-                e.stopPropagation();
-                setEditingMemory(mem);
-                setIsCreateModalOpen(true);
-              }}
-              onDelete={(mem, e) => {
-                e.stopPropagation();
-                setDeletingMemory(mem);
-              }}
+              onClick={handleSelectMemory}
+              onEdit={handleEditMemoryCard}
+              onDelete={handleDeleteMemoryCard}
               onOpenPhotoLightbox={openLightbox}
             />
           ))}

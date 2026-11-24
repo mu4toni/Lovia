@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Icon } from '../Icon/Icon';
 import { normalizeMediaUrl } from '../../../utils/media';
 import './Avatar.css';
@@ -11,7 +11,7 @@ export interface AvatarProps {
   className?: string;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({
+export const Avatar: React.FC<AvatarProps> = memo(({
   src,
   name,
   size = 'md',
@@ -34,7 +34,13 @@ export const Avatar: React.FC<AvatarProps> = ({
       aria-label={`Аватар: ${name}`}
     >
       {effectiveSrc ? (
-        <img src={effectiveSrc} alt={name} className="glass-avatar__img" />
+        <img
+          src={effectiveSrc}
+          alt={name}
+          className="glass-avatar__img"
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <div className="glass-avatar__fallback">
           {initials || <Icon name="heart-filled" size={14} />}
@@ -50,4 +56,4 @@ export const Avatar: React.FC<AvatarProps> = ({
       )}
     </div>
   );
-};
+});

@@ -1,9 +1,9 @@
 .place-picker-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
+  z-index: 1040;
+  background: rgba(16, 11, 9, 0.68);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,8 +299,7 @@
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(28, 20, 17, 0.82);
   color: #ffffff;
   font-size: 12px;
   font-weight: 500;

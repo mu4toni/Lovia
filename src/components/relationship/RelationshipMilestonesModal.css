@@ -171,12 +171,17 @@
 }
 
 .milestones-modal__item-badge--passed {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+[data-theme='dark'] .milestones-modal__item-badge--passed {
+  color: #6EE7B7;
+  background: rgba(16, 185, 129, 0.2);
 }
 
 .milestones-modal__item-badge--next {
-  color: var(--color-primary);
+  color: var(--accent-text, var(--color-primary));
   background: var(--color-primary-soft);
   font-weight: 700;
 }

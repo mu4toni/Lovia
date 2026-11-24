@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { DateMemory } from '../../../types/dates';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { PolaroidFrame } from '../../../components/ui/PolaroidFrame/PolaroidFrame';
@@ -16,7 +16,7 @@ export interface DateMemoryCardProps {
   onOpenPhotoLightbox?: (photos: string[], index: number) => void;
 }
 
-export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
+export const DateMemoryCard: React.FC<DateMemoryCardProps> = memo(({
   memory,
   tilt = 'left',
   onClick,
@@ -244,7 +244,8 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
                         src={normalizeMediaUrl(photoUrl)}
                         alt={`${title} — фото ${idx + 1} из ${photos.length}`}
                         className="date-memory-card__carousel-img"
-                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        loading="lazy"
+                        decoding="async"
                         draggable={false}
                       />
                     </div>
@@ -391,4 +392,4 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
       </div>
     </article>
   );
-};
+});

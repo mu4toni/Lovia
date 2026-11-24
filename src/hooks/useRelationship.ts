@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   MemorableDate,
   CreateMemorableDateInput,
@@ -17,41 +17,61 @@ import {
 export function useRelationship() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [startDate, setStartDateState] = useState<string>(() => relationshipService.getStartDate());
-  const [daysTogether, setDaysTogether] = useState<number>(0);
+  const [daysTogether, setDaysTogether] = useState<number>(() =>
+    calculateDaysTogether(relationshipService.getStartDate())
+  );
   const [anniversary, setAnniversary] = useState<AnniversaryInfo>(() =>
     getAnniversaryInfo(relationshipService.getStartDate())
   );
-  const [heldDatesCount, setHeldDatesCount] = useState<number>(() => dateMemoryService.getHeldDatesCount());
+  const [heldDatesCount, setHeldDatesCount] = useState<number>(() =>
+    dateMemoryService.getHeldDatesCount()
+  );
   const [memorableDates, setMemorableDates] = useState<MemorableDate[]>(() =>
     relationshipService.getMemorableDates()
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const hasLoadedRef = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refreshData = useCallback(async () => {
+  const syncLocalDerived = useCallback(() => {
     const curStart = relationshipService.getStartDate();
     setStartDateState(curStart);
     setDaysTogether(calculateDaysTogether(curStart));
     setAnniversary(getAnniversaryInfo(curStart));
     setHeldDatesCount(dateMemoryService.getHeldDatesCount());
+    setMemorableDates(relationshipService.getMemorableDates());
+  }, []);
+
+  const refreshData = useCallback(async () => {
+    syncLocalDerived();
     try {
-      const dates = await relationshipService.fetchMemorableDates();
+      const [prof, dates] = await Promise.all([
+        requestsService.getProfile(),
+        relationshipService.fetchMemorableDates(),
+      ]);
+      setProfile(prof);
       setMemorableDates(dates);
     } catch {
       setMemorableDates(relationshipService.getMemorableDates());
     }
-  }, []);
+  }, [syncLocalDerived]);
 
   useEffect(() => {
     let isMounted = true;
     async function init() {
-      if (!relationshipService.hasCachedData() && !profile) {
+      if (!relationshipService.hasCachedData() && !hasLoadedRef.current) {
         setIsLoading(true);
       }
       try {
-        const prof = await requestsService.getProfile();
+        const [prof, dates] = await Promise.all([
+          requestsService.getProfile(),
+          relationshipService.fetchMemorableDates(),
+        ]);
         if (isMounted) {
+          hasLoadedRef.current = true;
           setProfile(prof);
-          await refreshData();
+          syncLocalDerived();
+          setMemorableDates(dates);
         }
       } finally {
         if (isMounted) setIsLoading(false);
@@ -59,52 +79,76 @@ export function useRelationship() {
     }
     init();
 
-    const handleRelUpdate = () => refreshData();
-    const handleDatesUpdate = () => refreshData();
+    const scheduleLocalSync = () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = setTimeout(async () => {
+        refreshTimerRef.current = null;
+        if (!isMounted) return;
+        syncLocalDerived();
+        const prof = await requestsService.getProfile();
+        if (isMounted) setProfile(prof);
+      }, 45);
+    };
 
-    window.addEventListener('lovia_relationship_updated', handleRelUpdate);
-    window.addEventListener('lovia_dates_updated', handleDatesUpdate);
-    window.addEventListener('lovia_couple_connected', handleRelUpdate);
-    window.addEventListener('lovia_couple_updated', handleRelUpdate);
+    window.addEventListener('lovia_relationship_updated', scheduleLocalSync);
+    window.addEventListener('lovia_dates_updated', scheduleLocalSync);
+    window.addEventListener('lovia_couple_connected', scheduleLocalSync);
+    window.addEventListener('lovia_couple_updated', scheduleLocalSync);
 
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
         refreshData();
       }
-    }, 18000);
+    }, 25000);
 
     return () => {
       isMounted = false;
-      window.removeEventListener('lovia_relationship_updated', handleRelUpdate);
-      window.removeEventListener('lovia_dates_updated', handleDatesUpdate);
-      window.removeEventListener('lovia_couple_connected', handleRelUpdate);
-      window.removeEventListener('lovia_couple_updated', handleRelUpdate);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      window.removeEventListener('lovia_relationship_updated', scheduleLocalSync);
+      window.removeEventListener('lovia_dates_updated', scheduleLocalSync);
+      window.removeEventListener('lovia_couple_connected', scheduleLocalSync);
+      window.removeEventListener('lovia_couple_updated', scheduleLocalSync);
       clearInterval(intervalId);
     };
-  }, [refreshData]);
+  }, [refreshData, syncLocalDerived]);
 
-  const updateStartDate = useCallback((newDate: string) => {
-    relationshipService.setStartDate(newDate);
-    refreshData();
-  }, [refreshData]);
+  const updateStartDate = useCallback(
+    (newDate: string) => {
+      relationshipService.setStartDate(newDate);
+      syncLocalDerived();
+    },
+    [syncLocalDerived]
+  );
 
-  const addMemorableDate = useCallback((input: CreateMemorableDateInput) => {
-    const created = relationshipService.addMemorableDate(input);
-    refreshData();
-    return created;
-  }, [refreshData]);
+  const addMemorableDate = useCallback(
+    async (input: CreateMemorableDateInput) => {
+      const created = await relationshipService.addMemorableDate(input);
+      syncLocalDerived();
+      return created;
+    },
+    [syncLocalDerived]
+  );
 
-  const updateMemorableDate = useCallback((id: string, input: UpdateMemorableDateInput) => {
-    const updated = relationshipService.updateMemorableDate(id, input);
-    refreshData();
-    return updated;
-  }, [refreshData]);
+  const updateMemorableDate = useCallback(
+    async (id: string, input: UpdateMemorableDateInput) => {
+      const updated = await relationshipService.updateMemorableDate(id, input);
+      syncLocalDerived();
+      return updated;
+    },
+    [syncLocalDerived]
+  );
 
-  const deleteMemorableDate = useCallback((id: string) => {
-    const success = relationshipService.deleteMemorableDate(id);
-    refreshData();
-    return success;
-  }, [refreshData]);
+  const deleteMemorableDate = useCallback(
+    async (id: string) => {
+      const success = await relationshipService.deleteMemorableDate(id);
+      syncLocalDerived();
+      return success;
+    },
+    [syncLocalDerived]
+  );
 
   return {
     profile,

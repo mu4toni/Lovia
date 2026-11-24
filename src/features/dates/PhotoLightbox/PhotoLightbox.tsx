@@ -83,6 +83,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
           src={normalizeMediaUrl(currentPhoto)}
           alt={`Фотография ${currentIndex + 1} из ${photos.length}`}
           className="photo-lightbox-image"
+          decoding="async"
         />
 
         {photos.length > 1 && (

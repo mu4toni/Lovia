@@ -4,6 +4,7 @@ import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatRussianDate, pluralizeRu } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
+import { normalizeMediaUrl } from '../../../utils/media';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './AllDatesAlbumModal.css';
 
@@ -99,10 +100,11 @@ export const AllDatesAlbumModal: React.FC<AllDatesAlbumModalProps> = ({
                 } «${item.memoryTitle}», ${formatRussianDate(item.memoryDate)}`}
               >
                 <img
-                  src={item.url}
+                  src={normalizeMediaUrl(item.url)}
                   alt=""
                   className="all-dates-album__img"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div className="all-dates-album__overlay" aria-hidden="true">
                   <Icon name="eye" size={16} className="all-dates-album__overlay-icon" />

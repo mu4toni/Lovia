@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useWishlist } from '../hooks/useWishlist';
 import { useSpaceMode } from '../hooks/useSpaceMode';
 import { WishlistHeader, WishlistGrid } from '../widgets/Wishlist';
@@ -129,6 +129,11 @@ export function WishlistPage() {
     });
   };
 
+  const handleOpenCreateModal = useCallback(() => setIsCreateModalOpen(true), [setIsCreateModalOpen]);
+  const handleSelectEditWish = useCallback((item: WishItem) => setEditingWish(item), [setEditingWish]);
+  const handleSelectDeleteWish = useCallback((item: WishItem) => setDeletingWish(item), [setDeletingWish]);
+  const handleSelectWishDetail = useCallback((item: WishItem) => setSelectedWishForDetail(item), []);
+
   return (
     <div className="wishlist-page">
       {/* 1. Header with segmented tab switcher & owner info */}
@@ -171,12 +176,12 @@ export function WishlistPage() {
             items={displayedItems}
             isOwnList={isOwnList}
             partnerName={partnerName}
-            onCreateClick={() => setIsCreateModalOpen(true)}
-            onEdit={(item: WishItem) => setEditingWish(item)}
-            onDelete={(item: WishItem) => setDeletingWish(item)}
+            onCreateClick={handleOpenCreateModal}
+            onEdit={handleSelectEditWish}
+            onDelete={handleSelectDeleteWish}
             onToggleReserve={onToggleReserveWithToast}
             onRemindPartner={handleRemindPartner}
-            onItemClick={(item: WishItem) => setSelectedWishForDetail(item)}
+            onItemClick={handleSelectWishDetail}
           />
 
           {/* Single Dedicated Floating Add Wish Button */}

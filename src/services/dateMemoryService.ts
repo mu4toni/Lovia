@@ -9,6 +9,7 @@ import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
+import { normalizeMediaUrl } from '../utils/media';
 
 const STORAGE_DATE_MEMORIES_KEY = 'lovia_date_memories_v1';
 
@@ -151,7 +152,7 @@ async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<str
 
     if (!err1) {
       const { data } = supabase.storage.from('lovia_media').getPublicUrl(filePath);
-      if (data?.publicUrl) return data.publicUrl;
+      if (data?.publicUrl) return normalizeMediaUrl(data.publicUrl);
     } else {
       const { error: err2 } = await supabase.storage.from('lovia-media').upload(filePath, bytes, {
         contentType: mime,
@@ -159,7 +160,7 @@ async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<str
       });
       if (!err2) {
         const { data } = supabase.storage.from('lovia-media').getPublicUrl(filePath);
-        if (data?.publicUrl) return data.publicUrl;
+        if (data?.publicUrl) return normalizeMediaUrl(data.publicUrl);
       }
     }
   } catch (e) {
@@ -170,6 +171,7 @@ async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<str
 
 class DateMemoryService {
   private currentChannel: any = null;
+  private subscribedCoupleId: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -180,6 +182,7 @@ class DateMemoryService {
         this.subscribeToRealtime();
       });
       window.addEventListener('lovia_couple_dissolved', () => {
+        this.subscribedCoupleId = null;
         if (this.currentChannel) {
           try {
             supabase.removeChannel(this.currentChannel);
@@ -197,6 +200,7 @@ class DateMemoryService {
     if (!isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
+    if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
 
     if (this.currentChannel) {
       try {
@@ -206,6 +210,8 @@ class DateMemoryService {
         // ignore
       }
     }
+
+    this.subscribedCoupleId = couple.id;
 
     try {
       this.currentChannel = supabase

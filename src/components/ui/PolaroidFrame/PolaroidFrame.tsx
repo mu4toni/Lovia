@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { normalizeMediaUrl } from '../../../utils/media';
 import './PolaroidFrame.css';
 
@@ -15,7 +15,7 @@ export interface PolaroidFrameProps {
   children?: React.ReactNode;
 }
 
-export const PolaroidFrame: React.FC<PolaroidFrameProps> = ({
+export const PolaroidFrame: React.FC<PolaroidFrameProps> = memo(({
   src,
   alt = '',
   caption,
@@ -29,6 +29,10 @@ export const PolaroidFrame: React.FC<PolaroidFrameProps> = ({
 }) => {
   const [imgError, setImgError] = useState(false);
   const resolvedSrc = normalizeMediaUrl(src);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [resolvedSrc]);
 
   return (
     <div
@@ -77,6 +81,7 @@ export const PolaroidFrame: React.FC<PolaroidFrameProps> = ({
             alt={alt}
             className="polaroid-frame__img"
             loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : fallback ? (
@@ -93,4 +98,4 @@ export const PolaroidFrame: React.FC<PolaroidFrameProps> = ({
       {caption && <span className="polaroid-frame__caption">{caption}</span>}
     </div>
   );
-};
+});

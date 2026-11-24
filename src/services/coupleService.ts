@@ -141,6 +141,7 @@ class CoupleService {
   private lastSyncAt = 0;
   private hiddenAt = 0;
   private inFlightBundlePromise: Promise<CoupleSpace | null> | null = null;
+  private subscribedCoupleId: string | null = null;
 
   isFresh(maxAgeMs = 15000): boolean {
     return this.lastSyncAt > 0 && Date.now() - this.lastSyncAt < maxAgeMs;
@@ -494,7 +495,6 @@ class CoupleService {
     if (targetCouple && targetCouple.id && targetCouple.id !== 'couple-1') {
       updateSwrCache(targetCouple.id, 'couple', targetCouple);
     }
-    this.notify();
     return { ...user };
   }
 
@@ -594,6 +594,8 @@ class CoupleService {
    */
   private subscribeToCoupleUpdates(coupleId: string): void {
     if (!isSupabaseConfigured() || coupleId === 'couple-1') return;
+    if (this.subscribedCoupleId === coupleId) return;
+    this.subscribedCoupleId = coupleId;
 
     try {
       supabase
@@ -607,11 +609,12 @@ class CoupleService {
             filter: `id=eq.${coupleId}`,
           },
           async () => {
-            await this.syncCoupleFromSupabase(coupleId);
+            await this.syncCoupleFromSupabase(coupleId, true);
           }
         )
         .subscribe();
     } catch (e) {
+      this.subscribedCoupleId = null;
       console.warn('[coupleService] Realtime subscription error:', e);
     }
   }
@@ -636,6 +639,16 @@ class CoupleService {
         gender: bundle.user.gender || active.gender,
         coupleId: bundle.couple ? bundle.couple.id : null,
       };
+      if (typeof bundle.user.notifications_enabled === 'boolean') {
+        try {
+          localStorage.setItem(
+            'lovia_notifications_enabled',
+            String(bundle.user.notifications_enabled)
+          );
+        } catch {
+          // ignore
+        }
+      }
     }
 
     if (!bundle.couple || bundle.couple.status === 'dissolved') {
@@ -650,7 +663,6 @@ class CoupleService {
         );
         this.clearLocalCoupleData(oldId || undefined);
         this.saveToStorage();
-        this.notify();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('lovia_couple_dissolved'));
         }
@@ -724,7 +736,6 @@ class CoupleService {
     }
 
     this.saveToStorage();
-    this.notify();
 
     if (wasWaiting && syncedCouple.status === 'connected' && syncedCouple.user2) {
       if (typeof window !== 'undefined') {
@@ -1451,14 +1462,10 @@ class CoupleService {
     }
 
     couple.couplePhotoUrl = finalUrl || undefined;
-    this.saveToStorage();
     if (couple.id && couple.id !== 'couple-1') {
       updateSwrCache(couple.id, 'couple', couple);
     }
-    this.notify();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('lovia_couple_updated'));
-    }
+    this.saveToStorage();
   }
 
   /**
@@ -1522,14 +1529,10 @@ class CoupleService {
       couple.streakPingDate = nextState.pingDate;
       couple.streakPingUsers = nextState.pingUsers;
       this.couples[couple.id] = { ...couple };
-      this.saveToStorage();
       if (couple.id && couple.id !== 'couple-1') {
         updateSwrCache(couple.id, 'couple', this.couples[couple.id]);
       }
-      this.notify();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('lovia_couple_updated'));
-      }
+      this.saveToStorage();
 
       return {
         ...nextState,
@@ -1587,14 +1590,10 @@ class CoupleService {
     couple.streakPingDate = localDate;
     couple.streakPingUsers = nextPingUsers;
     this.couples[couple.id] = { ...couple };
-    this.saveToStorage();
     if (couple.id && couple.id !== 'couple-1') {
       updateSwrCache(couple.id, 'couple', this.couples[couple.id]);
     }
-    this.notify();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('lovia_couple_updated'));
-    }
+    this.saveToStorage();
 
     return {
       count: nextCount,

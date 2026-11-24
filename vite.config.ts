@@ -88,6 +88,32 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@supabase/')) {
+              return 'vendor-supabase';
+            }
+            if (
+              id.includes('/react/') ||
+              id.includes('\\react\\') ||
+              id.includes('/react-dom/') ||
+              id.includes('\\react-dom\\') ||
+              id.includes('/react-router') ||
+              id.includes('\\react-router') ||
+              id.includes('/scheduler/') ||
+              id.includes('\\scheduler\\')
+            ) {
+              return 'vendor-react';
+            }
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     host: true,
     port: 5173,

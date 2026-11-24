@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { MemorableDate } from '../../../types/relationship';
 import { Icon, IconName } from '../../../components/ui/Icon/Icon';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
@@ -27,7 +27,121 @@ function getMilestoneIcon(title: string, isFriendship: boolean): IconName {
   return isFriendship ? 'star' : 'heart-filled';
 }
 
-export const MemorableDatesList: React.FC<MemorableDatesListProps> = ({
+interface TimelineNodeItemProps {
+  item: MemorableDate;
+  isFriendship: boolean;
+  isLast: boolean;
+  isMenuOpen: boolean;
+  onToggleMenu: (id: string) => void;
+  onEdit: (date: MemorableDate) => void;
+  onDelete: (date: MemorableDate) => void;
+}
+
+const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
+  ({ item, isFriendship, isLast, isMenuOpen, onToggleMenu, onEdit, onDelete }) => {
+    const status = getMemorableDateStatus(item.date, item.isAnnual);
+    const daysLabel = pluralizeRu(status.daysUntil, 'день', 'дня', 'дней');
+    const daysAgoLabel =
+      status.daysAgo !== undefined ? pluralizeRu(status.daysAgo, 'день', 'дня', 'дней') : '';
+    const iconName = getMilestoneIcon(item.title, isFriendship);
+
+    return (
+      <article className="timeline-node">
+        <div className="timeline-node__marker-wrap" aria-hidden="true">
+          <div
+            className={`timeline-node__marker ${
+              status.isToday ? 'timeline-node__marker--today' : ''
+            }`}
+          >
+            <Icon name={iconName} size={13} />
+          </div>
+          {!isLast && (
+            <span className="timeline-node__arrow-dot" aria-hidden="true">
+              ↓
+            </span>
+          )}
+        </div>
+
+        <div className="timeline-node__card">
+          <div className="timeline-node__top-row">
+            <div className="timeline-node__date-sticker">
+              <Icon name="calendar" size={12} className="timeline-date-icon" />
+              <span>{formatRussianDate(item.date)}</span>
+              {item.isAnnual && (
+                <span className="timeline-node__annual-badge">Ежегодно</span>
+              )}
+            </div>
+
+            <div className="timeline-node__actions-wrap">
+              <button
+                type="button"
+                className="timeline-node__menu-btn"
+                onClick={() => onToggleMenu(item.id)}
+                title="Действия с датой"
+                aria-label={`Действия для «${item.title}»`}
+                aria-haspopup="true"
+                aria-expanded={isMenuOpen}
+              >
+                <Icon name="more-vertical" size={16} />
+              </button>
+
+              {isMenuOpen && (
+                <div className="timeline-node__popover" role="menu">
+                  <button
+                    type="button"
+                    className="timeline-node__popover-item"
+                    onClick={() => onEdit(item)}
+                  >
+                    <Icon name="edit" size={14} />
+                    <span>Редактировать</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="timeline-node__popover-item timeline-node__popover-item--delete"
+                    onClick={() => onDelete(item)}
+                  >
+                    <Icon name="trash" size={14} />
+                    <span>Удалить</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <h4 className="timeline-node__title">{item.title}</h4>
+
+          {item.description && (
+            <p className="timeline-node__desc">{item.description}</p>
+          )}
+
+          <div className="timeline-node__footer-pill">
+            {item.isAnnual ? (
+              status.isToday ? (
+                <span className="timeline-countdown--today">
+                  <Icon name="sparkles" size={12} />
+                  Сегодня годовщина!
+                </span>
+              ) : (
+                <span className="timeline-countdown">
+                  До следующей годовщины — <strong>{status.daysUntil}</strong> {daysLabel}
+                </span>
+              )
+            ) : (
+              status.daysAgo !== undefined &&
+              status.daysAgo > 0 && (
+                <span className="timeline-past-info">
+                  Состоялось {status.daysAgo} {daysAgoLabel} назад
+                </span>
+              )
+            )}
+          </div>
+        </div>
+      </article>
+    );
+  }
+);
+
+export const MemorableDatesList: React.FC<MemorableDatesListProps> = memo(({
   dates,
   onEdit,
   onDelete,
@@ -54,6 +168,34 @@ export const MemorableDatesList: React.FC<MemorableDatesListProps> = ({
     };
   }, [activeMenuId]);
 
+  const timelineDates = useMemo(
+    () =>
+      [...dates].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      ),
+    [dates]
+  );
+
+  const handleToggleMenu = React.useCallback((id: string) => {
+    setActiveMenuId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const handleEditItem = React.useCallback(
+    (item: MemorableDate) => {
+      setActiveMenuId(null);
+      onEdit(item);
+    },
+    [onEdit]
+  );
+
+  const handleDeleteItem = React.useCallback(
+    (item: MemorableDate) => {
+      setActiveMenuId(null);
+      onDelete(item);
+    },
+    [onDelete]
+  );
+
   if (dates.length === 0) {
     return (
       <div className="memorable-timeline-empty">
@@ -70,127 +212,22 @@ export const MemorableDatesList: React.FC<MemorableDatesListProps> = ({
     );
   }
 
-  const timelineDates = [...dates].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
   return (
     <div className="memorable-timeline" aria-label="Хронология памятных дат">
       <div className="memorable-timeline__track" aria-hidden="true" />
 
-      {timelineDates.map((item, index) => {
-        const status = getMemorableDateStatus(item.date, item.isAnnual);
-        const daysLabel = pluralizeRu(status.daysUntil, 'день', 'дня', 'дней');
-        const daysAgoLabel =
-          status.daysAgo !== undefined ? pluralizeRu(status.daysAgo, 'день', 'дня', 'дней') : '';
-        const iconName = getMilestoneIcon(item.title, isFriendship);
-        const isMenuOpen = activeMenuId === item.id;
-
-        return (
-          <article key={item.id} className="timeline-node">
-            {/* Timeline Heart/Star Marker on Dashed Track */}
-            <div className="timeline-node__marker-wrap" aria-hidden="true">
-              <div
-                className={`timeline-node__marker ${
-                  status.isToday ? 'timeline-node__marker--today' : ''
-                }`}
-              >
-                <Icon name={iconName} size={13} />
-              </div>
-              {index < timelineDates.length - 1 && (
-                <span className="timeline-node__arrow-dot" aria-hidden="true">
-                  ↓
-                </span>
-              )}
-            </div>
-
-            {/* Paper Sticker Card */}
-            <div className="timeline-node__card">
-              {/* Blush Date Sticker Pill */}
-              <div className="timeline-node__top-row">
-                <div className="timeline-node__date-sticker">
-                  <Icon name="calendar" size={12} className="timeline-date-icon" />
-                  <span>{formatRussianDate(item.date)}</span>
-                  {item.isAnnual && (
-                    <span className="timeline-node__annual-badge">Ежегодно</span>
-                  )}
-                </div>
-
-                {/* Actions Dropdown Toggle */}
-                <div className="timeline-node__actions-wrap">
-                  <button
-                    type="button"
-                    className="timeline-node__menu-btn"
-                    onClick={() => setActiveMenuId(isMenuOpen ? null : item.id)}
-                    title="Действия с датой"
-                    aria-label={`Действия для «${item.title}»`}
-                    aria-haspopup="true"
-                    aria-expanded={isMenuOpen}
-                  >
-                    <Icon name="more-vertical" size={16} />
-                  </button>
-
-                  {isMenuOpen && (
-                    <div className="timeline-node__popover" role="menu">
-                      <button
-                        type="button"
-                        className="timeline-node__popover-item"
-                        onClick={() => {
-                          setActiveMenuId(null);
-                          onEdit(item);
-                        }}
-                      >
-                        <Icon name="edit" size={14} />
-                        <span>Редактировать</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="timeline-node__popover-item timeline-node__popover-item--delete"
-                        onClick={() => {
-                          setActiveMenuId(null);
-                          onDelete(item);
-                        }}
-                      >
-                        <Icon name="trash" size={14} />
-                        <span>Удалить</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <h4 className="timeline-node__title">{item.title}</h4>
-
-              {item.description && (
-                <p className="timeline-node__desc">{item.description}</p>
-              )}
-
-              {/* Countdown / Past pill */}
-              <div className="timeline-node__footer-pill">
-                {item.isAnnual ? (
-                  status.isToday ? (
-                    <span className="timeline-countdown--today">
-                      <Icon name="sparkles" size={12} />
-                      Сегодня годовщина!
-                    </span>
-                  ) : (
-                    <span className="timeline-countdown">
-                      До следующей годовщины — <strong>{status.daysUntil}</strong> {daysLabel}
-                    </span>
-                  )
-                ) : (
-                  status.daysAgo !== undefined &&
-                  status.daysAgo > 0 && (
-                    <span className="timeline-past-info">
-                      Состоялось {status.daysAgo} {daysAgoLabel} назад
-                    </span>
-                  )
-                )}
-              </div>
-            </div>
-          </article>
-        );
-      })}
+      {timelineDates.map((item, index) => (
+        <TimelineNodeItem
+          key={item.id}
+          item={item}
+          isFriendship={isFriendship}
+          isLast={index === timelineDates.length - 1}
+          isMenuOpen={activeMenuId === item.id}
+          onToggleMenu={handleToggleMenu}
+          onEdit={handleEditItem}
+          onDelete={handleDeleteItem}
+        />
+      ))}
 
       {/* Scrapbook Timeline Closing Note */}
       <div className="memorable-timeline__ending">
@@ -201,4 +238,4 @@ export const MemorableDatesList: React.FC<MemorableDatesListProps> = ({
       </div>
     </div>
   );
-};
+});

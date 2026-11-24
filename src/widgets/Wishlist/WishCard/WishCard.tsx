@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { WishItem } from '../../../types/wishlist';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { WishCardButton } from './WishCardButton';
@@ -15,7 +15,7 @@ export interface WishCardProps {
   className?: string;
 }
 
-export const WishCard: React.FC<WishCardProps> = ({
+export const WishCard: React.FC<WishCardProps> = memo(({
   item,
   isOwnList,
   onEdit,
@@ -83,6 +83,7 @@ export const WishCard: React.FC<WishCardProps> = ({
             alt={item.title}
             className="wish-card__image"
             loading="lazy"
+            decoding="async"
             referrerPolicy="no-referrer"
             onError={handleImageError}
           />
@@ -226,4 +227,4 @@ export const WishCard: React.FC<WishCardProps> = ({
       </div>
     </article>
   );
-};
+});

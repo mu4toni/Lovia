@@ -24,6 +24,7 @@ class RemindersService {
   private events: CoupleEvent[] = [];
   private initialized = false;
   private currentChannel: any = null;
+  private subscribedCoupleId: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -39,6 +40,7 @@ class RemindersService {
         this.reminders = [];
         this.events = [];
         this.initialized = false;
+        this.subscribedCoupleId = null;
         if (this.currentChannel) {
           try {
             supabase.removeChannel(this.currentChannel);
@@ -55,6 +57,7 @@ class RemindersService {
     if (!isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
+    if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
 
     if (this.currentChannel) {
       try {
@@ -64,6 +67,8 @@ class RemindersService {
         // ignore
       }
     }
+
+    this.subscribedCoupleId = couple.id;
 
     try {
       this.currentChannel = supabase
@@ -138,7 +143,6 @@ class RemindersService {
   private notify() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('lovia_reminders_updated'));
-      window.dispatchEvent(new CustomEvent('lovia_categories_updated'));
     }
   }
 
@@ -151,9 +155,7 @@ class RemindersService {
   }
 
   async getProfile(): Promise<CoupleProfile> {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(profileService.getCoupleProfile()), 40);
-    });
+    return profileService.getCoupleProfile();
   }
 
   mapReminderRow(row: any, couple?: any): CoupleReminder {
@@ -203,10 +205,8 @@ class RemindersService {
     const effCouple = couple || coupleService.getCurrentCouple();
     const mapped = (rows || []).map((r) => this.mapReminderRow(r, effCouple));
     this.reminders = mapped;
+    this.initialized = true;
     this.saveLocal();
-    if (effCouple && effCouple.id && effCouple.id !== 'couple-1') {
-      updateSwrCache(effCouple.id, 'reminders', mapped);
-    }
     this.notify();
   }
 
@@ -722,7 +722,7 @@ class RemindersService {
 
   async getEvents(): Promise<CoupleEvent[]> {
     this.initLocal();
-    if (isSupabaseConfigured() && !isLocalDevHost()) {
+    if (!shouldUseServerDb() && isSupabaseConfigured() && !isLocalDevHost()) {
       const couple = coupleService.getCurrentCouple();
       if (couple && couple.id !== 'couple-1') {
         try {

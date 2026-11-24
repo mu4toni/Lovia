@@ -130,6 +130,7 @@ export const DangerZone: React.FC = () => {
         isOpen={isDeleteModalOpen}
         onClose={handleClose}
         title={step === 1 ? 'Удаление аккаунта' : 'Подтверждение удаления'}
+        zIndex={1200}
       >
         <div className="danger-modal-content">
           {error && (

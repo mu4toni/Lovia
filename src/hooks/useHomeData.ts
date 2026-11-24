@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   CoupleProfile,
   CoupleReminder,
@@ -8,8 +8,15 @@ import {
 } from '../types';
 import { requestsService } from '../services/requestsService';
 import { categoriesService } from '../services/categoriesService';
-import { DemoStateMode } from '../components/home/DemoStateSwitcher/DemoStateSwitcher';
 import { initialCoupleProfile } from '../services/mockData';
+
+export type DemoStateMode =
+  | 'normal'
+  | 'loading'
+  | 'error'
+  | 'unpaired'
+  | 'empty_tasks'
+  | 'overdue';
 
 export function useHomeData() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -23,8 +30,11 @@ export function useHomeData() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [editingRequest, setEditingRequest] = useState<CoupleReminder | null>(null);
 
+  const hasLoadedRef = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const loadData = useCallback(async (silent = false) => {
-    if (!silent && !requestsService.hasCachedData() && !profile) {
+    if (!silent && !requestsService.hasCachedData() && !hasLoadedRef.current) {
       setIsLoading(true);
     }
     setError(null);
@@ -35,6 +45,7 @@ export function useHomeData() {
         requestsService.getEvents(),
       ]);
 
+      hasLoadedRef.current = true;
       const catsData = categoriesService.getCategories();
       setCategories(catsData);
 
@@ -59,7 +70,7 @@ export function useHomeData() {
     } finally {
       setIsLoading(false);
     }
-  }, [demoMode, profile]);
+  }, [demoMode]);
 
   useEffect(() => {
     if (demoMode === 'loading') {
@@ -75,49 +86,53 @@ export function useHomeData() {
     loadData();
   }, [demoMode, loadData]);
 
-  const handleToggleStatus = async (id: string) => {
+  const handleToggleStatus = useCallback(async (id: string) => {
     const updated = await requestsService.toggleStatus(id);
     if (updated) {
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: updated.status } : r))
       );
     }
-  };
+  }, []);
 
-  const handleCreateRequest = async (input: CreateReminderInput) => {
+  const handleCreateRequest = useCallback(async (input: CreateReminderInput) => {
     const created = await requestsService.createRequest(input);
-    setRequests((prev) => [created, ...prev]);
-  };
+    setRequests((prev) =>
+      prev.some((r) => r.id === created.id)
+        ? prev.map((r) => (r.id === created.id ? created : r))
+        : [created, ...prev]
+    );
+  }, []);
 
-  const handleUpdateRequest = async (id: string, input: Partial<CreateReminderInput>) => {
-    const updated = await requestsService.updateRequest(id, input);
-    if (updated) {
-      setRequests((prev) =>
-        prev.map((r) => (r.id === id ? updated : r))
-      );
-    }
-    return updated;
-  };
+  const handleUpdateRequest = useCallback(
+    async (id: string, input: Partial<CreateReminderInput>) => {
+      const updated = await requestsService.updateRequest(id, input);
+      if (updated) {
+        setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+      }
+      return updated;
+    },
+    []
+  );
 
-  const handleDeleteRequest = async (id: string) => {
+  const handleDeleteRequest = useCallback(async (id: string) => {
     const ok = await requestsService.deleteRequest(id);
     if (ok) {
       setRequests((prev) => prev.filter((r) => r.id !== id));
     }
-  };
+  }, []);
 
-  const handleConnectPartnerSim = () => {
+  const handleConnectPartnerSim = useCallback(() => {
     setProfile({
       ...initialCoupleProfile,
       isPartnerConnected: true,
     });
     setDemoMode('normal');
-  };
+  }, []);
 
   const handleCategoriesChanged = useCallback(() => {
     const updatedCats = categoriesService.getCategories();
     setCategories(updatedCats);
-    // Reload reminders to sync any unlinked categories
     requestsService.getRequests(demoMode === 'overdue').then((list) => {
       if (demoMode !== 'empty_tasks') {
         setRequests(list);
@@ -125,34 +140,50 @@ export function useHomeData() {
     });
   }, [demoMode]);
 
-  useEffect(() => {
-    const onCatsUpdated = () => handleCategoriesChanged();
-    const onRelUpdated = () => {
-      loadData(true);
-    };
-    window.addEventListener('lovia_categories_updated', onCatsUpdated);
-    window.addEventListener('lovia_relationship_updated', onRelUpdated);
-    window.addEventListener('lovia_couple_updated', onRelUpdated);
-    window.addEventListener('lovia_couple_connected', onRelUpdated);
-    window.addEventListener('lovia_reminders_updated', onRelUpdated);
-    window.addEventListener('lovia_profile_updated', onRelUpdated);
+  const reload = useCallback(() => loadData(false), [loadData]);
 
-    // Silent background poll every 18 seconds so partner sees new reminders
+  useEffect(() => {
+    // Coalesce bursts of lovia_* events (e.g. applyBundle) into a single silent refresh
+    const scheduleSilentRefresh = () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = setTimeout(() => {
+        refreshTimerRef.current = null;
+        loadData(true);
+      }, 45);
+    };
+
+    const onCatsUpdated = () => handleCategoriesChanged();
+
+    window.addEventListener('lovia_categories_updated', onCatsUpdated);
+    window.addEventListener('lovia_relationship_updated', scheduleSilentRefresh);
+    window.addEventListener('lovia_couple_updated', scheduleSilentRefresh);
+    window.addEventListener('lovia_couple_connected', scheduleSilentRefresh);
+    window.addEventListener('lovia_reminders_updated', scheduleSilentRefresh);
+    window.addEventListener('lovia_profile_updated', scheduleSilentRefresh);
+
+    // Silent background poll every 25 seconds so partner sees new reminders
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden && demoMode === 'normal') {
-        requestsService.getRequests(false).then((list) => {
-          setRequests(list);
-        }).catch(() => {});
+        requestsService
+          .getRequests(false)
+          .then((list) => {
+            setRequests(list);
+          })
+          .catch(() => {});
       }
-    }, 18000);
+    }, 25000);
 
     return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
       window.removeEventListener('lovia_categories_updated', onCatsUpdated);
-      window.removeEventListener('lovia_relationship_updated', onRelUpdated);
-      window.removeEventListener('lovia_couple_updated', onRelUpdated);
-      window.removeEventListener('lovia_couple_connected', onRelUpdated);
-      window.removeEventListener('lovia_reminders_updated', onRelUpdated);
-      window.removeEventListener('lovia_profile_updated', onRelUpdated);
+      window.removeEventListener('lovia_relationship_updated', scheduleSilentRefresh);
+      window.removeEventListener('lovia_couple_updated', scheduleSilentRefresh);
+      window.removeEventListener('lovia_couple_connected', scheduleSilentRefresh);
+      window.removeEventListener('lovia_reminders_updated', scheduleSilentRefresh);
+      window.removeEventListener('lovia_profile_updated', scheduleSilentRefresh);
       clearInterval(intervalId);
     };
   }, [loadData, handleCategoriesChanged, demoMode]);
@@ -178,6 +209,6 @@ export function useHomeData() {
     handleDeleteRequest,
     handleConnectPartnerSim,
     handleCategoriesChanged,
-    reload: () => loadData(false),
+    reload,
   };
 }

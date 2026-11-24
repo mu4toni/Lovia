@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import bearLoveUrl from '../../../assets/mascots/bear-love.png';
-import bearSleepyUrl from '../../../assets/mascots/bear-sleepy.png';
-import bearPeekUrl from '../../../assets/mascots/bear-peek.png';
+import React, { useState, useEffect, memo } from 'react';
 import { telegramService } from '../../../services/telegramService';
 import './Mascot.css';
 
@@ -106,17 +103,9 @@ const LEGACY_MOOD_MAP: Record<MascotMood, MascotName> = {
   surprised: '01_peeking_home',
 };
 
-function getBundledFallback(fileKey: string): string {
-  if (fileKey.includes('sleep') || fileKey.includes('error') || fileKey.includes('sad')) {
-    return bearSleepyUrl;
-  }
-  if (fileKey.includes('peek') || fileKey.includes('camera') || fileKey.includes('wait')) {
-    return bearPeekUrl;
-  }
-  return bearLoveUrl;
-}
+const FALLBACK_STICKER_SRC = '/mascot/01_peeking_home.webp';
 
-export const Mascot: React.FC<MascotProps> = ({
+export const Mascot: React.FC<MascotProps> = memo(({
   name,
   mood,
   variant,
@@ -137,18 +126,18 @@ export const Mascot: React.FC<MascotProps> = ({
     (variant ? LEGACY_MOOD_MAP[variant] : undefined) ||
     '01_peeking_home';
 
-  const [useBundledFallback, setUseBundledFallback] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
   const [isTapped, setIsTapped] = useState(false);
   const [hearts, setHearts] = useState<
     { id: number; symbol: string; left: string; size: number }[]
   >([]);
 
   useEffect(() => {
-    setUseBundledFallback(false);
+    setUseFallback(false);
   }, [resolvedFile]);
 
-  const primarySrc = `/mascot/${resolvedFile}.png`;
-  const currentSrc = useBundledFallback ? getBundledFallback(resolvedFile) : primarySrc;
+  const primarySrc = `/mascot/${resolvedFile}.webp`;
+  const currentSrc = useFallback ? FALLBACK_STICKER_SRC : primarySrc;
 
   const w = width ?? size;
   const h = height ?? size;
@@ -175,7 +164,9 @@ export const Mascot: React.FC<MascotProps> = ({
         } ${className}`}
         style={sizeStyle}
         onError={() => {
-          if (!useBundledFallback) setUseBundledFallback(true);
+          if (!useFallback && primarySrc !== FALLBACK_STICKER_SRC) {
+            setUseFallback(true);
+          }
         }}
       />
     );
@@ -230,7 +221,9 @@ export const Mascot: React.FC<MascotProps> = ({
         draggable={false}
         className="lovia-mascot__img"
         onError={() => {
-          if (!useBundledFallback) setUseBundledFallback(true);
+          if (!useFallback && primarySrc !== FALLBACK_STICKER_SRC) {
+            setUseFallback(true);
+          }
         }}
       />
       {hearts.map((item) => (
@@ -245,4 +238,4 @@ export const Mascot: React.FC<MascotProps> = ({
       ))}
     </div>
   );
-};
+});

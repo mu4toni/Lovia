@@ -5,11 +5,69 @@ import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
+import { normalizeMediaUrl } from '../utils/media';
 
 const STORAGE_KEY = 'lovia_wishlist_items_v1';
 
+async function uploadWishPhotoIfNeeded(coupleId: string, imageUrl?: string): Promise<string | null> {
+  const trimmed = imageUrl?.trim();
+  if (!trimmed) return null;
+  if (!trimmed.startsWith('data:image')) {
+    return normalizeMediaUrl(trimmed);
+  }
+
+  if (shouldUseServerDb()) {
+    const uploadRes = await callServerDb<{ publicUrl: string }>('upload_media', {
+      base64Data: trimmed,
+      type: 'wish',
+    });
+    if (!uploadRes?.publicUrl) {
+      throw new Error('Не удалось загрузить фото желания на сервер');
+    }
+    return uploadRes.publicUrl;
+  }
+
+  if (isSupabaseConfigured() && !isLocalDevHost()) {
+    try {
+      const match = trimmed.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (!match) return trimmed;
+      const mime = match[1];
+      const binary = atob(match[2]);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+      const filePath = `${coupleId}/wishes/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+
+      const { error: err1 } = await supabase.storage.from('lovia_media').upload(filePath, bytes, {
+        contentType: mime,
+        upsert: true,
+      });
+      if (!err1) {
+        const { data } = supabase.storage.from('lovia_media').getPublicUrl(filePath);
+        if (data?.publicUrl) return normalizeMediaUrl(data.publicUrl);
+      } else {
+        const { error: err2 } = await supabase.storage.from('lovia-media').upload(filePath, bytes, {
+          contentType: mime,
+          upsert: true,
+        });
+        if (!err2) {
+          const { data } = supabase.storage.from('lovia-media').getPublicUrl(filePath);
+          if (data?.publicUrl) return normalizeMediaUrl(data.publicUrl);
+        }
+      }
+    } catch (e) {
+      console.warn('[wishlistService] Failed to upload wish photo to storage:', e);
+    }
+  }
+
+  return trimmed;
+}
+
 class WishlistService {
   private currentChannel: any = null;
+  private subscribedCoupleId: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -20,6 +78,7 @@ class WishlistService {
         this.subscribeToRealtime();
       });
       window.addEventListener('lovia_couple_dissolved', () => {
+        this.subscribedCoupleId = null;
         if (this.currentChannel) {
           try {
             supabase.removeChannel(this.currentChannel);
@@ -37,6 +96,7 @@ class WishlistService {
     if (!isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
+    if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
 
     if (this.currentChannel) {
       try {
@@ -46,6 +106,8 @@ class WishlistService {
         // ignore
       }
     }
+
+    this.subscribedCoupleId = couple.id;
 
     try {
       this.currentChannel = supabase
@@ -186,13 +248,9 @@ class WishlistService {
     };
   }
 
-  hydrateFromBundle(rows: any[], coupleId?: string): void {
+  hydrateFromBundle(rows: any[], _coupleId?: string): void {
     const mapped = this.dedupeItems((rows || []).map((r) => this.mapWishRow(r)));
     this.saveToStorage(mapped);
-    const targetCoupleId = coupleId || coupleService.getCurrentCouple()?.id;
-    if (targetCoupleId && targetCoupleId !== 'couple-1') {
-      updateSwrCache(targetCoupleId, 'wishlist', mapped);
-    }
     this.notify();
   }
 
@@ -307,12 +365,16 @@ class WishlistService {
       }
     }
 
+    const uploadedImageUrl = couple
+      ? await uploadWishPhotoIfNeeded(couple.id, input.imageUrl)
+      : input.imageUrl?.trim() || null;
+
     if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
       const serverRow = await callServerDb<any>('wishlist_create', {
         couple_id: couple.id,
         title: input.title.trim(),
         description: input.description?.trim() || null,
-        imageUrl: input.imageUrl?.trim() || null,
+        imageUrl: uploadedImageUrl,
         linkUrl: input.linkUrl?.trim() || null,
         estimatedPrice: input.estimatedPrice ? Math.max(0, input.estimatedPrice) : null,
         categoryId: input.categoryId || 'gifts',
@@ -343,7 +405,7 @@ class WishlistService {
       userId,
       title: input.title.trim(),
       description: input.description?.trim() || undefined,
-      imageUrl: input.imageUrl?.trim() || undefined,
+      imageUrl: uploadedImageUrl || undefined,
       linkUrl: input.linkUrl?.trim() || undefined,
       estimatedPrice: input.estimatedPrice ? Math.max(0, input.estimatedPrice) : undefined,
       currency: input.currency || '₽',
@@ -405,11 +467,18 @@ class WishlistService {
   ): Promise<WishItem> {
     const couple = coupleService.getCurrentCouple();
 
+    const resolvedUpdateImage =
+      input.imageUrl !== undefined && couple
+        ? await uploadWishPhotoIfNeeded(couple.id, input.imageUrl)
+        : input.imageUrl !== undefined
+        ? input.imageUrl.trim() || null
+        : undefined;
+
     if (shouldUseServerDb()) {
       const patch: any = {};
       if (input.title !== undefined) patch.title = input.title.trim();
       if (input.description !== undefined) patch.description = input.description?.trim() || null;
-      if (input.imageUrl !== undefined) patch.imageUrl = input.imageUrl?.trim() || null;
+      if (resolvedUpdateImage !== undefined) patch.imageUrl = resolvedUpdateImage;
       if (input.linkUrl !== undefined) patch.linkUrl = input.linkUrl?.trim() || null;
       if (input.estimatedPrice !== undefined) patch.estimatedPrice = input.estimatedPrice || null;
       if (input.categoryId !== undefined) patch.categoryId = input.categoryId;
@@ -430,7 +499,7 @@ class WishlistService {
       const updateData: any = {};
       if (input.title !== undefined) updateData.title = input.title.trim();
       if (input.description !== undefined) updateData.description = input.description?.trim() || null;
-      if (input.imageUrl !== undefined) updateData.image_url = input.imageUrl?.trim() || null;
+      if (resolvedUpdateImage !== undefined) updateData.image_url = resolvedUpdateImage;
       if (input.linkUrl !== undefined) updateData.link_url = input.linkUrl?.trim() || null;
       if (input.estimatedPrice !== undefined) updateData.price = input.estimatedPrice || null;
       if (input.categoryId !== undefined) updateData.category_id = input.categoryId;
@@ -462,7 +531,7 @@ class WishlistService {
       ...existing,
       title: input.title !== undefined ? input.title.trim() : existing.title,
       description: input.description !== undefined ? input.description?.trim() : existing.description,
-      imageUrl: input.imageUrl !== undefined ? input.imageUrl?.trim() : existing.imageUrl,
+      imageUrl: resolvedUpdateImage !== undefined ? resolvedUpdateImage || undefined : existing.imageUrl,
       linkUrl: input.linkUrl !== undefined ? input.linkUrl?.trim() : existing.linkUrl,
       estimatedPrice:
         input.estimatedPrice !== undefined

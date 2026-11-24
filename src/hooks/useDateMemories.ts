@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   DateMemory,
   CreateDateMemoryInput,
@@ -14,6 +14,7 @@ export function useDateMemories() {
   );
   const [sortOrder, setSortOrder] = useState<DateMemorySort>('newest');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshMemories = useCallback(async () => {
     try {
@@ -27,21 +28,32 @@ export function useDateMemories() {
   useEffect(() => {
     refreshMemories();
 
-    const handleUpdate = () => refreshMemories();
-    window.addEventListener('lovia_dates_updated', handleUpdate);
-    window.addEventListener('lovia_couple_connected', handleUpdate);
-    window.addEventListener('lovia_couple_updated', handleUpdate);
+    const scheduleRefresh = () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = setTimeout(() => {
+        refreshTimerRef.current = null;
+        setAllMemories(dateMemoryService.getDateMemories());
+      }, 45);
+    };
+
+    window.addEventListener('lovia_dates_updated', scheduleRefresh);
+    window.addEventListener('lovia_couple_connected', scheduleRefresh);
+    window.addEventListener('lovia_couple_updated', scheduleRefresh);
 
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
         refreshMemories();
       }
-    }, 18000);
+    }, 25000);
 
     return () => {
-      window.removeEventListener('lovia_dates_updated', handleUpdate);
-      window.removeEventListener('lovia_couple_connected', handleUpdate);
-      window.removeEventListener('lovia_couple_updated', handleUpdate);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      window.removeEventListener('lovia_dates_updated', scheduleRefresh);
+      window.removeEventListener('lovia_couple_connected', scheduleRefresh);
+      window.removeEventListener('lovia_couple_updated', scheduleRefresh);
       clearInterval(intervalId);
     };
   }, [refreshMemories]);
@@ -88,21 +100,21 @@ export function useDateMemories() {
 
   const createMemory = useCallback(async (input: CreateDateMemoryInput) => {
     const created = await dateMemoryService.createDateMemory(input);
-    await refreshMemories();
+    setAllMemories(dateMemoryService.getDateMemories());
     return created;
-  }, [refreshMemories]);
+  }, []);
 
   const updateMemory = useCallback(async (id: string, input: UpdateDateMemoryInput) => {
     const updated = await dateMemoryService.updateDateMemory(id, input);
-    await refreshMemories();
+    setAllMemories(dateMemoryService.getDateMemories());
     return updated;
-  }, [refreshMemories]);
+  }, []);
 
   const deleteMemory = useCallback(async (id: string) => {
     const ok = await dateMemoryService.deleteDateMemory(id);
-    await refreshMemories();
+    setAllMemories(dateMemoryService.getDateMemories());
     return ok;
-  }, [refreshMemories]);
+  }, []);
 
   return {
     memories,

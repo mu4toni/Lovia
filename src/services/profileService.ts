@@ -45,24 +45,9 @@ class ProfileService {
     }
     this.initialized = true;
 
-    // Фоновая синхронизация настройки уведомлений
-    if (shouldUseServerDb()) {
-      callServerDb<any>('get_bundle')
-        .then((bundle) => {
-          if (bundle?.user && typeof bundle.user.notifications_enabled === 'boolean') {
-            this.notificationsEnabled = bundle.user.notifications_enabled;
-            try {
-              localStorage.setItem(NOTIFICATIONS_KEY, String(bundle.user.notifications_enabled));
-            } catch {
-              // ignore
-            }
-            this.notify();
-          }
-        })
-        .catch((e) => {
-          console.warn('[profileService] Failed to sync notifications from server bundle:', e);
-        });
-    } else if (isSupabaseConfigured()) {
+    // В Telegram-режиме (shouldUseServerDb) notifications_enabled приходит из единого get_bundle
+    // в coupleService.applyBundle -> syncNotificationsFromBundle, без дублирующего запроса.
+    if (!shouldUseServerDb() && isSupabaseConfigured()) {
       const activeUser = coupleService.getActiveUser();
       const effectiveUserId =
         activeUser?.id && activeUser.id !== 'user-marsel' && !activeUser.id.startsWith('guest')
@@ -76,16 +61,24 @@ class ProfileService {
           .maybeSingle()
           .then(({ data }) => {
             if (data && typeof data.notifications_enabled === 'boolean') {
-              this.notificationsEnabled = data.notifications_enabled;
-              try {
-                localStorage.setItem(NOTIFICATIONS_KEY, String(data.notifications_enabled));
-              } catch {
-                // ignore
-              }
-              this.notify();
+              this.syncNotificationsFromBundle(data.notifications_enabled);
             }
           });
       }
+    }
+  }
+
+  syncNotificationsFromBundle(enabled: boolean): void {
+    const changed = this.notificationsEnabled !== enabled;
+    this.notificationsEnabled = enabled;
+    this.initialized = true;
+    try {
+      localStorage.setItem(NOTIFICATIONS_KEY, String(enabled));
+    } catch {
+      // ignore
+    }
+    if (changed) {
+      this.notify();
     }
   }
 

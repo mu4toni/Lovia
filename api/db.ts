@@ -1,6 +1,31 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+
+// Переиспользуемый синглтон Supabase-клиента между вызовами в тёплом serverless-контейнере
+let cachedAdminClient: { url: string; key: string; client: SupabaseClient } | null = null;
+
+function getAdminSupabaseClient(url: string, key: string): SupabaseClient {
+  if (cachedAdminClient && cachedAdminClient.url === url && cachedAdminClient.key === key) {
+    return cachedAdminClient.client;
+  }
+  const client = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  cachedAdminClient = { url, key, client };
+  return client;
+}
+
+// Явные проекции колонок (без лишних и служебных полей вроде delete_code)
+const USER_PUBLIC_COLUMNS =
+  'id, telegram_id, name, gender, avatar_url, couple_id, joined_date, timezone_offset, notifications_enabled, created_at, updated_at';
+const COUPLE_COLUMNS =
+  'id, invite_code, code_expires_at, code_status, space_type, user1_id, user2_id, status, start_date, couple_photo_url, streak_count, streak_last_date, streak_ping_date, streak_ping_users, created_at, dissolved_at';
+const WISHLIST_COLUMNS =
+  'id, couple_id, user_id, title, description, image_url, link_url, price, category_id, is_booked, booked_by_user_id, created_at';
+const MEMORABLE_DATE_COLUMNS = 'id, couple_id, title, date, description, is_annual, created_at';
+const DATE_MEMORY_COLUMNS =
+  'id, couple_id, title, date, place, location_data, story, photos, created_at';
 
 interface TelegramAuthUser {
   id: number;
@@ -275,7 +300,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ ok: false, error: 'Supabase credentials not configured' });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getAdminSupabaseClient(supabaseUrl, supabaseKey);
 
     // 3. Helper: создаём запись пользователя в public.users ТОЛЬКО при первом входе,
     // не перезаписывая кастомные name и avatar_url существующего пользователя данными из Telegram.
@@ -292,7 +317,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ) {
       const { data: existingUser } = await client
         .from('users')
-        .select('*')
+        .select(USER_PUBLIC_COLUMNS)
         .eq('id', targetActorId)
         .maybeSingle();
 
@@ -320,7 +345,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .from('users')
           .update(updatePatch)
           .eq('id', targetActorId)
-          .select()
+          .select(USER_PUBLIC_COLUMNS)
           .maybeSingle();
 
         if (updateErr) {
@@ -354,7 +379,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: insertedUser, error: insertErr } = await client
         .from('users')
         .upsert(newRow, { onConflict: 'id', ignoreDuplicates: true })
-        .select()
+        .select(USER_PUBLIC_COLUMNS)
         .maybeSingle();
 
       if (insertErr) {
@@ -368,7 +393,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Если параллельный запрос успел создать запись раньше (ignoreDuplicates вернул null)
       const { data: racedUser } = await client
         .from('users')
-        .select('*')
+        .select(USER_PUBLIC_COLUMNS)
         .eq('id', targetActorId)
         .maybeSingle();
       return racedUser;
@@ -411,12 +436,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ДЕЙСТВИЕ 1: get_bundle
     // -------------------------------------------------------------
     if (action === 'get_bundle') {
-      // Параллельный запуск проверки подписки и основных запросов к БД
+      // Параллельный запуск проверки подписки и основных запросов к БД (только нужные колонки)
       const [subResult, coupleRes, userRes] = await Promise.all([
         checkChannelSubscription(tgUser.id),
         supabase
           .from('couples')
-          .select('*')
+          .select(COUPLE_COLUMNS)
           .or(`user1_id.eq.${actorId},user2_id.eq.${actorId}`)
           .neq('status', 'dissolved')
           .order('created_at', { ascending: false })
@@ -424,7 +449,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .maybeSingle(),
         supabase
           .from('users')
-          .select('*')
+          .select(USER_PUBLIC_COLUMNS)
           .eq('id', actorId)
           .maybeSingle(),
       ]);
@@ -477,7 +502,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ? Promise.resolve(existingUserRow)
           : ensureServerUser(supabase, actorId, tgUser),
         partnerId
-          ? supabase.from('users').select('*').eq('id', partnerId).maybeSingle()
+          ? supabase.from('users').select(USER_PUBLIC_COLUMNS).eq('id', partnerId).maybeSingle()
           : Promise.resolve({ data: null }),
         supabase
           .from('reminders')
@@ -486,17 +511,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .order('created_at', { ascending: false }),
         supabase
           .from('wishlist_items')
-          .select('*')
+          .select(WISHLIST_COLUMNS)
           .eq('couple_id', coupleRow.id)
           .order('created_at', { ascending: false }),
         supabase
           .from('memorable_dates')
-          .select('*')
+          .select(MEMORABLE_DATE_COLUMNS)
           .eq('couple_id', coupleRow.id)
           .order('date', { ascending: true }),
         supabase
           .from('date_memories')
-          .select('*')
+          .select(DATE_MEMORY_COLUMNS)
           .eq('couple_id', coupleRow.id)
           .order('date', { ascending: false }),
       ]);
@@ -642,10 +667,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ ok: false, error: error.message });
       }
 
-      await ensureServerUser(supabase, actorId, tgUser, {
-        gender: payload?.gender,
-        coupleId: newCouple.id,
-      });
+      await supabase
+        .from('users')
+        .update({ couple_id: newCouple.id, updated_at: new Date().toISOString() })
+        .eq('id', actorId);
 
       return res.status(200).json({ ok: true, data: newCouple });
     }
@@ -698,22 +723,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ ok: false, error: updateErr.message });
       }
 
-      await ensureServerUser(supabase, actorId, tgUser, {
-        gender: payload?.gender,
-        coupleId: couple.id,
-      });
-
-      const { data: partnerUser } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', couple.user1_id)
-        .maybeSingle();
+      const [, partnerRes] = await Promise.all([
+        supabase
+          .from('users')
+          .update({ couple_id: couple.id, updated_at: new Date().toISOString() })
+          .eq('id', actorId),
+        supabase
+          .from('users')
+          .select(USER_PUBLIC_COLUMNS)
+          .eq('id', couple.user1_id)
+          .maybeSingle(),
+      ]);
 
       return res.status(200).json({
         ok: true,
         data: {
           couple: updatedCouple,
-          partner: partnerUser,
+          partner: partnerRes.data,
         },
       });
     }

@@ -20,7 +20,7 @@ export const DeleteMemorableDateDialog: React.FC<DeleteMemorableDateDialogProps>
   if (!targetDate) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Удалить дату?">
+    <Modal isOpen={isOpen} onClose={onClose} title="Удалить дату?" zIndex={1200}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
           <div

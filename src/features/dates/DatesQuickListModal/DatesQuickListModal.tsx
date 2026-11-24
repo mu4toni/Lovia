@@ -4,6 +4,7 @@ import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { formatRussianDate, pluralizeRu } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
+import { normalizeMediaUrl } from '../../../utils/media';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DatesQuickListModal.css';
 
@@ -97,10 +98,11 @@ export const DatesQuickListModal: React.FC<DatesQuickListModalProps> = ({
                   <div className="dates-quick-list__thumb-wrap">
                     {firstPhoto ? (
                       <img
-                        src={firstPhoto}
+                        src={normalizeMediaUrl(firstPhoto)}
                         alt=""
                         className="dates-quick-list__thumb"
                         loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="dates-quick-list__thumb-fallback" aria-hidden="true">

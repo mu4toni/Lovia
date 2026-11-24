@@ -59,6 +59,7 @@ export const initialMemorableDates: MemorableDate[] = [
 
 class RelationshipService {
   private currentChannel: any = null;
+  private subscribedCoupleId: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -69,6 +70,7 @@ class RelationshipService {
         this.subscribeToRealtime();
       });
       window.addEventListener('lovia_couple_dissolved', () => {
+        this.subscribedCoupleId = null;
         if (this.currentChannel) {
           try {
             supabase.removeChannel(this.currentChannel);
@@ -86,6 +88,7 @@ class RelationshipService {
     if (!isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
+    if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
 
     if (this.currentChannel) {
       try {
@@ -95,6 +98,8 @@ class RelationshipService {
         // ignore
       }
     }
+
+    this.subscribedCoupleId = couple.id;
 
     try {
       this.currentChannel = supabase
@@ -121,7 +126,6 @@ class RelationshipService {
   private notify() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('lovia_relationship_updated'));
-      window.dispatchEvent(new CustomEvent('lovia_dates_updated'));
     }
   }
 
@@ -237,11 +241,11 @@ class RelationshipService {
     this.isRevalidating = true;
     try {
       if (shouldUseServerDb()) {
-        const bundle = await callServerDb<any>('get_bundle');
-        if (bundle && Array.isArray(bundle.memorableDates)) {
-          this.hydrateFromBundle(bundle.memorableDates, coupleId);
+        if (coupleService.isFresh()) {
           return;
         }
+        await coupleService.syncCoupleFromSupabase();
+        return;
       }
 
       const { data, error } = await supabase

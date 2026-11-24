@@ -1,9 +1,9 @@
 .photo-lightbox-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
-  background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(8px);
+  z-index: 1250;
+  background: rgba(16, 11, 9, 0.90);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;

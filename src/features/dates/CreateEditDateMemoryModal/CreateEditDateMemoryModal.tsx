@@ -192,6 +192,8 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
                     src={normalizeMediaUrl(photoUrl)}
                     alt={`Фото ${index + 1}`}
                     className="date-memory-form__photo-img"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <button
                     type="button"

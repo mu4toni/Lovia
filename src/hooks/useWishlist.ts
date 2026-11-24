@@ -54,23 +54,22 @@ export function useWishlist() {
     }
   }, []);
 
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     loadData();
 
-    const handleUpdate = () => {
-      wishlistService
-        .getWishlist()
-        .then((data) => setItems(dedupeWishItems(data)))
-        .catch(() => {});
+    const scheduleSilentReload = () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = setTimeout(() => {
+        refreshTimerRef.current = null;
+        loadData(true);
+      }, 45);
     };
 
-    const handleSilentReload = () => {
-      loadData(true);
-    };
-
-    window.addEventListener('lovia_wishlist_updated', handleUpdate);
-    window.addEventListener('lovia_couple_connected', handleSilentReload);
-    window.addEventListener('lovia_couple_updated', handleSilentReload);
+    window.addEventListener('lovia_wishlist_updated', scheduleSilentReload);
+    window.addEventListener('lovia_couple_connected', scheduleSilentReload);
+    window.addEventListener('lovia_couple_updated', scheduleSilentReload);
 
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
@@ -79,12 +78,16 @@ export function useWishlist() {
           .then((data) => setItems(dedupeWishItems(data)))
           .catch(() => {});
       }
-    }, 18000);
+    }, 25000);
 
     return () => {
-      window.removeEventListener('lovia_wishlist_updated', handleUpdate);
-      window.removeEventListener('lovia_couple_connected', handleSilentReload);
-      window.removeEventListener('lovia_couple_updated', handleSilentReload);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      window.removeEventListener('lovia_wishlist_updated', scheduleSilentReload);
+      window.removeEventListener('lovia_couple_connected', scheduleSilentReload);
+      window.removeEventListener('lovia_couple_updated', scheduleSilentReload);
       clearInterval(intervalId);
     };
   }, [loadData]);
@@ -136,10 +139,12 @@ export function useWishlist() {
     return activeListItems.filter((item) => item.categoryId === selectedCategory);
   }, [activeListItems, selectedCategory]);
 
-  // Handlers
-  const handleCreateWish = async (input: CreateWishInput) => {
-    const created = await wishlistService.createWishItem(currentUserId, input);
-    // Avoid duplicating when wishlistService.notify() already synced items into state
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
+
+  // Stable handlers (for React.memo WishCard children)
+  const handleCreateWish = useCallback(async (input: CreateWishInput) => {
+    const created = await wishlistService.createWishItem(currentUserIdRef.current, input);
     setItems((prev) =>
       dedupeWishItems(
         prev.some((item) => item.id === created.id)
@@ -149,32 +154,32 @@ export function useWishlist() {
     );
     setIsCreateModalOpen(false);
     return created;
-  };
+  }, []);
 
-  const handleUpdateWish = async (id: string, input: UpdateWishInput) => {
-    const updated = await wishlistService.updateWishItem(id, currentUserId, input);
+  const handleUpdateWish = useCallback(async (id: string, input: UpdateWishInput) => {
+    const updated = await wishlistService.updateWishItem(id, currentUserIdRef.current, input);
     setItems((prev) => dedupeWishItems(prev.map((item) => (item.id === id ? updated : item))));
     setEditingWish(null);
     return updated;
-  };
+  }, []);
 
-  const handleDeleteWish = async (id: string) => {
-    await wishlistService.deleteWishItem(id, currentUserId);
+  const handleDeleteWish = useCallback(async (id: string) => {
+    await wishlistService.deleteWishItem(id, currentUserIdRef.current);
     setItems((prev) => prev.filter((item) => item.id !== id));
     setDeletingWish(null);
     return true;
-  };
+  }, []);
 
-  const handleToggleReserve = async (id: string) => {
-    const updated = await wishlistService.toggleReserveWishItem(id, currentUserId);
+  const handleToggleReserve = useCallback(async (id: string) => {
+    const updated = await wishlistService.toggleReserveWishItem(id, currentUserIdRef.current);
     setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
     return updated;
-  };
+  }, []);
 
-  const handleResetToMock = async () => {
+  const handleResetToMock = useCallback(async () => {
     const reset = await wishlistService.resetToMock();
     setItems(reset);
-  };
+  }, []);
 
   return {
     profile,

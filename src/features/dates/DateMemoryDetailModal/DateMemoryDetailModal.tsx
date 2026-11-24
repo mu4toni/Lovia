@@ -70,6 +70,7 @@ export const DateMemoryDetailModal: React.FC<DateMemoryDetailModalProps> = ({
                 alt={`${title} - фото ${currentPhotoIndex + 1}`}
                 className="date-memory-detail__hero-photo"
                 loading="eager"
+                decoding="async"
               />
               <div className="date-memory-detail__zoom-overlay" aria-hidden="true">
                 <Icon name="eye" size={16} />
@@ -130,6 +131,7 @@ export const DateMemoryDetailModal: React.FC<DateMemoryDetailModalProps> = ({
                       alt=""
                       className="date-memory-detail__gallery-img"
                       loading="lazy"
+                      decoding="async"
                     />
                   </button>
                 ))}

@@ -1,8 +1,0 @@
-.theme-toggle {
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--duration-fast) var(--ease-spring);
-}
-
-.theme-toggle:active {
-  transform: rotate(25deg) scale(0.9);
-}
