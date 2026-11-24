@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { trackEvent } from '../_lib/analytics';
 
 const FORCE_REPLY_PREFIX = '📅 Напишите напоминание на ';
 
@@ -668,6 +669,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (cbChatId && cbUserId) {
             const supabase = getSupabaseAdmin();
             await sendCalendarWidget(botToken, supabase, cbChatId, cbUserId);
+            await trackEvent(`tg_${cbUserId}`, 'bot_calendar_opened', { source: 'inline_button' });
           }
         }
         return res.status(200).json({ ok: true });
@@ -740,6 +742,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 reply_markup: openMarkup,
               });
             }
+
+            await trackEvent(`tg_${userId}`, 'bot_sub_verified', {
+              has_invite_param: Boolean(startParam),
+            });
           } else {
             await callTelegramApi(botToken, 'answerCallbackQuery', {
               callback_query_id: callbackQuery.id,
@@ -906,6 +912,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const supabase = getSupabaseAdmin();
       await sendCalendarWidget(botToken, supabase, chatId, fromUser.id);
+      await trackEvent(`tg_${fromUser.id}`, 'bot_calendar_opened', { source: 'command' });
       return res.status(200).json({ ok: true });
     }
 
@@ -987,6 +994,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               ],
             ],
           },
+        });
+      }
+
+      if (userId) {
+        await trackEvent(`tg_${userId}`, 'bot_start', {
+          has_invite_param: Boolean(startParam),
+          is_subscribed: subscribed,
         });
       }
     }

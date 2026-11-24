@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { trackEvent, trackEventsBatch } from './_lib/analytics';
 
 // Переиспользуемый синглтон Supabase-клиента между вызовами в тёплом serverless-контейнере
 let cachedAdminClient: { url: string; key: string; client: SupabaseClient } | null = null;
@@ -472,6 +473,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!coupleRow) {
         // Если в public.users ещё нет строки (первый вход) — создаём через ensureServerUser
         const userRow = existingUserRow || (await ensureServerUser(supabase, actorId, tgUser));
+        await trackEvent(actorId, 'app_opened', {
+          space_type: null,
+          couple_status: 'none',
+          has_couple: false,
+          $set: {
+            space_type: null,
+            couple_status: 'none',
+            has_couple: false,
+          },
+        });
         return res.status(200).json({
           ok: true,
           data: {
@@ -580,6 +591,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         streak_ping_users: streakPingUsers,
       };
 
+      const spaceType = normalizedCouple.space_type || 'relationship';
+      const coupleStatus = normalizedCouple.status || 'connected';
+      await trackEvent(actorId, 'app_opened', {
+        space_type: spaceType,
+        couple_status: coupleStatus,
+        has_couple: true,
+        $set: {
+          space_type: spaceType,
+          couple_status: coupleStatus,
+          has_couple: true,
+        },
+      });
+
       return res.status(200).json({
         ok: true,
         data: {
@@ -672,6 +696,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .update({ couple_id: newCouple.id, updated_at: new Date().toISOString() })
         .eq('id', actorId);
 
+      await trackEvent(actorId, 'couple_created', {
+        space_type: newCouple.space_type || 'relationship',
+      });
+
       return res.status(200).json({ ok: true, data: newCouple });
     }
 
@@ -734,6 +762,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('id', couple.user1_id)
           .maybeSingle(),
       ]);
+
+      await trackEvent(actorId, 'couple_joined', {
+        space_type: updatedCouple.space_type || 'relationship',
+      });
 
       return res.status(200).json({
         ok: true,
@@ -840,6 +872,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
       }
+
+      await trackEvent(actorId, 'couple_dissolved');
 
       return res.status(200).json({ ok: true });
     }
@@ -1075,10 +1109,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const finalLastDate = normalizeDateOnly(updatedCouple?.streak_last_date ?? nextLastDate);
+      const finalCount = Number(updatedCouple?.streak_count ?? nextCount);
+      const streakProps = {
+        streak_count: finalCount,
+        space_type: coupleRow.space_type || 'relationship',
+      };
+      if (justLitToday) {
+        await trackEventsBatch([
+          { distinctId: actorId, event: 'streak_ping', properties: streakProps },
+          { distinctId: actorId, event: 'streak_ignited', properties: streakProps },
+        ]);
+      } else {
+        await trackEvent(actorId, 'streak_ping', streakProps);
+      }
+
       return res.status(200).json({
         ok: true,
         data: {
-          streak_count: Number(updatedCouple?.streak_count ?? nextCount),
+          streak_count: finalCount,
           streak_last_date: finalLastDate,
           streak_ping_date: normalizeDateOnly(updatedCouple?.streak_ping_date ?? nextPingDate),
           streak_ping_users: Array.isArray(updatedCouple?.streak_ping_users)
@@ -1133,6 +1181,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      await trackEvent(actorId, 'reminder_created', {
+        priority: data.priority,
+        has_due_time: Boolean(data.due_time),
+      });
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1159,6 +1211,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (status === 'completed') {
+        await trackEvent(actorId, 'reminder_completed');
+      }
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1253,6 +1308,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      await trackEvent(actorId, 'wishlist_created', {
+        category_id: data.category_id,
+        has_price: Boolean(data.price),
+      });
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1347,6 +1406,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (nextBooked) {
+        await trackEvent(actorId, 'wishlist_reserved', {
+          category_id: data.category_id,
+        });
+      }
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1381,6 +1445,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      await trackEvent(actorId, 'memorable_date_created', {
+        is_annual: Boolean(data.is_annual),
+      });
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1465,6 +1532,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      await trackEvent(actorId, 'date_memory_created', {
+        photos_count: Array.isArray(data.photos) ? data.photos.length : 0,
+        has_location: Boolean(data.location_data),
+      });
       return res.status(200).json({ ok: true, data });
     }
 

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { trackEvent } from '../_lib/analytics';
 
 let cachedCronSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
 
@@ -721,15 +722,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    const totalSent =
+      stats.remindersSent +
+      stats.anniversariesSent +
+      stats.memorableDatesSent +
+      stats.streakRemindersSent;
+
+    await trackEvent('system_cron', 'cron_run_summary', {
+      reminders_sent: stats.remindersSent,
+      anniversaries_sent: stats.anniversariesSent,
+      memorable_dates_sent: stats.memorableDatesSent,
+      streak_reminders_sent: stats.streakRemindersSent,
+      total_sent: totalSent,
+      reminders_checked: stats.remindersChecked,
+      anniversaries_checked: stats.anniversariesChecked,
+      errors_count: stats.errors.length,
+    });
+
     return res.status(200).json({
       ok: true,
       success: true,
       checked: stats.remindersChecked + stats.anniversariesChecked,
-      sent:
-        stats.remindersSent +
-        stats.anniversariesSent +
-        stats.memorableDatesSent +
-        stats.streakRemindersSent,
+      sent: totalSent,
       stats,
     });
   } catch (err: any) {
