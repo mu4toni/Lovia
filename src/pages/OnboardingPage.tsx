@@ -12,6 +12,7 @@ import { telegramService } from '../services/telegramService';
 import { getTodayDateString } from '../utils/dateCalculations';
 import { copyTextToClipboard } from '../utils/clipboard';
 import { getTelegramInviteLink, isLocalDevHost } from '../utils/env';
+import { captureEvent, posthogLogger } from '../lib/posthog';
 import './OnboardingPage.css';
 
 export function OnboardingPage() {
@@ -135,6 +136,11 @@ export function OnboardingPage() {
         spaceType,
       });
       telegramService.hapticNotification('success');
+      captureEvent('shared_space_created', { space_type: couple.spaceType });
+      posthogLogger.info(
+        'shared space created',
+        couple.spaceType ? { space_type: couple.spaceType } : undefined,
+      );
       setCurrentCouple(couple);
       showToast({
         title: spaceType === 'friendship' ? 'Код дружбы создан!' : 'Код пары создан!',
@@ -164,6 +170,7 @@ export function OnboardingPage() {
     const ok = await copyTextToClipboard(link);
     if (ok) {
       telegramService.hapticNotification('success');
+      captureEvent('invite_link_copied', { space_type: currentCouple.spaceType });
       showToast({
         title: 'Ссылка скопирована!',
         message: isFriendship
@@ -180,6 +187,7 @@ export function OnboardingPage() {
     const ok = await copyTextToClipboard(currentCouple.inviteCode);
     if (ok) {
       telegramService.hapticNotification('success');
+      captureEvent('invite_link_copied', { space_type: currentCouple.spaceType });
       setCopied(true);
       showToast({
         title: 'Код скопирован!',
@@ -222,6 +230,7 @@ export function OnboardingPage() {
         gender,
       });
       telegramService.hapticNotification('success');
+      captureEvent('shared_space_joined');
 
       showToast({
         title: 'Успешное подключение',

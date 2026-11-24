@@ -13,6 +13,7 @@ import { useToast } from '../../../components/ui/Toast/ToastContext';
 import { copyTextToClipboard } from '../../../utils/clipboard';
 import { getTelegramInviteLink } from '../../../utils/env';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
+import { captureEvent } from '../../../lib/posthog';
 import './SharedSpaceSettings.css';
 
 export interface SharedSpaceSettingsProps {
@@ -91,6 +92,9 @@ export const SharedSpaceSettings: React.FC<SharedSpaceSettingsProps> = ({
 
       setIsDeleting(false);
       setIsUnpairWarningOpen(false);
+      captureEvent('shared_space_disconnected', {
+        space_type: isFriendship ? 'friendship' : 'relationship',
+      });
       onPartnerStatusChanged();
       // Redirect to onboarding / couple connect
       navigate('/connect');

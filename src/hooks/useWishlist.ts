@@ -3,6 +3,7 @@ import { WishItem, CreateWishInput, UpdateWishInput, WishlistTab } from '../type
 import { wishlistService } from '../services/wishlistService';
 import { requestsService } from '../services/requestsService';
 import { CoupleProfile, User } from '../types/couple';
+import { captureEvent, posthogLogger } from '../lib/posthog';
 
 function dedupeWishItems(list: WishItem[]): WishItem[] {
   const seen = new Set<string>();
@@ -145,6 +146,8 @@ export function useWishlist() {
   // Stable handlers (for React.memo WishCard children)
   const handleCreateWish = useCallback(async (input: CreateWishInput) => {
     const created = await wishlistService.createWishItem(currentUserIdRef.current, input);
+    captureEvent('wishlist_item_created');
+    posthogLogger.info('wishlist item created');
     setItems((prev) =>
       dedupeWishItems(
         prev.some((item) => item.id === created.id)
@@ -172,6 +175,7 @@ export function useWishlist() {
 
   const handleToggleReserve = useCallback(async (id: string) => {
     const updated = await wishlistService.toggleReserveWishItem(id, currentUserIdRef.current);
+    captureEvent('wishlist_reservation_changed');
     setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
     return updated;
   }, []);
