@@ -22,7 +22,7 @@
 
 .place-picker-window {
   width: 100%;
-  max-width: 520px;
+  max-width: 440px;
   height: 90vh;
   max-height: 780px;
   background: var(--bg-card);

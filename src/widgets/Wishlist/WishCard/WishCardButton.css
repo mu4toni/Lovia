@@ -61,6 +61,7 @@
   line-height: 1.15;
   text-align: left;
   overflow: hidden;
+  min-width: 0;
 }
 
 .wish-btn__line {
@@ -70,6 +71,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: -0.01em;
+  max-width: 100%;
 }
 
 .wish-btn__line--2 {

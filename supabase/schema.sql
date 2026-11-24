@@ -43,12 +43,21 @@ CREATE TABLE IF NOT EXISTS public.couples (
   status TEXT NOT NULL DEFAULT 'waiting_partner' CHECK (status IN ('waiting_partner', 'connected', 'dissolved')),
   start_date DATE,
   couple_photo_url TEXT,
+  streak_count INTEGER NOT NULL DEFAULT 0,
+  streak_last_date DATE,
+  streak_ping_date DATE,
+  streak_ping_users TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
   dissolved_at TIMESTAMPTZ
 );
 
 -- Migration for existing couples table
 ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS space_type TEXT NOT NULL DEFAULT 'relationship';
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS couple_photo_url TEXT;
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS streak_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS streak_last_date DATE;
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS streak_ping_date DATE;
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS streak_ping_users TEXT[] NOT NULL DEFAULT '{}';
 
 -- Foreign key back from users to couples
 DO $$

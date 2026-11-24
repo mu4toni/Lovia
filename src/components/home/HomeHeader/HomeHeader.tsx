@@ -16,11 +16,103 @@ import { relationshipService } from '../../../services/relationshipService';
 import { AnniversaryProgressBar } from '../../ui/AnniversaryProgress/AnniversaryProgressBar';
 import { PartnerQuickModal } from '../../partner/PartnerQuickModal';
 import { telegramService } from '../../../services/telegramService';
-import { Mascot } from '../../ui/Mascot/Mascot';
+import { Mascot, MascotName } from '../../ui/Mascot/Mascot';
 import { SketchUnderline } from '../../ui/SketchDecor/SketchDecor';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import { useCouplePhotoUrl, useCouplePhotoPicker } from '../../../features/couple/useCouplePhoto';
 import './HomeHeader.css';
+
+interface BeanMood {
+  id: string;
+  sticker: MascotName;
+  relationshipGreeting: string;
+  friendshipGreeting: string;
+}
+
+const BEAN_MOODS: BeanMood[] = [
+  {
+    id: 'calm',
+    sticker: '29_mood_calm',
+    relationshipGreeting: 'Хорошо, что вы есть ♡',
+    friendshipGreeting: 'Рад видеть вас вместе ✦',
+  },
+  {
+    id: 'happy',
+    sticker: '21_mood_happy',
+    relationshipGreeting: 'У Бина отличное настроение — пусть ваш день будет таким же ярким!',
+    friendshipGreeting: 'У Бина отличное настроение — пусть ваш день будет таким же ярким ✦',
+  },
+  {
+    id: 'sleepy',
+    sticker: '22_mood_sleepy',
+    relationshipGreeting: 'Бин ещё сонный… не забудьте пожелать друг другу доброго утра или сладких снов',
+    friendshipGreeting: 'Бин ещё сонный… не забудьте пожелать друг другу доброго утра или хорошего отдыха',
+  },
+  {
+    id: 'sad',
+    sticker: '23_mood_sad',
+    relationshipGreeting: 'Бин немного загрустил — обнимите или поддержите друг друга сегодня',
+    friendshipGreeting: 'Бин немного загрустил — поддержите друг друга и поднимите настроение',
+  },
+  {
+    id: 'angry',
+    sticker: '24_mood_angry',
+    relationshipGreeting: 'Бин сегодня ворчит — порадуйте друг друга чем-нибудь приятным!',
+    friendshipGreeting: 'Бин сегодня ворчит — порадуйте друг друга чем-нибудь приятным!',
+  },
+  {
+    id: 'miss_you',
+    sticker: '25_mood_miss_you',
+    relationshipGreeting: 'Бин очень скучает — самое время написать пару тёплых слов',
+    friendshipGreeting: 'Бин соскучился — самое время написать друг другу пару тёплых слов',
+  },
+  {
+    id: 'hungry',
+    sticker: '26_mood_hungry',
+    relationshipGreeting: 'Бин проголодался — может, закажете что-нибудь вкусное или сходите в кафе?',
+    friendshipGreeting: 'Бин проголодался — может, закажете что-нибудь вкусное или выберетесь в кафе?',
+  },
+  {
+    id: 'working',
+    sticker: '27_mood_working',
+    relationshipGreeting: 'Бин в делах, но всегда находит минутку для вас двоих',
+    friendshipGreeting: 'Бин в делах, но всегда находит минутку для вашей дружбы',
+  },
+  {
+    id: 'sick',
+    sticker: '28_mood_sick',
+    relationshipGreeting: 'Бин бережёт себя — не забывайте заботиться друг о друге',
+    friendshipGreeting: 'Бин бережёт себя — не забывайте заботиться друг о друге',
+  },
+  {
+    id: 'kiss_goodnight',
+    sticker: '30_kiss_goodnight',
+    relationshipGreeting: 'Передайте друг другу немного нежности и тепла сегодня ♡',
+    friendshipGreeting: 'Передайте друг другу немного тепла и дружеской поддержки сегодня ✦',
+  },
+];
+
+const BEAN_SESSION_MOOD_KEY = 'lovia_bean_session_mood_v1';
+
+function getSessionBeanMood(): BeanMood {
+  try {
+    const savedId = sessionStorage.getItem(BEAN_SESSION_MOOD_KEY);
+    if (savedId) {
+      const found = BEAN_MOODS.find((m) => m.id === savedId);
+      if (found) return found;
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  const randomMood = BEAN_MOODS[Math.floor(Math.random() * BEAN_MOODS.length)];
+  try {
+    sessionStorage.setItem(BEAN_SESSION_MOOD_KEY, randomMood.id);
+  } catch {
+    // ignore storage errors
+  }
+  return randomMood;
+}
 
 interface HomeHeaderProps {
   profile: CoupleProfile;
@@ -36,6 +128,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const navigate = useNavigate();
   const { isFriendship } = useSpaceMode();
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [sessionMood] = useState<BeanMood>(getSessionBeanMood);
+
   const couplePhotoUrl = useCouplePhotoUrl();
   const { openPicker, picker: couplePhotoPicker } = useCouplePhotoPicker();
 
@@ -47,6 +141,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const hasPartner = profile.isPartnerConnected && Boolean(profile.partner);
   const userName = profile.user.name;
   const partnerName = profile.partner?.name || (isFriendship ? 'Друг' : 'Партнёр');
+
+  const greetingMascotName: MascotName = sessionMood.sticker;
+  const dynamicGreetingText = isFriendship
+    ? sessionMood.friendshipGreeting
+    : sessionMood.relationshipGreeting;
 
   const { daysTogether, daysLabel, anniversary, currentYearsLabel, nextYearsLabel } = useMemo(() => {
     const sDate = profile.startDate || relationshipService.getStartDate();
@@ -108,15 +207,17 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   return (
     <>
       <header className={`home-header ${className}`} aria-label="Пространство пары">
-        {/* 1. Handwritten Scrapbook Greeting Row + Peeking Bean on Top-Right */}
+        {/* 1. Handwritten Scrapbook Greeting Row + Automatic Session Bean Mood */}
         <div className="home-header__greeting-row">
           <div className="home-header__greeting-text">
-            <span className="home-header__date-chip">
-              <Icon name="calendar" size={12} className="home-header__date-icon" />
-              <span>
-                {capitalizedWeekday}, {formattedDate}
+            <div className="home-header__meta-bar">
+              <span className="home-header__date-chip">
+                <Icon name="calendar" size={12} className="home-header__date-icon" />
+                <span>
+                  {capitalizedWeekday}, {formattedDate}
+                </span>
               </span>
-            </span>
+            </div>
 
             <h1 className="home-header__greeting-title">
               {hasPartner
@@ -127,20 +228,12 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </span>
             </h1>
 
-            <p className="home-header__greeting-subtitle">
-              {hasPartner
-                ? isFriendship
-                  ? 'Хорошо, что вы дружите ✦'
-                  : 'Хорошо, что вы есть ♡'
-                : isFriendship
-                ? 'Пригласите друга в ваш дневник ✦'
-                : 'Пригласите партнёра в ваш дневник ♡'}
-            </p>
+            <p className="home-header__greeting-subtitle">{dynamicGreetingText}</p>
           </div>
 
-          {/* Bean gently peeking from top-right — strictly pointer-events: none */}
+          {/* Bean gently peeking / reflecting selected mood — strictly pointer-events: none */}
           <div className="home-header__peeking-mascot" aria-hidden="true">
-            <Mascot mood="peek" size={68} />
+            <Mascot name={greetingMascotName} size={74} eager />
           </div>
         </div>
 
@@ -185,6 +278,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <div className="home-header__days-row">
               <span className="home-header__days-num">{daysTogether}</span>
               <span className="home-header__days-unit">{daysLabel}</span>
+              <span className="home-header__days-heart" aria-hidden="true">
+                {isFriendship ? '✦' : '♡'}
+              </span>
             </div>
 
             <SketchUnderline width={86} variant="wave" className="home-header__days-underline" />
@@ -229,6 +325,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Subtle side-peeking Bean tucked cleanly at top-right inside card bounds */}
+          <div className="home-header__card-side-bean" aria-hidden="true">
+            <Mascot name="35_peeking_side" size={38} />
           </div>
         </div>
       </header>

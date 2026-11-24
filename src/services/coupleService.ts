@@ -53,8 +53,39 @@ export interface CoupleSpace {
   status: 'waiting_partner' | 'connected' | 'dissolved';
   startDate?: string;
   couplePhotoUrl?: string;
+  streakCount?: number;
+  streakLastDate?: string | null;
+  streakPingDate?: string | null;
+  streakPingUsers?: string[];
   createdAt: string;
   dissolvedAt?: string;
+}
+
+export interface StreakState {
+  count: number;
+  lastDate: string | null;
+  pingDate: string | null;
+  pingUsers: string[];
+}
+
+function getLocalTodayString(date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function normalizeDateOnly(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const part = value.trim().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(part) ? part : null;
+}
+
+function diffDateDaysLocal(fromDate: string, toDate: string): number {
+  const [fy, fm, fd] = fromDate.split('-').map(Number);
+  const [ty, tm, td] = toDate.split('-').map(Number);
+  if (!fy || !fm || !fd || !ty || !tm || !td) return Number.POSITIVE_INFINITY;
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / (24 * 60 * 60 * 1000));
 }
 
 const STORAGE_COUPLES_KEY = 'lovia_couples_registry_v1';
@@ -654,6 +685,10 @@ class CoupleService {
       status: coupleRow.status as 'waiting_partner' | 'connected' | 'dissolved',
       startDate: coupleRow.start_date || undefined,
       couplePhotoUrl: coupleRow.couple_photo_url || undefined,
+      streakCount: Number(coupleRow.streak_count || 0),
+      streakLastDate: normalizeDateOnly(coupleRow.streak_last_date),
+      streakPingDate: normalizeDateOnly(coupleRow.streak_ping_date),
+      streakPingUsers: Array.isArray(coupleRow.streak_ping_users) ? coupleRow.streak_ping_users : [],
       createdAt: coupleRow.created_at,
       dissolvedAt: coupleRow.dissolved_at || undefined,
     };
@@ -715,7 +750,9 @@ class CoupleService {
 
       this.inFlightBundlePromise = (async () => {
         try {
-          const bundle = await callServerDb<any>('get_bundle');
+          const bundle = await callServerDb<any>('get_bundle', {
+            localDate: getLocalTodayString(),
+          });
           if (bundle) {
             if (bundle.subscriptionRequired) {
               this.setSubscriptionRequired(true, bundle.channelUrl);
@@ -804,6 +841,10 @@ class CoupleService {
         status: coupleRow.status as 'waiting_partner' | 'connected' | 'dissolved',
         startDate: coupleRow.start_date || undefined,
         couplePhotoUrl: coupleRow.couple_photo_url || undefined,
+        streakCount: Number(coupleRow.streak_count || 0),
+        streakLastDate: normalizeDateOnly(coupleRow.streak_last_date),
+        streakPingDate: normalizeDateOnly(coupleRow.streak_ping_date),
+        streakPingUsers: Array.isArray(coupleRow.streak_ping_users) ? coupleRow.streak_ping_users : [],
         createdAt: coupleRow.created_at,
         dissolvedAt: coupleRow.dissolved_at || undefined,
       };
@@ -1421,8 +1462,154 @@ class CoupleService {
   }
 
   /**
+   * Returns normalized current streak state for the active couple.
+   */
+  getStreakState(todayStr = getLocalTodayString()): StreakState {
+    this.init();
+    const couple = this.getCurrentCouple();
+    if (!couple) {
+      return { count: 0, lastDate: null, pingDate: null, pingUsers: [] };
+    }
+    const lastDate = normalizeDateOnly(couple.streakLastDate);
+    const pingDate = normalizeDateOnly(couple.streakPingDate);
+    const rawCount = Number(couple.streakCount || 0);
+    const isExpired =
+      rawCount > 0 && lastDate !== null && lastDate !== todayStr && diffDateDaysLocal(lastDate, todayStr) > 2;
+
+    return {
+      count: isExpired ? 0 : rawCount,
+      lastDate,
+      pingDate,
+      pingUsers: pingDate === todayStr && Array.isArray(couple.streakPingUsers) ? [...couple.streakPingUsers] : [],
+    };
+  }
+
+  /**
+   * Daily streak ping («Подначить»): sends server action `streak_ping` and updates local cache.
+   */
+  async pingStreak(): Promise<StreakState & { litToday: boolean; justLitToday: boolean }> {
+    this.init();
+    const user = this.getActiveUser();
+    const couple = this.getCurrentCouple();
+    if (!couple || couple.status !== 'connected' || !couple.user2) {
+      throw new Error('Оба участника должны быть подключены');
+    }
+
+    const localDate = getLocalTodayString();
+
+    if (shouldUseServerDb()) {
+      const res = await callServerDb<{
+        streak_count: number;
+        streak_last_date: string | null;
+        streak_ping_date: string | null;
+        streak_ping_users: string[];
+        litToday: boolean;
+        justLitToday: boolean;
+      }>('streak_ping', {
+        coupleId: couple.id,
+        localDate,
+      });
+
+      const nextState: StreakState = {
+        count: Number(res.streak_count || 0),
+        lastDate: normalizeDateOnly(res.streak_last_date),
+        pingDate: normalizeDateOnly(res.streak_ping_date),
+        pingUsers: Array.isArray(res.streak_ping_users) ? res.streak_ping_users : [],
+      };
+
+      couple.streakCount = nextState.count;
+      couple.streakLastDate = nextState.lastDate;
+      couple.streakPingDate = nextState.pingDate;
+      couple.streakPingUsers = nextState.pingUsers;
+      this.couples[couple.id] = { ...couple };
+      this.saveToStorage();
+      if (couple.id && couple.id !== 'couple-1') {
+        updateSwrCache(couple.id, 'couple', this.couples[couple.id]);
+      }
+      this.notify();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('lovia_couple_updated'));
+      }
+
+      return {
+        ...nextState,
+        litToday: Boolean(res.litToday || nextState.lastDate === localDate),
+        justLitToday: Boolean(res.justLitToday),
+      };
+    }
+
+    // Direct Supabase or local dev fallback
+    const currentCount = Number(couple.streakCount || 0);
+    const lastDate = normalizeDateOnly(couple.streakLastDate);
+    const pingDate = normalizeDateOnly(couple.streakPingDate);
+    const existingPingUsers = Array.isArray(couple.streakPingUsers) ? couple.streakPingUsers : [];
+
+    const nextPingUsers =
+      pingDate !== localDate
+        ? [user.id]
+        : existingPingUsers.includes(user.id)
+        ? [...existingPingUsers]
+        : [...existingPingUsers, user.id];
+
+    const bothPinged =
+      nextPingUsers.includes(couple.user1.id) && nextPingUsers.includes(couple.user2.id);
+
+    let nextCount = currentCount;
+    let nextLastDate = lastDate;
+    let justLitToday = false;
+
+    if (bothPinged && lastDate !== localDate) {
+      const daysSinceLast = lastDate ? diffDateDaysLocal(lastDate, localDate) : null;
+      nextCount = daysSinceLast !== null && daysSinceLast >= 1 && daysSinceLast <= 2 ? currentCount + 1 : 1;
+      nextLastDate = localDate;
+      justLitToday = true;
+    } else if (currentCount > 0 && lastDate && lastDate !== localDate && diffDateDaysLocal(lastDate, localDate) > 2) {
+      nextCount = 0;
+    }
+
+    if (isSupabaseConfigured() && couple.id !== 'couple-1') {
+      const { error } = await supabase
+        .from('couples')
+        .update({
+          streak_count: nextCount,
+          streak_last_date: nextLastDate,
+          streak_ping_date: localDate,
+          streak_ping_users: nextPingUsers,
+        })
+        .eq('id', couple.id);
+      if (error) {
+        throw new Error(error.message);
+      }
+    }
+
+    couple.streakCount = nextCount;
+    couple.streakLastDate = nextLastDate;
+    couple.streakPingDate = localDate;
+    couple.streakPingUsers = nextPingUsers;
+    this.couples[couple.id] = { ...couple };
+    this.saveToStorage();
+    if (couple.id && couple.id !== 'couple-1') {
+      updateSwrCache(couple.id, 'couple', this.couples[couple.id]);
+    }
+    this.notify();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('lovia_couple_updated'));
+    }
+
+    return {
+      count: nextCount,
+      lastDate: nextLastDate,
+      pingDate: localDate,
+      pingUsers: nextPingUsers,
+      litToday: nextLastDate === localDate,
+      justLitToday,
+    };
+  }
+
+  /**
    * 3. FULL DISSOLUTION / TEARDOWN OF SHARED SPACE
-   */  async dissolveCouple(): Promise<{ success: boolean; error?: string }> {
+   */
+  async dissolveCouple(): Promise<{ success: boolean; error?: string }> {
     this.init();
     try {
       const user = this.getActiveUser();
@@ -1539,6 +1726,60 @@ class CoupleService {
     this.activeUserId = userId;
     this.saveToStorage();
     return { ...this.users[userId] };
+  }
+
+  /**
+   * Local dev preview helper: switches space type (relationship / friendship) instantly without server writes.
+   */
+  setDevSpaceType(spaceType: SpaceType): void {
+    if (!isLocalDevHost()) return;
+    this.init();
+    const user = this.users[this.activeUserId];
+    if (user?.coupleId && this.couples[user.coupleId]) {
+      this.couples[user.coupleId].spaceType = spaceType;
+      this.saveToStorage();
+      this.notify();
+    }
+  }
+
+  /**
+   * Local dev preview helper: disconnects demo user locally to inspect Onboarding / Registration screen.
+   */
+  setDevDisconnectedForOnboarding(): void {
+    if (!isLocalDevHost()) return;
+    this.init();
+    const user = this.users[this.activeUserId];
+    if (user) {
+      user.coupleId = null;
+      this.saveToStorage();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('lovia_couple_dissolved'));
+      }
+      this.notify();
+    }
+  }
+
+  /**
+   * Local dev preview helper: reconnects demo user back to couple-1 when returning to Home.
+   */
+  reconnectDevDemoCouple(): void {
+    if (!isLocalDevHost()) return;
+    this.init();
+    if (!this.couples['couple-1'] || this.couples['couple-1'].status !== 'connected') {
+      this.couples['couple-1'] = { ...defaultCouple };
+    }
+    const user = this.users[this.activeUserId];
+    if (user) {
+      user.coupleId = 'couple-1';
+    } else {
+      this.users = { ...defaultUsers };
+      this.activeUserId = 'user-marsel';
+    }
+    this.saveToStorage();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('lovia_couple_connected'));
+    }
+    this.notify();
   }
 
   /**

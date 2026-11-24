@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { MemorableDate } from '../../../types/relationship';
 import { Icon, IconName } from '../../../components/ui/Icon/Icon';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
-import { SketchDoodle } from '../../../components/ui/SketchDecor/SketchDecor';
 import {
   formatRussianDate,
   getMemorableDateStatus,
@@ -59,7 +58,7 @@ export const MemorableDatesList: React.FC<MemorableDatesListProps> = ({
     return (
       <div className="memorable-timeline-empty">
         <div className="memorable-timeline-empty__mascot" aria-hidden="true">
-          <Mascot mood="thinking" size={106} interactive />
+          <Mascot name="38_writing_diary" size={108} />
         </div>
         <p className="memorable-timeline-empty__title">Пока нет сохранённых дат</p>
         <p className="memorable-timeline-empty__desc">
@@ -195,11 +194,7 @@ export const MemorableDatesList: React.FC<MemorableDatesListProps> = ({
 
       {/* Scrapbook Timeline Closing Note */}
       <div className="memorable-timeline__ending">
-        <SketchDoodle
-          type={isFriendship ? 'star' : 'heart-filled'}
-          size={14}
-          className="memorable-timeline__ending-icon"
-        />
+        <Mascot name="38_writing_diary" size={32} />
         <span className="memorable-timeline__ending-text">
           {isFriendship ? 'Дальше — ещё больше приключений ✦' : 'Дальше — только вместе ♡'}
         </span>

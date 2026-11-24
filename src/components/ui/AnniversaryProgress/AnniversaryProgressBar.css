@@ -8,7 +8,7 @@
 .anniversary-progress__track {
   width: 100%;
   height: 6px;
-  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.06));
+  background: var(--bg-paper, #F8F1E9);
   border-radius: var(--radius-full, 9999px);
   overflow: hidden;
   position: relative;
@@ -19,8 +19,8 @@
   border-radius: var(--radius-full, 9999px);
   background: linear-gradient(
     90deg,
-    #e3a3b4 0%,
-    var(--color-primary, #da0038) 100%
+    var(--accent-soft, #F7DDE0) 0%,
+    var(--accent-primary, #C92D48) 100%
   );
   position: relative;
   transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
@@ -30,8 +30,8 @@
 .anniversary-progress__fill--celebrate {
   background: linear-gradient(
     90deg,
-    #e3a3b4 0%,
-    var(--color-primary, #da0038) 100%
+    var(--accent-soft, #F7DDE0) 0%,
+    var(--accent-primary, #C92D48) 100%
   );
 }
 

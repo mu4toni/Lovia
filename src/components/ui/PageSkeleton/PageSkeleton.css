@@ -4,7 +4,7 @@
   gap: var(--space-md);
   padding: var(--space-md);
   width: 100%;
-  max-width: 600px;
+  max-width: 440px;
   margin: 0 auto;
   box-sizing: border-box;
   animation: pageSkeletonFadeIn 0.2s ease;
@@ -17,6 +17,21 @@
   to {
     opacity: 1;
   }
+}
+
+.page-skeleton__mascot-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0 2px;
+  pointer-events: none;
+}
+
+.page-skeleton__cloud {
+  opacity: 0.82;
+  margin-top: -12px;
 }
 
 .page-skeleton__header {

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { DateMemory } from '../../../types/dates';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { PolaroidFrame } from '../../../components/ui/PolaroidFrame/PolaroidFrame';
 import { formatRussianDate } from '../../../utils/dateCalculations';
+import { normalizeMediaUrl } from '../../../utils/media';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './DateMemoryCard.css';
 
@@ -26,10 +27,100 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
   const { isFriendship } = useSpaceMode();
   const { title, date, place, location, story, photos } = memory;
   const effectivePlace = location?.placeName || place;
-  const hasPhotos = Boolean(photos && photos.length > 0);
+  const photoCount = photos ? photos.length : 0;
+  const hasPhotos = photoCount > 0;
+  const isMultiPhoto = photoCount > 1;
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const swipeStateRef = useRef({
+    startX: 0,
+    startY: 0,
+    hasSwiped: false,
+    lastSwipeTs: 0,
+  });
+
+  // Reset active photo index when memory or photo list changes
+  useEffect(() => {
+    setActivePhotoIndex(0);
+    if (carouselRef.current) {
+      carouselRef.current.scrollLeft = 0;
+    }
+  }, [memory.id, photoCount]);
+
+  const scrollToPhoto = useCallback(
+    (targetIndex: number) => {
+      if (!photos || photos.length <= 1) return;
+      const wrappedIndex = ((targetIndex % photos.length) + photos.length) % photos.length;
+      setActivePhotoIndex(wrappedIndex);
+      swipeStateRef.current.lastSwipeTs = Date.now();
+      const el = carouselRef.current;
+      if (el && el.clientWidth > 0) {
+        el.scrollTo({
+          left: wrappedIndex * el.clientWidth,
+          behavior: 'smooth',
+        });
+      }
+    },
+    [photos]
+  );
+
+  const handleCarouselScroll = () => {
+    const el = carouselRef.current;
+    if (!el || el.clientWidth <= 0 || photoCount <= 1) return;
+    const nextIdx = Math.max(0, Math.min(photoCount - 1, Math.round(el.scrollLeft / el.clientWidth)));
+    if (nextIdx !== activePhotoIndex) {
+      setActivePhotoIndex(nextIdx);
+      swipeStateRef.current.lastSwipeTs = Date.now();
+    }
+  };
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    swipeStateRef.current.startX = touch.clientX;
+    swipeStateRef.current.startY = touch.clientY;
+    swipeStateRef.current.hasSwiped = false;
+  };
+
+  const handleCarouselTouchMove = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const dx = Math.abs(touch.clientX - swipeStateRef.current.startX);
+    if (dx > 8) {
+      swipeStateRef.current.hasSwiped = true;
+      swipeStateRef.current.lastSwipeTs = Date.now();
+    }
+  };
+
+  const handleCarouselPointerDown = (e: React.PointerEvent) => {
+    swipeStateRef.current.startX = e.clientX;
+    swipeStateRef.current.startY = e.clientY;
+    swipeStateRef.current.hasSwiped = false;
+  };
+
+  const handleCarouselPointerMove = (e: React.PointerEvent) => {
+    if (e.buttons === 0 && e.pointerType === 'mouse') return;
+    const dx = Math.abs(e.clientX - swipeStateRef.current.startX);
+    if (dx > 8) {
+      swipeStateRef.current.hasSwiped = true;
+      swipeStateRef.current.lastSwipeTs = Date.now();
+    }
+  };
+
+  const handleCarouselClick = (e: React.MouseEvent) => {
+    // Always stop propagation on carousel area so swiping/browsing photos NEVER opens the card
+    e.stopPropagation();
+    const recentlySwiped =
+      swipeStateRef.current.hasSwiped || Date.now() - swipeStateRef.current.lastSwipeTs < 260;
+    swipeStateRef.current.hasSwiped = false;
+    if (recentlySwiped) return;
+    if (photos && onOpenPhotoLightbox) {
+      onOpenPhotoLightbox(photos, activePhotoIndex);
+    }
+  };
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -122,29 +213,126 @@ export const DateMemoryCard: React.FC<DateMemoryCardProps> = ({
 
       {/* 1. Polaroid Photo Header (when photos exist) */}
       {hasPhotos && photos && photos.length > 0 && (
-        <div className="date-memory-card__polaroid-wrap">
-          <PolaroidFrame
-            src={photos[0]}
-            alt={`${title} - фото`}
-            aspectRatio="landscape"
-            tilt={tilt}
-            sticker={isFriendship ? 'tape' : 'heart'}
-            className="date-memory-card__polaroid"
-            onClick={(e) => {
-              if (onOpenPhotoLightbox) {
-                e.stopPropagation();
-                onOpenPhotoLightbox(photos, 0);
-              }
-            }}
-          />
+        <div
+          className="date-memory-card__polaroid-wrap"
+          onClick={isMultiPhoto ? (e) => e.stopPropagation() : undefined}
+        >
+          {isMultiPhoto ? (
+            <PolaroidFrame
+              aspectRatio="landscape"
+              tilt={tilt}
+              sticker={isFriendship ? 'tape' : 'heart'}
+              className="date-memory-card__polaroid"
+            >
+              <div
+                className="date-memory-card__carousel-box"
+                onClick={handleCarouselClick}
+                onTouchStart={handleCarouselTouchStart}
+                onTouchMove={handleCarouselTouchMove}
+                onPointerDown={handleCarouselPointerDown}
+                onPointerMove={handleCarouselPointerMove}
+              >
+                <div
+                  ref={carouselRef}
+                  className="date-memory-card__carousel-track"
+                  onScroll={handleCarouselScroll}
+                  aria-label={`Галерея фотографий: ${title}`}
+                >
+                  {photos.map((photoUrl, idx) => (
+                    <div key={`${idx}-${photoUrl.slice(-16)}`} className="date-memory-card__carousel-slide">
+                      <img
+                        src={normalizeMediaUrl(photoUrl)}
+                        alt={`${title} — фото ${idx + 1} из ${photos.length}`}
+                        className="date-memory-card__carousel-img"
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        draggable={false}
+                      />
+                    </div>
+                  ))}
+                </div>
 
-          {photos.length > 1 && (
+                {/* Mini Left / Right Arrows */}
+                <button
+                  type="button"
+                  className="date-memory-card__carousel-arrow date-memory-card__carousel-arrow--prev"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    scrollToPhoto(activePhotoIndex - 1);
+                  }}
+                  aria-label="Предыдущее фото"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="date-memory-card__carousel-arrow date-memory-card__carousel-arrow--next"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    scrollToPhoto(activePhotoIndex + 1);
+                  }}
+                  aria-label="Следующее фото"
+                >
+                  ›
+                </button>
+
+                {/* Bottom Dot Indicators */}
+                <div
+                  className="date-memory-card__carousel-dots"
+                  role="tablist"
+                  aria-label="Выбор фотографии"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {photos.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      role="tab"
+                      aria-selected={idx === activePhotoIndex}
+                      aria-label={`Фото ${idx + 1} из ${photos.length}`}
+                      className={`date-memory-card__carousel-dot ${
+                        idx === activePhotoIndex ? 'date-memory-card__carousel-dot--active' : ''
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollToPhoto(idx);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </PolaroidFrame>
+          ) : (
+            <PolaroidFrame
+              src={photos[0]}
+              alt={`${title} - фото`}
+              aspectRatio="landscape"
+              tilt={tilt}
+              sticker={isFriendship ? 'tape' : 'heart'}
+              className="date-memory-card__polaroid"
+              onClick={(e) => {
+                if (onOpenPhotoLightbox) {
+                  e.stopPropagation();
+                  onOpenPhotoLightbox(photos, 0);
+                }
+              }}
+            />
+          )}
+
+          {isMultiPhoto && (
             <div
               className="date-memory-card__photo-count-badge"
-              aria-label={`Всего фотографий: ${photos.length}`}
+              aria-label={`Фото ${activePhotoIndex + 1} из ${photos.length}`}
             >
               <Icon name="image" size={13} />
-              <span>1 / {photos.length}</span>
+              <span>
+                {activePhotoIndex + 1} / {photos.length}
+              </span>
             </div>
           )}
 

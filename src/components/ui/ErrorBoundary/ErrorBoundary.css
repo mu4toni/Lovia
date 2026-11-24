@@ -1,0 +1,45 @@
+.error-boundary-screen {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg-paper);
+  box-sizing: border-box;
+}
+
+.error-boundary-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.error-boundary-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--text-cocoa);
+  line-height: 1.25;
+}
+
+.error-boundary-desc {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.error-boundary-btn {
+  margin-top: 6px;
+  min-height: 44px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
+}

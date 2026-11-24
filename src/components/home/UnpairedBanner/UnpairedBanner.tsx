@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../../ui/Card/Card';
 import { Button } from '../../ui/Button/Button';
 import { Icon } from '../../ui/Icon/Icon';
+import { Mascot } from '../../ui/Mascot/Mascot';
 import { useToast } from '../../ui/Toast/ToastContext';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import { getTelegramInviteLink, isLocalDevHost } from '../../../utils/env';
@@ -35,12 +36,8 @@ export const UnpairedBanner: React.FC<UnpairedBannerProps> = ({
 
   return (
     <Card variant="solid" className={`unpaired-banner ${className}`}>
-      <div className="unpaired-banner__icon-wrap" aria-hidden="true">
-        <Icon
-          name={isFriendship ? 'sparkles' : 'heart'}
-          size={28}
-          className="unpaired-banner__icon"
-        />
+      <div className="unpaired-banner__mascot-wrap" aria-hidden="true" style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+        <Mascot name="04_sending_love_note" size={84} />
       </div>
       <h2 className="unpaired-banner__title">
         {isFriendship ? 'Пригласите друга' : 'Пригласите партнёра'}

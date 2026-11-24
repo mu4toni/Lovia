@@ -10,6 +10,7 @@ import { PlaceCard } from '../PlaceCard/PlaceCard';
 import { PlacePickerModal } from '../PlacePickerModal/PlacePickerModal';
 import { getTodayDateString, isFutureDate } from '../../../utils/dateCalculations';
 import { compressImageFile } from '../../../utils/imageCompressor';
+import { normalizeMediaUrl } from '../../../utils/media';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './CreateEditDateMemoryModal.css';
 
@@ -172,6 +173,56 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
             </div>
           )}
 
+          {/* Photo Upload Section (First element right under modal header) */}
+          <div className="date-memory-form__field">
+            <label className="date-memory-form__label">Фотографии с встречи</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handlePhotoUpload}
+            />
+
+            <div className="date-memory-form__photos-area">
+              {photos.map((photoUrl, index) => (
+                <div key={index} className="date-memory-form__photo-item">
+                  <img
+                    src={normalizeMediaUrl(photoUrl)}
+                    alt={`Фото ${index + 1}`}
+                    className="date-memory-form__photo-img"
+                  />
+                  <button
+                    type="button"
+                    className="date-memory-form__remove-photo-btn"
+                    onClick={() => handleRemovePhoto(index)}
+                    title="Удалить фото"
+                    aria-label={`Удалить фото ${index + 1}`}
+                  >
+                    <Icon name="close" size={14} />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className="date-memory-form__add-photo-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isReadingFiles}
+                aria-label="Прикрепить фотографии"
+              >
+                <Icon name="camera" size={20} />
+                <span className="date-memory-form__add-photo-text">
+                  {isReadingFiles ? 'Загрузка...' : 'Добавить фото'}
+                </span>
+              </button>
+            </div>
+            <span className="date-memory-form__hint">
+              Можно выбрать одно или несколько фото с устройства (до 5 МБ каждое)
+            </span>
+          </div>
+
           <div className="date-memory-form__field">
             <Input
               label={isFriendship ? 'Название встречи *' : 'Название свидания *'}
@@ -186,7 +237,6 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
                 if (error) setError(null);
               }}
               required
-              autoFocus
             />
           </div>
 
@@ -235,56 +285,6 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
               onChange={(e) => setStory(e.target.value)}
               rows={4}
             />
-          </div>
-
-          {/* Photo Upload Section */}
-          <div className="date-memory-form__field">
-            <label className="date-memory-form__label">Фотографии с встречи</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: 'none' }}
-              onChange={handlePhotoUpload}
-            />
-
-            <div className="date-memory-form__photos-area">
-              {photos.map((photoUrl, index) => (
-                <div key={index} className="date-memory-form__photo-item">
-                  <img
-                    src={photoUrl}
-                    alt={`Фото ${index + 1}`}
-                    className="date-memory-form__photo-img"
-                  />
-                  <button
-                    type="button"
-                    className="date-memory-form__remove-photo-btn"
-                    onClick={() => handleRemovePhoto(index)}
-                    title="Удалить фото"
-                    aria-label={`Удалить фото ${index + 1}`}
-                  >
-                    <Icon name="close" size={14} />
-                  </button>
-                </div>
-              ))}
-
-              <button
-                type="button"
-                className="date-memory-form__add-photo-btn"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isReadingFiles}
-                aria-label="Прикрепить фотографии"
-              >
-                <Icon name="camera" size={20} />
-                <span className="date-memory-form__add-photo-text">
-                  {isReadingFiles ? 'Загрузка...' : 'Добавить фото'}
-                </span>
-              </button>
-            </div>
-            <span className="date-memory-form__hint">
-              Можно выбрать одно или несколько фото с устройства (до 5 МБ каждое)
-            </span>
           </div>
 
           <div className="date-memory-form__actions">

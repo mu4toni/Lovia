@@ -1,10 +1,65 @@
-import React, { useEffect, useId, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useId, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from '../IconButton/IconButton';
 import { Icon } from '../Icon/Icon';
 import { telegramService } from '../../../services/telegramService';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './Modal.css';
+
+const MODAL_BASE_Z_INDEX = 1000;
+const MODAL_Z_STEP = 20;
+
+interface ModalLayerEntry {
+  id: string;
+  zIndex: number;
+}
+
+const openModalLayers: ModalLayerEntry[] = [];
+let savedBodyOverflow: string | null = null;
+
+/**
+ * Registers a modal/overlay layer in the global stack so nested modals always
+ * receive strictly higher z-index values (1020, 1040, 1060, ...) and body scroll
+ * remains locked until the last modal closes.
+ */
+export function registerModalLayer(id: string, explicitZIndex?: number): number {
+  const existing = openModalLayers.find((entry) => entry.id === id);
+  if (existing) {
+    if (explicitZIndex !== undefined && existing.zIndex !== explicitZIndex) {
+      existing.zIndex = explicitZIndex;
+    }
+    return existing.zIndex;
+  }
+
+  const topZ =
+    openModalLayers.length > 0
+      ? openModalLayers[openModalLayers.length - 1].zIndex
+      : MODAL_BASE_Z_INDEX;
+  const nextZ = explicitZIndex ?? topZ + MODAL_Z_STEP;
+
+  if (openModalLayers.length === 0 && typeof document !== 'undefined') {
+    savedBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+
+  openModalLayers.push({ id, zIndex: nextZ });
+  return nextZ;
+}
+
+export function unregisterModalLayer(id: string): void {
+  const idx = openModalLayers.findIndex((entry) => entry.id === id);
+  if (idx !== -1) {
+    openModalLayers.splice(idx, 1);
+  }
+  if (openModalLayers.length === 0 && typeof document !== 'undefined') {
+    document.body.style.overflow = savedBodyOverflow ?? '';
+    savedBodyOverflow = null;
+  }
+}
+
+export function isTopModalLayer(id: string): boolean {
+  return openModalLayers.length > 0 && openModalLayers[openModalLayers.length - 1].id === id;
+}
 
 export interface ModalProps {
   isOpen: boolean;
@@ -13,6 +68,7 @@ export interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  zIndex?: number;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -22,10 +78,15 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   className = '',
+  zIndex,
 }) => {
   const titleId = useId();
+  const layerId = useId();
   const { isFriendship } = useSpaceMode();
   const [shouldRender, setShouldRender] = useState(isOpen);
+  const [layerZIndex, setLayerZIndex] = useState<number>(
+    () => zIndex ?? MODAL_BASE_Z_INDEX + MODAL_Z_STEP
+  );
   const [isClosing, setIsClosing] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [closeFromY, setCloseFromY] = useState(0);
@@ -100,25 +161,31 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, []);
 
-  // Lock body scroll and handle Escape
+  // Register modal layer in global stack and handle Escape (topmost modal only)
+  useLayoutEffect(() => {
+    if (!shouldRender) return;
+    const assignedZ = registerModalLayer(layerId, zIndex);
+    setLayerZIndex(assignedZ);
+    return () => {
+      unregisterModalLayer(layerId);
+    };
+  }, [shouldRender, layerId, zIndex]);
+
   useEffect(() => {
     if (!shouldRender) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && isTopModalLayer(layerId)) {
+        e.stopPropagation();
         startCloseSequence();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = originalOverflow;
     };
-  }, [shouldRender, startCloseSequence]);
+  }, [shouldRender, layerId, startCloseSequence]);
 
   // Pointer drag gestures for Swipe-to-Dismiss
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -205,11 +272,13 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!shouldRender) return null;
 
-  // Calculate backdrop dynamic opacity during drag
-  const backdropOpacityStyle =
-    isDragging && dragOffset > 0
+  // Calculate backdrop dynamic opacity & automatic stacking z-index
+  const backdropStyle: React.CSSProperties = {
+    zIndex: zIndex ?? layerZIndex,
+    ...(isDragging && dragOffset > 0
       ? { opacity: Math.max(0.1, 1 - dragOffset / 320) }
-      : undefined;
+      : {}),
+  };
 
   // Calculate sheet transform during drag, reset, or swipe-close
   const sheetStyle: React.CSSProperties & { '--modal-close-from'?: string } = {};
@@ -233,7 +302,7 @@ export const Modal: React.FC<ModalProps> = ({
   const modalContent = (
     <div
       className={`modal-backdrop ${isClosing ? 'modal-backdrop--closing' : ''}`}
-      style={backdropOpacityStyle}
+      style={backdropStyle}
       onClick={startCloseSequence}
       role="presentation"
     >

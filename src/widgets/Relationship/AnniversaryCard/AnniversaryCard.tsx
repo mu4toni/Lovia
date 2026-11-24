@@ -110,7 +110,11 @@ export const AnniversaryCard: React.FC<AnniversaryCardProps> = ({
           <div className="anniversary-showcase__hero-badge">
             <span className="anniversary-showcase__hero-cap" aria-hidden="true" />
             <div className="anniversary-showcase__mascot" aria-hidden="true">
-              <Mascot variant="love" size={46} animated />
+              <Mascot
+                name={isToday ? '37_heart_balloon' : '09_calendar_anniversary'}
+                size={48}
+                animated
+              />
             </div>
             {isToday ? (
               <span className="anniversary-hero-today">

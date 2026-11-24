@@ -1,7 +1,7 @@
 import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { scrapeProductUrl } from './src/server/metadataScraper';
+import { scrapeProductUrl, proxyProductImage } from './src/server/metadataScraper';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 function scraperPlugin(): Plugin {
@@ -11,9 +11,30 @@ function scraperPlugin(): Plugin {
     next: () => void
   ) => {
     if (req.url && req.url.startsWith('/api/scrape-product')) {
-      res.setHeader('Content-Type', 'application/json');
       try {
         const urlObj = new URL(req.url, 'http://localhost:5173');
+        const proxyImage = urlObj.searchParams.get('proxyImage');
+
+        if (req.method === 'GET' && proxyImage) {
+          const proxied = await proxyProductImage(proxyImage);
+          if (proxied.ok && proxied.buffer && proxied.contentType) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', proxied.contentType);
+            res.setHeader(
+              'Cache-Control',
+              'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800'
+            );
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.end(proxied.buffer);
+            return;
+          }
+          res.statusCode = proxied.status || 502;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ success: false, error: proxied.error || 'Ошибка прокси' }));
+          return;
+        }
+
+        res.setHeader('Content-Type', 'application/json');
         let targetUrl = urlObj.searchParams.get('url');
 
         if (!targetUrl && req.method === 'POST') {

@@ -1,9 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { DatePlace } from '../../../types/dates';
 import { mapsService } from '../../../services/mapsService';
 import { InteractiveMap } from './InteractiveMap';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { Button } from '../../../components/ui/Button/Button';
+import {
+  registerModalLayer,
+  unregisterModalLayer,
+  isTopModalLayer,
+} from '../../../components/ui/Modal/Modal';
 import './PlacePickerModal.css';
 
 export interface PlacePickerModalProps {
@@ -11,6 +17,7 @@ export interface PlacePickerModalProps {
   onClose: () => void;
   onSelectPlace: (place: DatePlace) => void;
   initialPlace?: DatePlace | null;
+  zIndex?: number;
 }
 
 // Default center: Moscow center
@@ -22,7 +29,35 @@ export const PlacePickerModal: React.FC<PlacePickerModalProps> = ({
   onClose,
   onSelectPlace,
   initialPlace,
+  zIndex,
 }) => {
+  const layerId = useId();
+  const [layerZIndex, setLayerZIndex] = useState<number>(() => zIndex ?? 1040);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const assignedZ = registerModalLayer(layerId, zIndex);
+    setLayerZIndex(assignedZ);
+    return () => {
+      unregisterModalLayer(layerId);
+    };
+  }, [isOpen, layerId, zIndex]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTopModalLayer(layerId)) {
+        e.stopPropagation();
+        onCloseRef.current();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, layerId]);
   const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number }>({
     lat: initialPlace?.latitude || DEFAULT_LAT,
     lng: initialPlace?.longitude || DEFAULT_LNG,
@@ -150,9 +185,11 @@ export const PlacePickerModal: React.FC<PlacePickerModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const pickerContent = (
     <div
       className="place-picker-overlay"
+      style={{ zIndex: layerZIndex }}
+      onClick={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-label="Выбор места встречи"
@@ -296,4 +333,8 @@ export const PlacePickerModal: React.FC<PlacePickerModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(pickerContent, document.body)
+    : pickerContent;
 };

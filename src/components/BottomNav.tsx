@@ -50,8 +50,8 @@ export function BottomNav() {
                   <span className="bottom-nav__icon">
                     <Icon
                       name={item.icon}
-                      size={isActive ? 20 : 21}
-                      strokeWidth={isActive ? 2 : 1.75}
+                      size={isActive ? 19 : 20}
+                      strokeWidth={isActive ? 2 : 1.7}
                     />
                   </span>
                 </span>

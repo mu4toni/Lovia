@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { WishItem, CreateWishInput } from '../../../types/wishlist';
 import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { productScraperService } from '../../../services/productScraperService';
+import { normalizeMediaUrl, getProxyImageUrl } from '../../../utils/media';
 import './CreateEditWishModal.css';
 
 export interface CreateEditWishModalProps {
@@ -31,6 +33,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
   // UI & Loading States
   const [photoState, setPhotoState] = useState<PhotoBoxState>('idle');
   const [photoErrorMsg, setPhotoErrorMsg] = useState('');
+  const [isBlockedByProtection, setIsBlockedByProtection] = useState(false);
+  const [useProxyFallback, setUseProxyFallback] = useState(false);
   const [isAutoFetched, setIsAutoFetched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
@@ -44,6 +48,7 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastScrapedUrlRef = useRef<string>('');
   const requestIdRef = useRef<number>(0);
+  const isSubmittingRef = useRef<boolean>(false);
 
   // Reset form when modal opens / changes initialWish
   useEffect(() => {
@@ -58,6 +63,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
       setImageUrl(initialWish.imageUrl || '');
       setPhotoState(initialWish.imageUrl ? 'success' : 'idle');
       setPhotoErrorMsg('');
+      setIsBlockedByProtection(false);
+      setUseProxyFallback(false);
       setIsAutoFetched(false);
       lastScrapedUrlRef.current = initialWish.linkUrl || '';
     } else {
@@ -67,6 +74,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
       setImageUrl('');
       setPhotoState('idle');
       setPhotoErrorMsg('');
+      setIsBlockedByProtection(false);
+      setUseProxyFallback(false);
       setIsAutoFetched(false);
       lastScrapedUrlRef.current = '';
     }
@@ -75,6 +84,30 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     setTitleError(null);
     setIsZoomOpen(false);
   }, [initialWish, isOpen]);
+
+  // Reset proxy fallback whenever imageUrl changes
+  useEffect(() => {
+    setUseProxyFallback(false);
+  }, [imageUrl]);
+
+  const displayImageUrl = imageUrl
+    ? useProxyFallback
+      ? getProxyImageUrl(imageUrl) || normalizeMediaUrl(imageUrl)
+      : normalizeMediaUrl(imageUrl)
+    : '';
+
+  const handlePreviewImageError = () => {
+    if (!useProxyFallback && getProxyImageUrl(imageUrl)) {
+      setUseProxyFallback(true);
+      return;
+    }
+    setIsZoomOpen(false);
+    setPhotoState('error');
+    setIsBlockedByProtection(true);
+    setPhotoErrorMsg(
+      'Сайт ограничил показ фото по прямой ссылке. Нажмите «Загрузить фото с устройства» ниже.'
+    );
+  };
 
   // Clean up any pending scraping requests on modal close
   useEffect(() => {
@@ -108,6 +141,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     lastScrapedUrlRef.current = trimmed;
     setPhotoState('loading');
     setPhotoErrorMsg('');
+    setIsBlockedByProtection(false);
+    setUseProxyFallback(false);
     setIsManualUrlOpen(false);
 
     try {
@@ -121,6 +156,7 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
       if (result.success && result.imageUrl) {
         setImageUrl(result.imageUrl);
         setPhotoState('success');
+        setIsBlockedByProtection(false);
         setIsAutoFetched(true);
 
         // Autofill title if empty and title was extracted from page
@@ -130,13 +166,24 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
         }
       } else {
         setPhotoState('error');
+        const blocked = Boolean(result.blockedByProtection);
+        setIsBlockedByProtection(blocked);
         setPhotoErrorMsg(
-          result.error || 'Не удалось автоматически получить фотографию этого товара'
+          result.error ||
+            (blocked
+              ? 'Магазин защищён от автозагрузки — нажмите «Загрузить фото с устройства» ниже'
+              : 'Не удалось автоматически получить фотографию этого товара')
         );
+        // Even if photo failed, autofill title if available
+        if (!title.trim() && result.title) {
+          setTitle(result.title);
+          setTitleError(null);
+        }
       }
     } catch {
       if (reqId === requestIdRef.current) {
         setPhotoState('error');
+        setIsBlockedByProtection(false);
         setPhotoErrorMsg('Не удалось автоматически получить фотографию этого товара');
       }
     }
@@ -227,6 +274,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
       setImageUrl(dataUrl);
       setPhotoState('success');
       setIsAutoFetched(false);
+      setIsBlockedByProtection(false);
+      setUseProxyFallback(false);
       setPhotoErrorMsg('');
       setIsManualUrlOpen(false);
     };
@@ -244,6 +293,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     setImageUrl(trimmed);
     setPhotoState('success');
     setIsAutoFetched(false);
+    setIsBlockedByProtection(false);
+    setUseProxyFallback(false);
     setIsManualUrlOpen(false);
     setManualImageUrl('');
     setPhotoErrorMsg('');
@@ -255,6 +306,8 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     setImageUrl('');
     setPhotoState('idle');
     setIsAutoFetched(false);
+    setIsBlockedByProtection(false);
+    setUseProxyFallback(false);
     setPhotoErrorMsg('');
     setIsManualUrlOpen(false);
     if (fileInputRef.current) {
@@ -280,19 +333,22 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     setPhotoState('idle');
     setPhotoErrorMsg('');
     setIsAutoFetched(false);
+    setIsBlockedByProtection(false);
+    setUseProxyFallback(false);
     setIsManualUrlOpen(false);
   };
 
-  // Submit handler
+  // Submit handler (protected against rapid double-click / double-submit)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || isSubmittingRef.current) return;
 
     if (!title.trim()) {
       setTitleError('Пожалуйста, укажите название желания');
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const parsedPrice = estimatedPrice.trim()
@@ -311,6 +367,7 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     } catch (err) {
       console.error('Failed to save wish', err);
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -430,12 +487,14 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
             )}
 
             {/* State C: Success (Image loaded) */}
-            {photoState === 'success' && imageUrl && (
+            {photoState === 'success' && displayImageUrl && (
               <>
                 <img
-                  src={imageUrl}
+                  src={displayImageUrl}
                   alt={title || 'Фотография желания'}
                   className="wish-photo-box__image"
+                  referrerPolicy="no-referrer"
+                  onError={handlePreviewImageError}
                   onClick={() => setIsZoomOpen(true)}
                   title="Нажмите для полноразмерного просмотра"
                   style={{ cursor: 'pointer' }}
@@ -529,14 +588,16 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
                   <div className="wish-photo-box__error-actions">
                     <button
                       type="button"
-                      className="wish-photo-box__upload-btn"
+                      className={`wish-photo-box__upload-btn ${
+                        isBlockedByProtection ? 'wish-photo-box__upload-btn--primary' : ''
+                      }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         fileInputRef.current?.click();
                       }}
                     >
                       <Icon name="plus" size={14} />
-                      <span>Загрузить фото вручную</span>
+                      <span>Загрузить фото с устройства</span>
                     </button>
                     <button
                       type="button"
@@ -679,33 +740,40 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
         </form>
       </Modal>
 
-      {/* 6. Fullscreen Photo Zoom Lightbox (Requirement 7) */}
-      {isZoomOpen && imageUrl && (
-        <div
-          className="wish-lightbox-overlay"
-          onClick={() => setIsZoomOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Полноразмерный просмотр фотографии"
-        >
-          <div className="wish-lightbox-container" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="wish-lightbox-close-btn"
-              onClick={() => setIsZoomOpen(false)}
-              aria-label="Закрыть полноразмерный просмотр"
-            >
-              <Icon name="close" size={20} />
-            </button>
-            <img
-              src={imageUrl}
-              alt={title || 'Фотография товара'}
-              className="wish-lightbox-img"
-            />
-            {title && <p className="wish-lightbox-caption">{title}</p>}
-          </div>
-        </div>
-      )}
+      {/* 6. Fullscreen Photo Zoom Lightbox (Portaled to document.body above modal) */}
+      {isZoomOpen &&
+        displayImageUrl &&
+        (typeof document !== 'undefined'
+          ? createPortal(
+              <div
+                className="wish-lightbox-overlay"
+                onClick={() => setIsZoomOpen(false)}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Полноразмерный просмотр фотографии"
+              >
+                <div className="wish-lightbox-container" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="wish-lightbox-close-btn"
+                    onClick={() => setIsZoomOpen(false)}
+                    aria-label="Закрыть полноразмерный просмотр"
+                  >
+                    <Icon name="close" size={20} />
+                  </button>
+                  <img
+                    src={displayImageUrl}
+                    alt={title || 'Фотография товара'}
+                    className="wish-lightbox-img"
+                    referrerPolicy="no-referrer"
+                    onError={handlePreviewImageError}
+                  />
+                  {title && <p className="wish-lightbox-caption">{title}</p>}
+                </div>
+              </div>,
+              document.body
+            )
+          : null)}
     </>
   );
 };

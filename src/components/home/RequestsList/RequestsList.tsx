@@ -3,6 +3,7 @@ import { CoupleReminder, RequestFilterTab } from '../../../types';
 import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
 import { EmptyState } from '../../ui/EmptyState/EmptyState';
 import { Icon } from '../../ui/Icon/Icon';
+import { Mascot } from '../../ui/Mascot/Mascot';
 import { SketchDoodle } from '../../ui/SketchDecor/SketchDecor';
 import { getCardColorStyles } from '../../../utils/colorContrast';
 import { getContrastColor } from '../../../utils/categories';
@@ -95,7 +96,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
       <div className="requests-section__header">
         <div className="requests-section__title-wrap">
           <div className="requests-section__title-row">
-            <Icon name="bell" size={18} className="requests-section__title-icon" />
+            <Mascot name="14_reminder_bell" size={26} />
             <h2 className="requests-section__title">Сегодня</h2>
             <SketchDoodle
               type={isFriendship ? 'star' : 'heart-filled'}
@@ -344,7 +345,11 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                       }`}
                       title="Срок выполнения"
                       style={{
-                        color: isOverdue ? 'var(--color-primary)' : cardStyles.colorSecondary,
+                        color: isOverdue
+                          ? cardStyles.isLightSurface && req.categoryColor
+                            ? '#B1243D'
+                            : 'var(--accent-text, var(--color-primary))'
+                          : cardStyles.colorSecondary,
                       }}
                     >
                       <Icon
@@ -413,7 +418,15 @@ export const RequestsList: React.FC<RequestsListProps> = ({
         </div>
       ) : (
         <EmptyState
-          mascotVariant="sleepy"
+          mascotName={
+            selectedColor
+              ? '17_empty_state_box'
+              : activeTab === 'for_me' || activeTab === 'from_me'
+              ? '14_reminder_bell'
+              : new Date().getHours() >= 21
+              ? '40_sleeping_moon'
+              : '19_loading_tea'
+          }
           title={
             selectedColor
               ? 'Напоминаний этого цвета пока нет'

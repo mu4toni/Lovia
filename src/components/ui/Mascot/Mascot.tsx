@@ -5,6 +5,48 @@ import bearPeekUrl from '../../../assets/mascots/bear-peek.png';
 import { telegramService } from '../../../services/telegramService';
 import './Mascot.css';
 
+export type MascotName =
+  | '01_peeking_home'
+  | '02_key_register'
+  | '03_waving_hello'
+  | '04_sending_love_note'
+  | '05_nudge_poke'
+  | '06_waiting_partner'
+  | '07_streak_fire'
+  | '08_camera_photo'
+  | '09_calendar_anniversary'
+  | '10_pair_lock'
+  | '11_wishlist_gift'
+  | '12_date_coffee'
+  | '13_date_cinema'
+  | '14_reminder_bell'
+  | '15_profile_scarf'
+  | '16_relationships_hug'
+  | '17_empty_state_box'
+  | '18_success_celebrate'
+  | '19_loading_tea'
+  | '20_error_dizzy'
+  | '21_mood_happy'
+  | '22_mood_sleepy'
+  | '23_mood_sad'
+  | '24_mood_angry'
+  | '25_mood_miss_you'
+  | '26_mood_hungry'
+  | '27_mood_working'
+  | '28_mood_sick'
+  | '29_mood_calm'
+  | '30_kiss_goodnight'
+  | '31_campfire_zero'
+  | '32_peeking_cloud'
+  | '33_streak_12_glow'
+  | '34_lying_dreaming'
+  | '35_peeking_side'
+  | '36_high_five'
+  | '37_heart_balloon'
+  | '38_writing_diary'
+  | '39_umbrella_care'
+  | '40_sleeping_moon';
+
 export type MascotMood =
   | 'happy'
   | 'love'
@@ -13,16 +55,30 @@ export type MascotMood =
   | 'camera'
   | 'peek'
   | 'thinking'
-  | 'sad';
+  | 'sad'
+  | 'home_jump'
+  | 'registration_invite'
+  | 'error_splat'
+  | 'error_oops'
+  | 'empty_wishlist'
+  | 'empty_dates'
+  | 'bouquet'
+  | 'surprised';
 
 export type MascotVariant = 'love' | 'sleepy' | 'peek';
 
 export interface MascotProps {
+  /** Preferred sticker filename without .png (e.g. "01_peeking_home") */
+  name?: MascotName | string;
+  /** Legacy mood alias */
   mood?: MascotMood;
+  /** Legacy variant alias */
   variant?: MascotVariant;
   size?: number | string;
   width?: number | string;
   height?: number | string;
+  /** Set loading="eager" for above-the-fold / first-frame stickers */
+  eager?: boolean;
   animated?: boolean;
   interactive?: boolean;
   className?: string;
@@ -31,110 +87,99 @@ export interface MascotProps {
   onClick?: () => void;
 }
 
-const FALLBACK_BUNDLED_IMAGES: Record<MascotMood, string> = {
-  happy: bearLoveUrl,
-  love: bearLoveUrl,
-  support: bearLoveUrl,
-  sleepy: bearSleepyUrl,
-  camera: bearPeekUrl,
-  peek: bearPeekUrl,
-  thinking: bearPeekUrl,
-  sad: bearSleepyUrl,
+const LEGACY_MOOD_MAP: Record<MascotMood, MascotName> = {
+  happy: '21_mood_happy',
+  love: '37_heart_balloon',
+  support: '39_umbrella_care',
+  sleepy: '40_sleeping_moon',
+  camera: '08_camera_photo',
+  peek: '01_peeking_home',
+  thinking: '38_writing_diary',
+  sad: '23_mood_sad',
+  home_jump: '03_waving_hello',
+  registration_invite: '02_key_register',
+  error_splat: '20_error_dizzy',
+  error_oops: '20_error_dizzy',
+  empty_wishlist: '11_wishlist_gift',
+  empty_dates: '08_camera_photo',
+  bouquet: '37_heart_balloon',
+  surprised: '01_peeking_home',
 };
 
-const DEFAULT_ALTS: Record<MascotMood, string> = {
-  happy: 'Радостный медвежонок Бин',
-  love: 'Медвежонок Бин с сердечком',
-  support: 'Медвежонок Бин советует',
-  sleepy: 'Сонный медвежонок Бин отдыхает',
-  camera: 'Медвежонок Бин с фотоаппаратом',
-  peek: 'Любопытный медвежонок Бин выглядывает',
-  thinking: 'Задумчивый медвежонок Бин',
-  sad: 'Медвежонок Бин скучает',
-};
-
-/**
- * Cozy hand-drawn SVG fallback of Bear Bean if neither /mascot/<mood>.png nor bundled PNG loads.
- */
-const FallbackBearSvg: React.FC<{ mood: MascotMood }> = ({ mood }) => (
-  <svg
-    viewBox="0 0 80 80"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="lovia-mascot__svg-fallback"
-    aria-hidden="true"
-  >
-    {/* Ears */}
-    <circle cx="22" cy="23" r="10" fill="#A87554" stroke="#49372F" strokeWidth="2.4" />
-    <circle cx="22" cy="23" r="4.5" fill="#E8B9B5" />
-    <circle cx="58" cy="23" r="10" fill="#A87554" stroke="#49372F" strokeWidth="2.4" />
-    <circle cx="58" cy="23" r="4.5" fill="#E8B9B5" />
-    {/* Head */}
-    <ellipse cx="40" cy="43" rx="25" ry="22" fill="#C2916F" stroke="#49372F" strokeWidth="2.4" />
-    {/* Snout */}
-    <ellipse cx="40" cy="48" rx="10" ry="7.5" fill="#FFFBF6" />
-    {/* Cheeks */}
-    <ellipse cx="24" cy="48" rx="4.5" ry="2.8" fill="#E8B9B5" opacity="0.85" />
-    <ellipse cx="56" cy="48" rx="4.5" ry="2.8" fill="#E8B9B5" opacity="0.85" />
-    {/* Eyes */}
-    {mood === 'sleepy' ? (
-      <>
-        <path d="M27 40C29 42.5 32 42.5 34 40" stroke="#49372F" strokeWidth="2.2" strokeLinecap="round" />
-        <path d="M46 40C48 42.5 51 42.5 53 40" stroke="#49372F" strokeWidth="2.2" strokeLinecap="round" />
-      </>
-    ) : (
-      <>
-        <circle cx="30" cy="39" r="2.7" fill="#49372F" />
-        <circle cx="50" cy="39" r="2.7" fill="#49372F" />
-      </>
-    )}
-    {/* Nose & Smile */}
-    <ellipse cx="40" cy="45.5" rx="3.4" ry="2.4" fill="#49372F" />
-    <path d="M36.5 50.5C38 52.5 42 52.5 43.5 50.5" stroke="#49372F" strokeWidth="2" strokeLinecap="round" />
-    {/* Mini heart for love / happy / support */}
-    {(mood === 'love' || mood === 'happy' || mood === 'support') && (
-      <path
-        d="M40 72s-6-3.8-7.8-7.2c-1.2-2.4 0-5.2 2.6-6 1.9-.6 4 .3 5.2 1.8 1.2-1.5 3.3-2.4 5.2-1.8 2.6.8 3.8 3.6 2.6 6C46 68.2 40 72 40 72z"
-        fill="var(--accent-primary)"
-        stroke="#49372F"
-        strokeWidth="1.6"
-      />
-    )}
-  </svg>
-);
+function getBundledFallback(fileKey: string): string {
+  if (fileKey.includes('sleep') || fileKey.includes('error') || fileKey.includes('sad')) {
+    return bearSleepyUrl;
+  }
+  if (fileKey.includes('peek') || fileKey.includes('camera') || fileKey.includes('wait')) {
+    return bearPeekUrl;
+  }
+  return bearLoveUrl;
+}
 
 export const Mascot: React.FC<MascotProps> = ({
+  name,
   mood,
   variant,
   size,
   width,
   height,
+  eager = false,
   animated = false,
   interactive = false,
   className = '',
   style,
-  alt,
+  alt = '',
   onClick,
 }) => {
-  const resolvedMood: MascotMood = mood || variant || 'love';
-  const [fallbackLevel, setFallbackLevel] = useState<0 | 1 | 2>(0);
+  const resolvedFile =
+    name ||
+    (mood ? LEGACY_MOOD_MAP[mood] : undefined) ||
+    (variant ? LEGACY_MOOD_MAP[variant] : undefined) ||
+    '01_peeking_home';
+
+  const [useBundledFallback, setUseBundledFallback] = useState(false);
   const [isTapped, setIsTapped] = useState(false);
-  const [hearts, setHearts] = useState<{ id: number; symbol: string; left: string; size: number }[]>([]);
+  const [hearts, setHearts] = useState<
+    { id: number; symbol: string; left: string; size: number }[]
+  >([]);
 
   useEffect(() => {
-    setFallbackLevel(0);
-  }, [resolvedMood]);
+    setUseBundledFallback(false);
+  }, [resolvedFile]);
 
-  const resolvedAlt = alt || DEFAULT_ALTS[resolvedMood] || 'Медвежонок Бин Lovia';
-  const primarySrc = `/mascot/${resolvedMood}.png`;
-  const bundledFallbackSrc = FALLBACK_BUNDLED_IMAGES[resolvedMood] || bearLoveUrl;
-
-  const currentSrc = fallbackLevel === 0 ? primarySrc : bundledFallbackSrc;
+  const primarySrc = `/mascot/${resolvedFile}.png`;
+  const currentSrc = useBundledFallback ? getBundledFallback(resolvedFile) : primarySrc;
 
   const w = width ?? size;
   const h = height ?? size;
 
+  const sizeStyle: React.CSSProperties = {
+    ...style,
+    ...(w !== undefined ? { width: typeof w === 'number' ? `${w}px` : w } : {}),
+    ...(h !== undefined ? { height: typeof h === 'number' ? `${h}px` : h } : {}),
+  };
+
   const isClickable = interactive || Boolean(onClick);
+
+  // Lean decorative render: direct <img> with zero pointer interception
+  if (!isClickable) {
+    return (
+      <img
+        src={currentSrc}
+        alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        draggable={false}
+        className={`lovia-mascot lovia-mascot__img lovia-mascot--decorative ${
+          animated ? 'lovia-mascot--animated' : ''
+        } ${className}`}
+        style={sizeStyle}
+        onError={() => {
+          if (!useBundledFallback) setUseBundledFallback(true);
+        }}
+      />
+    );
+  }
 
   const handleClick = () => {
     if (interactive) {
@@ -160,39 +205,34 @@ export const Mascot: React.FC<MascotProps> = ({
     }
   };
 
-  const styleObj: React.CSSProperties = {
-    ...style,
-    ...(w !== undefined ? { width: typeof w === 'number' ? `${w}px` : w } : {}),
-    ...(h !== undefined ? { height: typeof h === 'number' ? `${h}px` : h } : {}),
-  };
-
   return (
     <div
-      className={`lovia-mascot lovia-mascot--${resolvedMood} ${
+      className={`lovia-mascot lovia-mascot--interactive ${
         animated ? 'lovia-mascot--animated' : ''
-      } ${isClickable ? 'lovia-mascot--interactive' : 'lovia-mascot--decorative'} ${
-        isTapped ? 'lovia-mascot--tapped' : ''
-      } ${className}`}
-      style={styleObj}
-      onClick={isClickable ? handleClick : undefined}
-      role={isClickable ? 'button' : undefined}
-      tabIndex={isClickable ? 0 : undefined}
-      aria-label={isClickable ? resolvedAlt : undefined}
+      } ${isTapped ? 'lovia-mascot--tapped' : ''} ${className}`}
+      style={sizeStyle}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-label={alt || 'Медвежонок Бин'}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
-      {fallbackLevel < 2 ? (
-        <img
-          src={currentSrc}
-          alt={resolvedAlt}
-          className="lovia-mascot__img"
-          loading="lazy"
-          draggable={false}
-          onError={() => {
-            setFallbackLevel((prev) => (prev === 0 ? 1 : 2));
-          }}
-        />
-      ) : (
-        <FallbackBearSvg mood={resolvedMood} />
-      )}
+      <img
+        src={currentSrc}
+        alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        draggable={false}
+        className="lovia-mascot__img"
+        onError={() => {
+          if (!useBundledFallback) setUseBundledFallback(true);
+        }}
+      />
       {hearts.map((item) => (
         <span
           key={item.id}

@@ -12,6 +12,13 @@ export interface Partner extends User {
   lastSeen?: string;
 }
 
+export interface StreakState {
+  count: number;
+  lastDate: string | null;
+  pingDate: string | null;
+  pingUsers: string[];
+}
+
 export interface CoupleProfile {
   id: string;
   user: User;
@@ -22,4 +29,8 @@ export interface CoupleProfile {
   inviteCode: string;
   motto?: string;
   spaceType?: SpaceType;
+  streakCount?: number;
+  streakLastDate?: string | null;
+  streakPingDate?: string | null;
+  streakPingUsers?: string[];
 }

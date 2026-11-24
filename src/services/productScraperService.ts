@@ -12,6 +12,7 @@ export interface ScrapeProductResult {
   imageUrl?: string;
   title?: string;
   error?: string;
+  blockedByProtection?: boolean;
 }
 
 // In-memory cache strictly for verified authentic product photos
@@ -87,13 +88,16 @@ class ProductScraperService {
 
       if (!response.ok) {
         let errorMsg = 'Не удалось автоматически получить фотографию этого товара';
+        let blockedByProtection = false;
         try {
           const errData = await response.json();
           if (errData?.error) errorMsg = errData.error;
+          if (errData?.blockedByProtection) blockedByProtection = true;
         } catch {}
         return {
           success: false,
           error: errorMsg,
+          blockedByProtection,
         };
       }
 

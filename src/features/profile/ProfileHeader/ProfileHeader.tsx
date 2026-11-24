@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserProfileData } from '../../../services/profileService';
 import { Avatar } from '../../../components/ui/Avatar/Avatar';
 import { Icon } from '../../../components/ui/Icon/Icon';
+import { Mascot } from '../../../components/ui/Mascot/Mascot';
 import { formatMonthYearGenitive } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
@@ -75,6 +76,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <section className="profile-hero-card" aria-label="Карточка профиля пользователя">
       <div className="profile-hero-card__glow" aria-hidden="true" />
+      <div className="profile-hero-card__mascot" aria-hidden="true">
+        <Mascot name="15_profile_scarf" size={56} eager />
+      </div>
 
       <div className="profile-hero-card__body">
         {/* Telegram-style Centered 96px Round Avatar */}

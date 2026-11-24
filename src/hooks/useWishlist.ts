@@ -1,12 +1,24 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { WishItem, CreateWishInput, UpdateWishInput, WishlistTab } from '../types/wishlist';
 import { wishlistService } from '../services/wishlistService';
 import { requestsService } from '../services/requestsService';
 import { CoupleProfile, User } from '../types/couple';
 
+function dedupeWishItems(list: WishItem[]): WishItem[] {
+  const seen = new Set<string>();
+  const unique: WishItem[] = [];
+  for (const item of list) {
+    if (!item || !item.id || seen.has(item.id)) continue;
+    seen.add(item.id);
+    unique.push(item);
+  }
+  return unique;
+}
+
 export function useWishlist() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [items, setItems] = useState<WishItem[]>([]);
+  const hasLoadedProfileRef = useRef(false);
   const [activeTab, setActiveTab] = useState<WishlistTab>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -24,7 +36,7 @@ export function useWishlist() {
 
   // Load profile and wishlist items
   const loadData = useCallback(async (silent = false) => {
-    if (!silent && !wishlistService.hasCachedData() && !profile) {
+    if (!silent && !wishlistService.hasCachedData() && !hasLoadedProfileRef.current) {
       setIsLoading(true);
     }
     try {
@@ -32,20 +44,24 @@ export function useWishlist() {
         requestsService.getProfile(),
         wishlistService.getWishlist(),
       ]);
+      hasLoadedProfileRef.current = true;
       setProfile(profData);
-      setItems(wishlistData);
+      setItems(dedupeWishItems(wishlistData));
     } catch (err) {
       console.error('Failed to load wishlist data', err);
     } finally {
       setIsLoading(false);
     }
-  }, [profile]);
+  }, []);
 
   useEffect(() => {
     loadData();
 
     const handleUpdate = () => {
-      wishlistService.getWishlist().then((data) => setItems(data)).catch(() => {});
+      wishlistService
+        .getWishlist()
+        .then((data) => setItems(dedupeWishItems(data)))
+        .catch(() => {});
     };
 
     const handleSilentReload = () => {
@@ -58,7 +74,10 @@ export function useWishlist() {
 
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible' && !document.hidden) {
-        wishlistService.getWishlist().then((data) => setItems(data)).catch(() => {});
+        wishlistService
+          .getWishlist()
+          .then((data) => setItems(dedupeWishItems(data)))
+          .catch(() => {});
       }
     }, 18000);
 
@@ -120,14 +139,21 @@ export function useWishlist() {
   // Handlers
   const handleCreateWish = async (input: CreateWishInput) => {
     const created = await wishlistService.createWishItem(currentUserId, input);
-    setItems((prev) => [created, ...prev]);
+    // Avoid duplicating when wishlistService.notify() already synced items into state
+    setItems((prev) =>
+      dedupeWishItems(
+        prev.some((item) => item.id === created.id)
+          ? prev.map((item) => (item.id === created.id ? created : item))
+          : [created, ...prev]
+      )
+    );
     setIsCreateModalOpen(false);
     return created;
   };
 
   const handleUpdateWish = async (id: string, input: UpdateWishInput) => {
     const updated = await wishlistService.updateWishItem(id, currentUserId, input);
-    setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    setItems((prev) => dedupeWishItems(prev.map((item) => (item.id === id ? updated : item))));
     setEditingWish(null);
     return updated;
   };

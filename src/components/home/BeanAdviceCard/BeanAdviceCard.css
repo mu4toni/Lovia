@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LOVIA — "Bean Advises" Scrapbook Tip Card
+   LOVIA — "Bean Advises" Airy Secondary Card (Soft Illustrated Scrapbook)
    ========================================================================== */
 
 .bean-advice-card {
@@ -9,16 +9,21 @@
   gap: 14px;
   padding: 14px 16px;
   background: var(--bg-card);
-  border: 1.5px dashed var(--border-dashed-cocoa);
+  border: 1px solid var(--border);
   border-radius: 20px;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
 }
 
 .bean-advice-card__mascot {
   flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  background: var(--accent-caramel-soft);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 3px;
   pointer-events: none;
 }
 
@@ -37,20 +42,23 @@
 }
 
 .bean-advice-card__title {
-  font-family: var(--font-handwritten);
-  font-size: 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.01em;
   color: var(--accent-caramel);
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .bean-advice-card__doodle {
-  color: var(--accent-strawberry);
+  color: var(--accent-primary);
 }
 
 .bean-advice-card__text {
   margin: 0;
+  font-family: var(--font-sans);
   font-size: 13.5px;
-  line-height: 1.45;
+  font-weight: 600;
+  line-height: 1.48;
   color: var(--text-cocoa);
 }

@@ -106,7 +106,11 @@ export function RelationshipPage() {
           <SketchUnderline width={110} variant="wave" className="relationship-page__title-underline" />
         </div>
         <div className="relationship-page__peeking-mascot" aria-hidden="true">
-          <Mascot mood="peek" size={64} />
+          <Mascot
+            name={isFriendship ? '36_high_five' : '16_relationships_hug'}
+            size={68}
+            eager
+          />
         </div>
       </header>
 

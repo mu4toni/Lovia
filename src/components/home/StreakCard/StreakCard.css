@@ -1,0 +1,451 @@
+/* ==========================================================================
+   LOVIA — Scrapbook Streak Card («Огонёк» на Главной, 3-колоночный референс)
+   Left: mini flame + title, handwritten days count, status caption
+   Center: Mascot Bean (gentle sway, pointer-events: none)
+   Right: .sketch-pill button with icon + label + >
+   ========================================================================== */
+
+:root {
+  --streak-black-top: #3B322E;
+  --streak-black-bottom: #181311;
+  --streak-black-core: #574C47;
+  --streak-black-stroke: #1A1412;
+}
+
+[data-theme='dark'] {
+  --streak-black-top: #2C2522;
+  --streak-black-bottom: #0E0B0A;
+  --streak-black-core: #473E3A;
+  --streak-black-stroke: rgba(248, 241, 233, 0.52);
+}
+
+.streak-card.sketch-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px 12px 13px 14px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px 18px 21px 17px / 18px 21px 17px 22px;
+  transition: background-color 260ms ease,
+              border-color 260ms ease,
+              box-shadow 260ms ease;
+}
+
+/* Milky card surface when nobody lit yet */
+body .streak-card.streak-card--milky {
+  background-color: var(--bg-card);
+}
+
+/* Soft blush surface when user supported, partner nudged, or both lit */
+body .streak-card.streak-card--blush {
+  background-color: var(--bg-card);
+  background-image: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%);
+  background-size: 100% 100%;
+  border-color: var(--border-dashed);
+}
+
+body .streak-card.streak-card--black {
+  border-color: var(--text-cocoa);
+}
+
+/* 1. Left Column: Heading, Handwritten Count, Caption */
+.streak-card__left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.streak-card__heading-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+}
+
+.streak-card__heading {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.streak-card--lit .streak-card__heading {
+  color: var(--accent-text, var(--accent-primary));
+}
+
+.streak-card--black .streak-card__heading {
+  color: var(--text-cocoa);
+}
+
+.streak-card__counter {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 1px;
+  line-height: 1.05;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.streak-card__num {
+  font-family: var(--font-handwritten);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text-cocoa);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.streak-card__unit {
+  font-family: var(--font-handwritten);
+  font-size: 16.5px;
+  font-weight: 500;
+  color: var(--text-cocoa);
+  line-height: 1.05;
+}
+
+.streak-card__subtext {
+  margin-top: 2px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.streak-card__subtext--nudge {
+  color: var(--accent-text, var(--accent-primary));
+  font-weight: 700;
+}
+
+.streak-card__subtext--urgent {
+  color: var(--accent-text, var(--accent-primary));
+  font-weight: 700;
+}
+
+/* 2. Center Column: Mascot Bear Bean */
+.streak-card__center {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  margin: -2px 0;
+}
+
+.streak-card__mascot--sway {
+  animation: streakBeanSway 3.4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.streak-card__mascot--celebrate {
+  animation: streakBeanBounce 2.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* 3. Right Column: Sketch Pill Button */
+.streak-card__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.streak-card__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 42px;
+  padding: 7px 11px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-fast) var(--ease-tactile),
+              background-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease,
+              opacity var(--duration-fast) ease;
+}
+
+.streak-card__pill-text {
+  display: inline-block;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.streak-card__pill-icon,
+.streak-card__pill-arrow {
+  flex-shrink: 0;
+}
+
+/* Ignite & Support CTA: accent primary pill */
+body .streak-card__pill.streak-card__pill--ignite,
+body .streak-card__pill.streak-card__pill--support,
+body .streak-card__pill.streak-card__pill--lit {
+  background: var(--accent-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--sketch-border-strong, rgba(73, 55, 47, 0.28)) !important;
+  box-shadow: 2px 3px 0 var(--sketch-btn-shadow, rgba(73, 55, 47, 0.14)) !important;
+}
+
+body .streak-card__pill.streak-card__pill--ignite:hover:not(:disabled),
+body .streak-card__pill.streak-card__pill--support:hover:not(:disabled),
+body .streak-card__pill.streak-card__pill--lit:hover:not(:disabled) {
+  background: var(--accent-primary-hover) !important;
+}
+
+body .streak-card__pill.streak-card__pill--ignite:disabled,
+body .streak-card__pill.streak-card__pill--support:disabled {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+/* Waiting pill: soft light surface with clock icon (disabled) */
+body .streak-card__pill.streak-card__pill--waiting {
+  background: var(--bg-card) !important;
+  color: var(--text-cocoa) !important;
+  border-color: var(--sketch-border, rgba(73, 55, 47, 0.24)) !important;
+  box-shadow: 1.5px 2px 0 var(--sketch-shadow, rgba(73, 55, 47, 0.08)) !important;
+  opacity: 0.92;
+  cursor: default;
+}
+
+body .streak-card__pill.streak-card__pill--waiting:active {
+  transform: none !important;
+  box-shadow: 1.5px 2px 0 var(--sketch-shadow, rgba(73, 55, 47, 0.08)) !important;
+}
+
+/* Flame SVG + 60fps GPU-only Animations */
+.streak-flame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.streak-flame--header {
+  width: 20px;
+  height: 22px;
+}
+
+.streak-flame--pill {
+  width: 16px;
+  height: 18px;
+}
+
+.streak-flame__svg {
+  position: relative;
+  z-index: 2;
+  display: block;
+  overflow: visible;
+}
+
+.streak-flame__glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 184, 77, 0.45) 0%, rgba(201, 45, 72, 0.18) 58%, transparent 78%);
+  z-index: 1;
+  pointer-events: none;
+  animation: streakGlowBreathe 2s ease-in-out infinite;
+}
+
+.streak-flame--lit .streak-flame__outer {
+  transform-origin: 12px 25px;
+  animation: streakFlameSway 1.85s ease-in-out infinite;
+}
+
+.streak-flame--lit .streak-flame__inner {
+  transform-origin: 12px 22px;
+  animation: streakCoreFlicker 1.3s ease-in-out infinite;
+}
+
+.streak-flame__spark--1 {
+  animation: streakSparkFloat 2.1s ease-out infinite;
+}
+
+.streak-flame__spark--2 {
+  animation: streakSparkFloat 2.5s ease-out 0.85s infinite;
+}
+
+.streak-flame--black .streak-flame__svg {
+  transform-origin: 12px 23px;
+  animation: streakBlackTremble 1.6s ease-in-out infinite;
+}
+
+@keyframes streakFlameSway {
+  0%, 100% {
+    transform: scale(1, 1) rotate(-2deg);
+  }
+  35% {
+    transform: scale(1.05, 1.06) rotate(2deg);
+  }
+  70% {
+    transform: scale(0.97, 1.03) rotate(-1deg);
+  }
+}
+
+@keyframes streakCoreFlicker {
+  0%, 100% {
+    transform: scale(1, 1) translateY(0);
+    opacity: 0.96;
+  }
+  50% {
+    transform: scale(0.92, 1.08) translateY(-0.8px);
+    opacity: 1;
+  }
+}
+
+@keyframes streakGlowBreathe {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+}
+
+@keyframes streakSparkFloat {
+  0% {
+    transform: translateY(3px) scale(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-5px) scale(0.25);
+    opacity: 0;
+  }
+}
+
+@keyframes streakBlackTremble {
+  0%, 72%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  78% {
+    transform: translateX(-1px) rotate(-2deg);
+  }
+  84% {
+    transform: translateX(1px) rotate(2deg);
+  }
+  90% {
+    transform: translateX(-0.8px) rotate(-1deg);
+  }
+  95% {
+    transform: translateX(0.8px) rotate(1deg);
+  }
+}
+
+@keyframes streakBeanSway {
+  0%, 100% {
+    transform: rotate(-1.5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(1.5deg) translateY(-1.5px);
+  }
+}
+
+@keyframes streakBeanBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2.5px) scale(1.03);
+  }
+}
+
+/* Compact mobile adaptation (<= 390px) */
+@media (max-width: 390px) {
+  .streak-card.sketch-card {
+    gap: 6px;
+    padding: 11px 10px 11px 12px;
+  }
+
+  .streak-card__heading {
+    font-size: 11.5px;
+  }
+
+  .streak-card__num {
+    font-size: 24px;
+  }
+
+  .streak-card__unit {
+    font-size: 15px;
+  }
+
+  .streak-card__subtext {
+    font-size: 10.5px;
+  }
+
+  .streak-card__center .lovia-mascot {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .streak-card__pill {
+    padding: 6px 9px;
+    font-size: 11.5px;
+    gap: 4px;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 365px) {
+  .streak-card.sketch-card {
+    gap: 5px;
+    padding: 10px 9px 10px 10px;
+  }
+
+  .streak-card__heading {
+    font-size: 11px;
+  }
+
+  .streak-card__num {
+    font-size: 22px;
+  }
+
+  .streak-card__unit {
+    font-size: 14px;
+  }
+
+  .streak-card__center .lovia-mascot {
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  .streak-card__pill {
+    padding: 6px 8px;
+    font-size: 11px;
+    gap: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-flame__glow,
+  .streak-flame--lit .streak-flame__outer,
+  .streak-flame--lit .streak-flame__inner,
+  .streak-flame__spark,
+  .streak-flame--black .streak-flame__svg,
+  .streak-card__mascot--sway,
+  .streak-card__mascot--celebrate {
+    animation: none !important;
+  }
+}

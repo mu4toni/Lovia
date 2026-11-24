@@ -57,9 +57,9 @@
 
 @media (max-width: 400px) {
   .wishlist-header__tab-btn {
-    padding: 8px 10px;
-    font-size: 13px;
-    gap: 6px;
+    padding: 8px 8px;
+    font-size: 12.5px;
+    gap: 5px;
     height: 44px;
     min-height: 44px;
   }
@@ -92,10 +92,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
   background: var(--bg-card);
   color: var(--text-muted);
 }
@@ -110,13 +112,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px;
+  gap: 14px;
+  padding: 16px;
   background: var(--bg-card);
   border: 1.5px dashed var(--border-dashed);
   border-radius: 20px;
   box-shadow: var(--shadow-card);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 [data-theme='dark'] .wishlist-header__owner-card {
@@ -125,21 +128,25 @@
 
 @media (max-width: 380px) {
   .wishlist-header__owner-card {
-    padding: 20px 16px;
-    gap: 16px;
+    padding: 16px 14px;
+    gap: 12px;
   }
 }
 
 .wishlist-header__owner-info {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .wishlist-header__owner-details {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .wishlist-header__owner-badge {

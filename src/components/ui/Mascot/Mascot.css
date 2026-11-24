@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LOVIA — Mascot Bear Bean Component Styles (Lightweight, 60fps safe)
+   LOVIA — Unified Mascot Bear Bean Sticker Styles (Lightweight, 60fps safe)
    ========================================================================== */
 
 .lovia-mascot {
@@ -7,6 +7,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  flex-shrink: 0;
   background: transparent !important;
   border: none !important;
   outline: none !important;
@@ -16,16 +17,22 @@
 }
 
 .lovia-mascot--decorative {
+  display: block;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
 }
 
-.lovia-mascot__img,
-.lovia-mascot__svg-fallback {
+.lovia-mascot__img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
+  flex-shrink: 0;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Interactive tap feedback */
@@ -47,7 +54,7 @@
 .lovia-mascot__float-heart {
   position: absolute;
   top: 10%;
-  color: var(--accent-strawberry, #C92D48);
+  color: var(--accent-primary, #C92D48);
   font-family: var(--font-handwritten);
   pointer-events: none;
   user-select: none;

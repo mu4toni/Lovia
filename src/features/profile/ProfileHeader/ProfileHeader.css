@@ -20,6 +20,14 @@
   display: none;
 }
 
+.profile-hero-card__mascot {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .profile-hero-card__body {
   display: flex;
   flex-direction: column;
@@ -157,6 +165,8 @@
   letter-spacing: -0.01em;
   line-height: 1.25;
   text-align: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 

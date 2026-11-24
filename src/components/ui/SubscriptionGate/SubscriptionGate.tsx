@@ -59,7 +59,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({
       <div className="subscription-gate-backdrop" />
       <div className="subscription-gate-card">
         <div className="subscription-gate-mascot-wrap">
-          <Mascot variant="peek" size={136} animated interactive alt="Маскот Lovia" />
+          <Mascot name="10_pair_lock" size={126} eager animated alt="Маскот Lovia" />
         </div>
 
         <h1 id="sub-gate-title" className="subscription-gate-title">

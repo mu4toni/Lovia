@@ -16,6 +16,17 @@ interface CoupleRecord {
   user2_id?: string | null;
   status: string;
   start_date?: string | null;
+  streak_count?: number | null;
+  streak_last_date?: string | null;
+  streak_ping_date?: string | null;
+  streak_ping_users?: string[] | null;
+}
+
+function diffDateDays(fromDate: string, toDate: string): number {
+  const [fy, fm, fd] = fromDate.split('-').map(Number);
+  const [ty, tm, td] = toDate.split('-').map(Number);
+  if (!fy || !fm || !fd || !ty || !tm || !td) return Number.POSITIVE_INFINITY;
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / (24 * 60 * 60 * 1000));
 }
 
 interface ReminderRecord {
@@ -137,6 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     anniversariesChecked: 0,
     anniversariesSent: 0,
     memorableDatesSent: 0,
+    streakRemindersSent: 0,
     errors: [] as string[],
   };
 
@@ -594,6 +606,84 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // ========================================================
+    // В) ПРОВЕРКА ОГОНЬКА ЗА 1 ЧАС ДО КОНЦА ДНЯ (streak_1h, 23:00–23:59)
+    // ========================================================
+    for (const couple of (couples as CoupleRecord[])) {
+      const coupleUsers: TelegramUser[] = [];
+      if (couple.user1_id && usersMap.has(couple.user1_id)) {
+        coupleUsers.push(usersMap.get(couple.user1_id)!);
+      }
+      if (couple.user2_id && usersMap.has(couple.user2_id)) {
+        coupleUsers.push(usersMap.get(couple.user2_id)!);
+      }
+
+      const streakLastDate = couple.streak_last_date ? String(couple.streak_last_date).slice(0, 10) : null;
+      const streakPingDate = couple.streak_ping_date ? String(couple.streak_ping_date).slice(0, 10) : null;
+      const rawStreakCount = Number(couple.streak_count || 0);
+
+      for (const user of coupleUsers) {
+        if (!user.telegram_id || user.notifications_enabled === false) continue;
+
+        const userOffsetMin = typeof user.timezone_offset === 'number' ? user.timezone_offset : 0;
+        const userLocalNow = new Date(nowMs + userOffsetMin * 60 * 1000);
+        const localHour = userLocalNow.getUTCHours();
+
+        // Напоминание отправляется только в последний час дня (23:00–23:59 локального времени)
+        if (localHour !== 23) continue;
+
+        const localYear = userLocalNow.getUTCFullYear();
+        const localMonth = String(userLocalNow.getUTCMonth() + 1).padStart(2, '0');
+        const localDay = String(userLocalNow.getUTCDate()).padStart(2, '0');
+        const userLocalDate = `${localYear}-${localMonth}-${localDay}`;
+
+        // Если огонёк уже зажёгся сегодня — напоминать не нужно
+        if (streakLastDate === userLocalDate) continue;
+
+        const todayPingUsers =
+          streakPingDate === userLocalDate && Array.isArray(couple.streak_ping_users)
+            ? couple.streak_ping_users
+            : [];
+
+        // Если этот пользователь уже нажал «Подначить» сегодня — ему не напоминаем
+        if (todayPingUsers.includes(user.id)) continue;
+
+        // Проверяем, что серия актуальна (не старше позавчера) либо партнёр уже нажал сегодня
+        const streakStillAlive =
+          rawStreakCount > 0 &&
+          (!streakLastDate || diffDateDays(streakLastDate, userLocalDate) <= 2);
+        const partnerAlreadyPinged = todayPingUsers.length > 0;
+
+        if (!streakStillAlive && !partnerAlreadyPinged) continue;
+
+        const logId = `streak_1h_${user.id}_${userLocalDate}`;
+        if (sentLogIds.has(logId)) continue;
+
+        const text =
+          `🔥 До конца дня остался 1 час! Нажмите «Подначить» в Lovia, чтобы ваш огонёк не стал чёрным и не потух`;
+        const sendResult = await sendTelegramMessage(user.telegram_id, text, appUrl, botToken);
+
+        if (sendResult.ok) {
+          sentLogIds.add(logId);
+          stats.streakRemindersSent++;
+          newLogsToInsert.push({
+            id: logId,
+            user_id: user.id,
+            couple_id: couple.id,
+            notification_type: 'streak_1h',
+            sent_at: new Date().toISOString(),
+            payload: {
+              local_date: userLocalDate,
+              streak_count: streakStillAlive ? rawStreakCount : 0,
+              partner_pinged: partnerAlreadyPinged,
+            },
+          });
+        } else {
+          stats.errors.push(`Streak 1h error (${user.id}): ${sendResult.description}`);
+        }
+      }
+    }
+
     // 8. Сохранение новых записей логов в public.notification_logs
     if (newLogsToInsert.length > 0) {
       const { error: insertError } = await supabase
@@ -610,7 +700,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       success: true,
       checked: stats.remindersChecked + stats.anniversariesChecked,
-      sent: stats.remindersSent + stats.anniversariesSent + stats.memorableDatesSent,
+      sent:
+        stats.remindersSent +
+        stats.anniversariesSent +
+        stats.memorableDatesSent +
+        stats.streakRemindersSent,
       stats,
     });
   } catch (err: any) {

@@ -150,8 +150,10 @@ class ProfileService {
     const isConnected = partner.isPartnerConnected;
     const startDate = relationshipService.getStartDate();
 
+    const couple = coupleService.getCurrentCouple();
+
     return {
-      id: initialCoupleProfile.id,
+      id: couple?.id || initialCoupleProfile.id,
       user: {
         id: user.id,
         name: user.name,
@@ -170,6 +172,10 @@ class ProfileService {
       inviteCode: partner.inviteCode,
       motto: initialCoupleProfile.motto,
       spaceType: coupleService.getSpaceType(),
+      streakCount: couple?.streakCount ?? 0,
+      streakLastDate: couple?.streakLastDate ?? null,
+      streakPingDate: couple?.streakPingDate ?? null,
+      streakPingUsers: couple?.streakPingUsers ?? [],
     };
   }
 

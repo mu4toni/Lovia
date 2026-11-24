@@ -16,17 +16,11 @@ import { profileService, UserProfileData, PartnerProfileData } from '../services
 import { relationshipService } from '../services/relationshipService';
 import { telegramService } from '../services/telegramService';
 import { isLocalDevHost } from '../utils/env';
-import { PolaroidFrame } from '../components/ui/PolaroidFrame/PolaroidFrame';
-import { useCouplePhotoUrl, useCouplePhotoPicker } from '../features/couple/useCouplePhoto';
-import { useSpaceMode } from '../hooks/useSpaceMode';
 import './ProfilePage.css';
 
 export function ProfilePage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { isFriendship } = useSpaceMode();
-  const couplePhotoUrl = useCouplePhotoUrl();
-  const { openPicker, picker: couplePhotoPicker } = useCouplePhotoPicker();
 
   const [user, setUser] = useState<UserProfileData>(() => profileService.getUserProfile());
   const [partner, setPartner] = useState<PartnerProfileData>(() =>
@@ -128,37 +122,6 @@ export function ProfilePage() {
       {/* 2. Partner Info Card: Online status, Days together, Link to chronicle */}
       <PartnerInfoCard partner={partner} startDate={startDate} />
 
-      {/* 2b. Shared couple / friends photo (shown in the Home polaroid) */}
-      <Card variant="solid" className="couple-photo-row">
-        <PolaroidFrame
-          tilt="left"
-          sticker="none"
-          src={couplePhotoUrl}
-          alt={isFriendship ? 'Совместное фото друзей' : 'Совместное фото пары'}
-          fallback={
-            <div className="home-header__polaroid-empty" aria-hidden="true">
-              <Icon name="camera" size={20} />
-            </div>
-          }
-        />
-        <div className="couple-photo-row__text">
-          <h3 className="couple-photo-row__title">Совместное фото</h3>
-          <p className="couple-photo-row__desc">
-            {isFriendship
-              ? 'Одно общее фото друзей для главной страницы'
-              : 'Одно общее фото пары для главной страницы'}
-          </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<Icon name="camera" size={15} />}
-            onClick={openPicker}
-          >
-            {couplePhotoUrl ? 'Изменить фото' : 'Добавить фото'}
-          </Button>
-        </div>
-      </Card>
-      {couplePhotoPicker}
       {/* 3. Theme & Appearance Settings: Light / Dark interactive cards */}
       <AppearanceSettings theme={theme} onThemeChange={handleThemeChange} />
 

@@ -14,13 +14,15 @@
 }
 
 .bottom-action-wrapper--floating {
-  position: fixed;
-  left: 50%;
+  position: fixed !important;
+  top: auto !important;
+  right: auto !important;
+  left: 50% !important;
+  bottom: calc(84px + max(var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px))) !important;
   transform: translateX(-50%);
   width: auto;
-  max-width: calc(100vw - 24px);
-  bottom: calc(82px + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
-  z-index: 110;
+  max-width: min(416px, calc(100vw - 24px));
+  z-index: 90;
   margin: 0;
   padding: 0;
   display: flex;
@@ -58,19 +60,19 @@
   gap: 8px;
   width: 100%;
   max-width: 440px;
-  height: 48px;
-  min-height: 48px;
-  padding: 0 24px;
-  border-radius: 999px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: var(--radius-sketch-pill, 255px 20px 225px 22px / 22px 225px 20px 255px);
   background: var(--accent-primary);
   color: #FFFFFF;
-  border: 2px solid var(--bg-card);
+  border: 1.8px solid var(--sketch-border-strong, rgba(73, 55, 47, 0.28));
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow: 0 6px 20px var(--accent-shadow);
+  box-shadow: 2px 3px 0 var(--sketch-btn-shadow, rgba(73, 55, 47, 0.14));
   transition: transform var(--motion-micro) var(--ease-tactile),
               background-color var(--motion-micro) ease,
               box-shadow var(--motion-micro) ease;
@@ -86,10 +88,8 @@
   height: 46px;
   min-height: 46px;
   padding: 0 22px;
-  border-radius: 999px;
   background: var(--accent-primary);
   color: #FFFFFF;
-  box-shadow: 0 6px 20px var(--accent-shadow), 0 2px 6px rgba(73, 55, 47, 0.12);
   pointer-events: auto;
   font-size: 14px;
   font-weight: 700;
@@ -111,8 +111,9 @@
 }
 
 .bottom-action-btn:active {
-  transform: scale(0.97);
-  transition: transform 90ms var(--ease-tactile);
+  transform: translate(2px, 2px);
+  box-shadow: none;
+  transition: transform 90ms var(--ease-tactile), box-shadow 90ms ease;
 }
 
 .bottom-action-btn:focus-visible {

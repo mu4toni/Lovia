@@ -19,4 +19,5 @@ export { ColorSelector } from '../../components/ui/Category/ColorSelector';
 export { CategoryMarker } from '../../components/ui/Category/CategoryMarker';
 export { ThemeToggle } from '../../components/ui/ThemeToggle/ThemeToggle';
 export { BottomActionButton } from '../../components/ui/BottomActionButton/BottomActionButton';
+export { Mascot } from '../../components/ui/Mascot/Mascot';
 export { ToastProvider, useToast } from '../../components/ui/Toast/ToastContext';

@@ -1,11 +1,10 @@
 import { Navigate } from 'react-router-dom';
 import { useHomeData } from '../hooks';
 import { HomeHeader, HomeCalendar, RequestsList, UnpairedBanner } from '../widgets';
-import { NearestEventCard } from '../components/home/NearestEventCard/NearestEventCard';
+import { StreakCard } from '../components/home/StreakCard/StreakCard';
 import { BeanAdviceCard } from '../components/home/BeanAdviceCard/BeanAdviceCard';
 import { CreateRequestModal } from '../features/create-reminder';
-import { DemoStateSwitcher } from '../features/demo-switcher';
-import { Card, Button, Skeleton, Icon, useToast, BottomActionButton } from '../shared';
+import { Card, Button, Skeleton, Mascot, useToast, BottomActionButton } from '../shared';
 import { telegramService } from '../services/telegramService';
 import { coupleService } from '../services/coupleService';
 import { isLocalDevHost } from '../utils/env';
@@ -21,7 +20,6 @@ export function HomePage() {
     setSelectedDate,
     isLoading,
     error,
-    demoMode,
     setDemoMode,
     isCreateModalOpen,
     setIsCreateModalOpen,
@@ -122,14 +120,12 @@ export function HomePage() {
 
   return (
     <div className="home-page">
-      {/* 1. Demo States Switcher for easy testing of required states */}
-      {isLocalDevHost() && (
-        <DemoStateSwitcher currentMode={demoMode} onSelectMode={setDemoMode} />
-      )}
-
-      {/* 2. Loading State */}
+      {/* 1. Loading State */}
       {isLoading && (
         <div className="home-loading-skeleton" aria-busy="true" aria-label="Загрузка данных...">
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 2px' }} aria-hidden="true">
+            <Mascot name="19_loading_tea" size={64} eager animated />
+          </div>
           {/* Header Skeleton */}
           <Card variant="solid">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -164,8 +160,8 @@ export function HomePage() {
       {/* 3. Error State */}
       {!isLoading && error && (
         <Card variant="solid" className="home-error-card" role="alert">
-          <div className="home-error-icon-wrap" aria-hidden="true">
-            <Icon name="alert" size={32} className="home-error-icon" />
+          <div className="home-error-mascot-wrap" aria-hidden="true">
+            <Mascot name="20_error_dizzy" size={96} eager />
           </div>
           <h2 className="home-error-title">Что-то пошло не так</h2>
           <p className="home-error-desc">{error}</p>
@@ -194,12 +190,8 @@ export function HomePage() {
             />
           )}
 
-          {/* 2. Nearest Event Card (Blush Paper + Bean) */}
-          <NearestEventCard
-            events={events}
-            requests={requests}
-            startDate={profile.startDate}
-          />
+          {/* 2. Daily Streak Card («Огонёк») */}
+          <StreakCard profile={profile} />
 
           {/* 3. Shared Calendar */}
           <HomeCalendar

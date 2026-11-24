@@ -58,15 +58,60 @@ class WishlistService {
             table: 'wishlist_items',
             filter: `couple_id=eq.${couple.id}`,
           },
-          async () => {
-            await this.getWishlist();
-            window.dispatchEvent(new CustomEvent('lovia_wishlist_updated'));
+          async (payload: any) => {
+            try {
+              const eventType = payload?.eventType;
+              if (eventType === 'INSERT' && payload.new) {
+                const inserted = this.mapWishRow(payload.new);
+                const current = this.loadFromStorage();
+                const next = current.some((x) => x.id === inserted.id)
+                  ? current.map((x) => (x.id === inserted.id ? inserted : x))
+                  : [inserted, ...current];
+                this.saveToStorage(next);
+                this.notify();
+                return;
+              }
+              if (eventType === 'UPDATE' && payload.new) {
+                const updated = this.mapWishRow(payload.new);
+                const current = this.loadFromStorage();
+                const next = current.some((x) => x.id === updated.id)
+                  ? current.map((x) => (x.id === updated.id ? updated : x))
+                  : [updated, ...current];
+                this.saveToStorage(next);
+                this.notify();
+                return;
+              }
+              if (eventType === 'DELETE' && payload.old?.id) {
+                const current = this.loadFromStorage();
+                const next = current.filter((x) => x.id !== payload.old.id);
+                this.saveToStorage(next);
+                this.notify();
+                return;
+              }
+            } catch {
+              // fallback to full fetch below
+            }
+
+            await this.fetchWishlistFromSupabase(couple.id);
+            this.notify();
           }
         )
         .subscribe();
     } catch (e) {
       console.warn('[wishlistService] Realtime subscription error:', e);
     }
+  }
+
+  private dedupeItems(items: WishItem[]): WishItem[] {
+    if (!Array.isArray(items)) return [];
+    const seen = new Set<string>();
+    const unique: WishItem[] = [];
+    for (const item of items) {
+      if (!item || !item.id || seen.has(item.id)) continue;
+      seen.add(item.id);
+      unique.push(item);
+    }
+    return unique;
   }
 
   private getCategoryDetails(categoryId: string) {
@@ -83,13 +128,15 @@ class WishlistService {
       if (!raw) {
         if (isLocalDevHost() && coupleService.isDemoCouple()) {
           this.saveToStorage(initialWishlistItems);
-          return [...initialWishlistItems];
+          return this.dedupeItems([...initialWishlistItems]);
         }
         return [];
       }
-      return JSON.parse(raw);
+      return this.dedupeItems(JSON.parse(raw));
     } catch {
-      return isLocalDevHost() && coupleService.isDemoCouple() ? [...initialWishlistItems] : [];
+      return isLocalDevHost() && coupleService.isDemoCouple()
+        ? this.dedupeItems([...initialWishlistItems])
+        : [];
     }
   }
 
@@ -100,11 +147,12 @@ class WishlistService {
   }
 
   private saveToStorage(items: WishItem[]) {
+    const deduped = this.dedupeItems(items);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(deduped));
       const couple = coupleService.getCurrentCouple();
       if (couple && couple.id && couple.id !== 'couple-1') {
-        updateSwrCache(couple.id, 'wishlist', items);
+        updateSwrCache(couple.id, 'wishlist', deduped);
       }
     } catch (e) {
       console.error('Failed to save wishlist items to localStorage', e);
@@ -139,7 +187,7 @@ class WishlistService {
   }
 
   hydrateFromBundle(rows: any[], coupleId?: string): void {
-    const mapped = (rows || []).map((r) => this.mapWishRow(r));
+    const mapped = this.dedupeItems((rows || []).map((r) => this.mapWishRow(r)));
     this.saveToStorage(mapped);
     const targetCoupleId = coupleId || coupleService.getCurrentCouple()?.id;
     if (targetCoupleId && targetCoupleId !== 'couple-1') {
@@ -172,7 +220,7 @@ class WishlistService {
       throw new Error('Ошибка БД: ' + error.message);
     }
 
-    const mapped: WishItem[] = (data || []).map((row: any) => this.mapWishRow(row));
+    const mapped: WishItem[] = this.dedupeItems((data || []).map((row: any) => this.mapWishRow(row)));
 
     this.saveToStorage(mapped);
     return mapped;
@@ -270,9 +318,12 @@ class WishlistService {
         categoryId: input.categoryId || 'gifts',
       });
       const newItem = this.mapWishRow(serverRow);
-      const all = this.loadFromStorage();
-      all.unshift(newItem);
-      this.saveToStorage(all);
+      // Reload fresh storage AFTER server call in case Realtime already inserted this item
+      const current = this.loadFromStorage();
+      const next = current.some((x) => x.id === newItem.id)
+        ? current.map((x) => (x.id === newItem.id ? newItem : x))
+        : [newItem, ...current];
+      this.saveToStorage(next);
       this.notify();
 
       sendPartnerNotification('wishlist_added', {
@@ -283,7 +334,6 @@ class WishlistService {
       return newItem;
     }
 
-    const all = this.loadFromStorage();
     const effectiveCategory = input.categoryId || 'gifts';
     const catInfo = this.getCategoryDetails(effectiveCategory);
     const now = new Date().toISOString();
@@ -329,8 +379,12 @@ class WishlistService {
       }
     }
 
-    all.unshift(newItem);
-    this.saveToStorage(all);
+    // Reload fresh storage AFTER async insert and strictly deduplicate by item.id
+    const current = this.loadFromStorage();
+    const next = current.some((x) => x.id === newItem.id)
+      ? current.map((x) => (x.id === newItem.id ? newItem : x))
+      : [newItem, ...current];
+    this.saveToStorage(next);
     this.notify();
 
     sendPartnerNotification('wishlist_added', {

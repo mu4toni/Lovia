@@ -62,7 +62,7 @@ export function getCardColorStyles(colorHex?: string): CardColorStyles {
       checkSvgColor: '#ffffff',
       deleteBtnColor: 'var(--text-tertiary)',
       deleteBtnHoverBg: 'var(--color-primary-soft)',
-      urgencyBg: 'rgba(0, 0, 0, 0.05)',
+      urgencyBg: 'var(--bg-surface-subtle)',
       urgencyColor: 'var(--text-secondary)',
       isLightSurface: true,
     };

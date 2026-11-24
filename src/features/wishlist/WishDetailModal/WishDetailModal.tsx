@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WishItem } from '../../../types/wishlist';
 import { Modal } from '../../../components/ui/Modal/Modal';
 import { Icon } from '../../../components/ui/Icon/Icon';
-import { normalizeMediaUrl } from '../../../utils/media';
+import { normalizeMediaUrl, getProxyImageUrl } from '../../../utils/media';
 import './WishDetailModal.css';
 
 export interface WishDetailModalProps {
@@ -25,8 +25,28 @@ export const WishDetailModal: React.FC<WishDetailModalProps> = ({
   onToggleReserve,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [useProxyFallback, setUseProxyFallback] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+    setUseProxyFallback(false);
+  }, [item?.id, item?.imageUrl]);
 
   if (!item) return null;
+
+  const resolvedImageSrc = item.imageUrl
+    ? useProxyFallback
+      ? getProxyImageUrl(item.imageUrl) || normalizeMediaUrl(item.imageUrl)
+      : normalizeMediaUrl(item.imageUrl)
+    : '';
+
+  const handleImageError = () => {
+    if (!useProxyFallback && getProxyImageUrl(item.imageUrl)) {
+      setUseProxyFallback(true);
+      return;
+    }
+    setImageError(true);
+  };
 
   const formattedPrice =
     item.estimatedPrice !== undefined
@@ -50,12 +70,13 @@ export const WishDetailModal: React.FC<WishDetailModalProps> = ({
       <div className="wish-detail-modal__container">
         {/* Large Media Header */}
         <div className="wish-detail-modal__media">
-          {item.imageUrl && !imageError ? (
+          {resolvedImageSrc && !imageError ? (
             <img
-              src={normalizeMediaUrl(item.imageUrl)}
+              src={resolvedImageSrc}
               alt={item.title}
               className="wish-detail-modal__image"
-              onError={() => setImageError(true)}
+              referrerPolicy="no-referrer"
+              onError={handleImageError}
             />
           ) : (
             <div className="wish-detail-modal__placeholder" aria-hidden="true">

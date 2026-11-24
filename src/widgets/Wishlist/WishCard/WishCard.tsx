@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WishItem } from '../../../types/wishlist';
 import { Icon } from '../../../components/ui/Icon/Icon';
 import { WishCardButton } from './WishCardButton';
-import { normalizeMediaUrl } from '../../../utils/media';
+import { normalizeMediaUrl, getProxyImageUrl } from '../../../utils/media';
 import './WishCard.css';
 
 export interface WishCardProps {
@@ -25,6 +25,26 @@ export const WishCard: React.FC<WishCardProps> = ({
   className = '',
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [useProxyFallback, setUseProxyFallback] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+    setUseProxyFallback(false);
+  }, [item.imageUrl]);
+
+  const resolvedImageSrc = item.imageUrl
+    ? useProxyFallback
+      ? getProxyImageUrl(item.imageUrl) || normalizeMediaUrl(item.imageUrl)
+      : normalizeMediaUrl(item.imageUrl)
+    : '';
+
+  const handleImageError = () => {
+    if (!useProxyFallback && getProxyImageUrl(item.imageUrl)) {
+      setUseProxyFallback(true);
+      return;
+    }
+    setImageError(true);
+  };
 
   // Format price
   const formattedPrice =
@@ -57,13 +77,14 @@ export const WishCard: React.FC<WishCardProps> = ({
       {/* 1. Polaroid-Framed Media Container */}
       <div className="wish-card__media">
         <span className="wish-card__tape" aria-hidden="true" />
-        {item.imageUrl && !imageError ? (
+        {resolvedImageSrc && !imageError ? (
           <img
-            src={normalizeMediaUrl(item.imageUrl)}
+            src={resolvedImageSrc}
             alt={item.title}
             className="wish-card__image"
             loading="lazy"
-            onError={() => setImageError(true)}
+            referrerPolicy="no-referrer"
+            onError={handleImageError}
           />
         ) : (
           <div className="wish-card__placeholder" aria-hidden="true">

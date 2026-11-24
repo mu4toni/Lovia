@@ -100,6 +100,31 @@ function generateInviteCode(): string {
   return `LOVIA-${part1}-${part2}`;
 }
 
+function isValidDateStr(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function normalizeDateOnly(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const candidate = value.trim().slice(0, 10);
+  return isValidDateStr(candidate) ? candidate : null;
+}
+
+function getLocalDateByOffset(offsetMin: number, nowMs = Date.now()): string {
+  const shifted = new Date(nowMs + offsetMin * 60 * 1000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function diffDateDays(fromDate: string, toDate: string): number {
+  const [fy, fm, fd] = fromDate.split('-').map(Number);
+  const [ty, tm, td] = toDate.split('-').map(Number);
+  if (!fy || !fm || !fd || !ty || !tm || !td) return Number.POSITIVE_INFINITY;
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / (24 * 60 * 60 * 1000));
+}
+
 /**
  * Извлечение чистого username/chat_id канала
  * Поддерживает форматы: @channel, channel, -1001234567890, https://t.me/channel, t.me/channel
@@ -491,11 +516,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return item;
       });
 
+      // Автосброс серии огонька, если пропущено более 1 полного дня (streak_last_date старше позавчера)
+      const utcToday = getLocalDateByOffset(0);
+      const userOffsetMin = typeof userRow?.timezone_offset === 'number' ? userRow.timezone_offset : 0;
+      const todayDate =
+        isValidDateStr(payload?.localDate) && Math.abs(diffDateDays(utcToday, payload.localDate)) <= 1
+          ? payload.localDate
+          : getLocalDateByOffset(userOffsetMin);
+
+      let streakCount = Number(coupleRow.streak_count || 0);
+      const streakLastDate = normalizeDateOnly(coupleRow.streak_last_date);
+      const streakPingDate = normalizeDateOnly(coupleRow.streak_ping_date);
+      const streakPingUsers: string[] = Array.isArray(coupleRow.streak_ping_users)
+        ? coupleRow.streak_ping_users
+        : [];
+
+      if (
+        streakCount > 0 &&
+        streakLastDate &&
+        streakLastDate !== todayDate &&
+        diffDateDays(streakLastDate, todayDate) > 2
+      ) {
+        streakCount = 0;
+        const { error: resetErr } = await supabase
+          .from('couples')
+          .update({ streak_count: 0 })
+          .eq('id', coupleRow.id);
+        if (resetErr) {
+          console.warn('[get_bundle] Failed to auto-reset expired streak:', resetErr.message);
+        }
+      }
+
+      const normalizedCouple = {
+        ...coupleRow,
+        streak_count: streakCount,
+        streak_last_date: streakLastDate,
+        streak_ping_date: streakPingDate,
+        streak_ping_users: streakPingUsers,
+      };
+
       return res.status(200).json({
         ok: true,
         data: {
           user: userRow || null,
-          couple: coupleRow,
+          couple: normalizedCouple,
           partner: partnerRes.data || null,
           reminders: remindersRes.data || [],
           wishlist: sanitizedWishlist,
@@ -803,6 +867,201 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       return res.status(200).json({ ok: true, data: updated });
+    }
+
+    // -------------------------------------------------------------
+    // ДЕЙСТВИЕ 6c: streak_ping («Огонёк» — ежедневная серия пары/друзей)
+    // -------------------------------------------------------------
+    if (action === 'streak_ping') {
+      let coupleRow: any = null;
+      if (payload?.coupleId) {
+        const isAllowed = await verifyUserCouple(payload.coupleId);
+        if (!isAllowed) {
+          return res.status(403).json({ ok: false, error: 'Нет доступа к этой паре' });
+        }
+        const { data } = await supabase
+          .from('couples')
+          .select('*')
+          .eq('id', payload.coupleId)
+          .maybeSingle();
+        coupleRow = data;
+      } else {
+        const { data } = await supabase
+          .from('couples')
+          .select('*')
+          .or(`user1_id.eq.${actorId},user2_id.eq.${actorId}`)
+          .neq('status', 'dissolved')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        coupleRow = data;
+      }
+
+      if (!coupleRow) {
+        return res.status(404).json({ ok: false, error: 'Пара не найдена' });
+      }
+
+      if (coupleRow.user1_id !== actorId && coupleRow.user2_id !== actorId) {
+        return res.status(403).json({ ok: false, error: 'Нет доступа к этой паре' });
+      }
+
+      if (coupleRow.status !== 'connected' || !coupleRow.user1_id || !coupleRow.user2_id) {
+        return res.status(400).json({ ok: false, error: 'Оба участника должны быть подключены' });
+      }
+
+      const partnerId = coupleRow.user1_id === actorId ? coupleRow.user2_id : coupleRow.user1_id;
+
+      // Вычисляем локальную дату пользователя (из payload.localDate в пределах ±1 дня от UTC или по timezone_offset)
+      const utcToday = getLocalDateByOffset(0);
+      let localDate: string;
+      if (isValidDateStr(payload?.localDate) && Math.abs(diffDateDays(utcToday, payload.localDate)) <= 1) {
+        localDate = payload.localDate;
+      } else {
+        const { data: actorRow } = await supabase
+          .from('users')
+          .select('timezone_offset')
+          .eq('id', actorId)
+          .maybeSingle();
+        const offsetMin = typeof actorRow?.timezone_offset === 'number' ? actorRow.timezone_offset : 0;
+        localDate = getLocalDateByOffset(offsetMin);
+      }
+
+      const currentCount = Number(coupleRow.streak_count || 0);
+      const lastDate = normalizeDateOnly(coupleRow.streak_last_date);
+      const pingDate = normalizeDateOnly(coupleRow.streak_ping_date);
+      const existingPingUsers: string[] = Array.isArray(coupleRow.streak_ping_users)
+        ? coupleRow.streak_ping_users
+        : [];
+
+      const alreadyPingedToday = pingDate === localDate && existingPingUsers.includes(actorId);
+
+      const nextPingDate = localDate;
+      let nextPingUsers: string[];
+      if (pingDate !== localDate) {
+        nextPingUsers = [actorId];
+      } else {
+        nextPingUsers = existingPingUsers.includes(actorId)
+          ? [...existingPingUsers]
+          : [...existingPingUsers, actorId];
+      }
+
+      const bothPinged =
+        nextPingUsers.includes(coupleRow.user1_id) && nextPingUsers.includes(coupleRow.user2_id);
+
+      let nextCount = currentCount;
+      let nextLastDate = lastDate;
+      let justLitToday = false;
+
+      if (bothPinged && lastDate !== localDate) {
+        const daysSinceLast = lastDate ? diffDateDays(lastDate, localDate) : null;
+        if (daysSinceLast !== null && daysSinceLast >= 1 && daysSinceLast <= 2) {
+          // Вчера (1) или позавчера (2 — спасение чёрного огонька)
+          nextCount = currentCount + 1;
+        } else {
+          nextCount = 1;
+        }
+        nextLastDate = localDate;
+        justLitToday = true;
+      } else if (currentCount > 0 && lastDate && lastDate !== localDate && diffDateDays(lastDate, localDate) > 2) {
+        nextCount = 0;
+      }
+
+      const { data: updatedCouple, error: updateErr } = await supabase
+        .from('couples')
+        .update({
+          streak_count: nextCount,
+          streak_last_date: nextLastDate,
+          streak_ping_date: nextPingDate,
+          streak_ping_users: nextPingUsers,
+        })
+        .eq('id', coupleRow.id)
+        .select()
+        .single();
+
+      if (updateErr) {
+        return res.status(500).json({ ok: false, error: updateErr.message });
+      }
+
+      // Если нажал первый участник (второй ещё не нажимал сегодня) — отправляем партнёру уведомление (строго 1 раз в день)
+      if (!alreadyPingedToday && !bothPinged && partnerId) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (botToken) {
+          const pingLogId = `streak_ping_${coupleRow.id}_${actorId}_${localDate}`;
+          const [existingLogRes, usersRes] = await Promise.all([
+            supabase
+              .from('notification_logs')
+              .select('id')
+              .eq('id', pingLogId)
+              .maybeSingle(),
+            supabase
+              .from('users')
+              .select('id, name, telegram_id, notifications_enabled')
+              .in('id', [actorId, partnerId]),
+          ]);
+
+          if (!existingLogRes.data) {
+            const actorUser = (usersRes.data || []).find((u: any) => u.id === actorId);
+            const partnerUser = (usersRes.data || []).find((u: any) => u.id === partnerId);
+            const partnerTgId = partnerUser?.telegram_id;
+
+            if (partnerTgId && partnerUser?.notifications_enabled !== false) {
+              const actorName =
+                (actorUser?.name || '').trim() ||
+                [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(' ').trim() ||
+                'Партнёр';
+              const host = req.headers.host || '';
+              const appUrl = process.env.APP_URL || (host ? `https://${host}` : 'https://lovia.app');
+              const text = `🔥 <b>${actorName}</b> подначил(а) вас! Нажмите в ответ, чтобы зажечь огонёк дня`;
+
+              try {
+                const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: partnerTgId,
+                    text,
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                      inline_keyboard: [[{ text: 'Открыть Lovia', web_app: { url: appUrl } }]],
+                    },
+                  }),
+                });
+                const tgJson = (await tgRes.json()) as { ok?: boolean };
+                if (tgJson?.ok) {
+                  await supabase.from('notification_logs').upsert(
+                    {
+                      id: pingLogId,
+                      user_id: partnerId,
+                      couple_id: coupleRow.id,
+                      notification_type: 'streak_ping',
+                      sent_at: new Date().toISOString(),
+                      payload: { actor_id: actorId, local_date: localDate },
+                    },
+                    { onConflict: 'id', ignoreDuplicates: true }
+                  );
+                }
+              } catch (e) {
+                console.warn('[streak_ping] Failed to notify partner:', e);
+              }
+            }
+          }
+        }
+      }
+
+      const finalLastDate = normalizeDateOnly(updatedCouple?.streak_last_date ?? nextLastDate);
+      return res.status(200).json({
+        ok: true,
+        data: {
+          streak_count: Number(updatedCouple?.streak_count ?? nextCount),
+          streak_last_date: finalLastDate,
+          streak_ping_date: normalizeDateOnly(updatedCouple?.streak_ping_date ?? nextPingDate),
+          streak_ping_users: Array.isArray(updatedCouple?.streak_ping_users)
+            ? updatedCouple.streak_ping_users
+            : nextPingUsers,
+          litToday: finalLastDate === localDate,
+          justLitToday,
+        },
+      });
     }
 
     // -------------------------------------------------------------

@@ -4,7 +4,7 @@ import { UserCategory } from '../../../types/category';
 import { Card } from '../../ui/Card/Card';
 import { DateBadge } from '../../ui/CalendarStrip/DateBadge';
 import { Icon } from '../../ui/Icon/Icon';
-import { useSpaceMode } from '../../../hooks/useSpaceMode';
+import { Mascot } from '../../ui/Mascot/Mascot';
 import { getCardColorStyles } from '../../../utils/colorContrast';
 import {
   formatLocalDate,
@@ -42,8 +42,6 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
   onSelectDate,
   className = '',
 }) => {
-  const { isFriendship } = useSpaceMode();
-  const eventMark = isFriendship ? '✦' : '♥';
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
 
   // Navigation viewing month (independent from selectedDate)
@@ -172,13 +170,25 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
     return [...validEvents, ...datedRequestsOnDay];
   }, [events, selectedDateStr, datedRequestsOnDay, activeRequests, requests]);
 
-  // Find reminder colors on any date string for active reminders only
-  const getReminderColorsOnDate = (dateStr: string): string[] => {
-    const matching = activeRequests.filter(
-      (r) => r.dueDate && r.dueDate.startsWith(dateStr)
+  // Check whether any active reminder or event is scheduled on a given YYYY-MM-DD date
+  const completedTitlesSet = useMemo(
+    () =>
+      new Set(
+        requests
+          .filter((r) => r.status === 'completed')
+          .map((r) => r.title.trim().toLowerCase())
+      ),
+    [requests]
+  );
+
+  const hasItemsOnDate = (dateStr: string): boolean => {
+    const hasActiveReminder = activeRequests.some(
+      (r) => Boolean(r.dueDate) && r.dueDate!.startsWith(dateStr)
     );
-    const colors = matching.map((r) => r.categoryColor).filter(Boolean) as string[];
-    return Array.from(new Set(colors));
+    if (hasActiveReminder) return true;
+    return events.some(
+      (e) => e.date === dateStr && !completedTitlesSet.has(e.title.trim().toLowerCase())
+    );
   };
 
   // Calculate days of current week (Monday-based)
@@ -377,7 +387,7 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
                 const dateStr = formatLocalDate(date);
                 const isSel = isSameDay(date, selectedDate);
                 const isTod = isToday(date);
-                const colors = getReminderColorsOnDate(dateStr);
+                const hasItems = hasItemsOnDate(dateStr);
                 const dayOfWeek = WEEKDAYS_SHORT_RU[(date.getDay() + 6) % 7];
 
                 return (
@@ -389,7 +399,7 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
                     aria-label={`${date.getDate()} ${MONTH_NAMES_RU[date.getMonth()]}${
                       isTod ? ', сегодня' : ''
                     }${isSel ? ', выбрано' : ''}${
-                      colors.length > 0 ? ', есть напоминания' : ''
+                      hasItems ? ', есть напоминания или события' : ''
                     }`}
                     className={`calendar-day ${isSel ? 'calendar-day--selected' : ''} ${
                       isTod ? 'calendar-day--today' : ''
@@ -397,13 +407,9 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
                   >
                     <span className="calendar-day__weekday">{dayOfWeek}</span>
                     <span className="calendar-day__number">{date.getDate()}</span>
-                    {colors.length > 0 && (
+                    {hasItems && (
                       <div className="calendar-day__dots" aria-hidden="true">
-                        {colors.slice(0, 2).map((_col, idx) => (
-                          <span key={idx} className="calendar-day__dot">
-                            {eventMark}
-                          </span>
-                        ))}
+                        <span className="calendar-day__dot" />
                       </div>
                     )}
                   </button>
@@ -430,7 +436,7 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
               {monthCells.map((cell) => {
                 const isSel = isSameDay(cell.date, selectedDate);
                 const isTod = isToday(cell.date);
-                const reminderColors = getReminderColorsOnDate(cell.dateStr);
+                const hasItems = hasItemsOnDate(cell.dateStr);
 
                 return (
                   <button
@@ -445,17 +451,13 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
                     aria-label={`${cell.dayNumber} ${MONTH_NAMES_RU[cell.date.getMonth()]}${
                       isTod ? ', сегодня' : ''
                     }${isSel ? ', выбрано' : ''}${
-                      reminderColors.length > 0 ? ', есть напоминания' : ''
+                      hasItems ? ', есть напоминания или события' : ''
                     }`}
                   >
                     <span className="home-calendar__month-num">{cell.dayNumber}</span>
-                    {reminderColors.length > 0 && (
+                    {hasItems && (
                       <div className="home-calendar__cell-dots" aria-hidden="true">
-                        {reminderColors.slice(0, 3).map((_col, i) => (
-                          <span key={i} className="home-calendar__cell-dot">
-                            {eventMark}
-                          </span>
-                        ))}
+                        <span className="home-calendar__cell-dot" />
                       </div>
                     )}
                   </button>
@@ -473,7 +475,11 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
               Планы и напоминания на {selectedDate.getDate()}{' '}
               {MONTH_NAMES_GENITIVE_RU[selectedDate.getMonth()]}
             </span>
-            <span className="home-calendar__events-count">
+            <span
+              className={`home-calendar__events-count ${
+                dayEvents.length > 0 ? 'home-calendar__events-count--has-items' : ''
+              }`}
+            >
               {dayEvents.length > 0
                 ? `${dayEvents.length} ${
                     dayEvents.length === 1 ? 'событие' : 'события'
@@ -554,6 +560,10 @@ export const HomeCalendar: React.FC<HomeCalendarProps> = ({
             </div>
           ) : (
             <div className="home-calendar__empty-events">
+              <Mascot
+                name={today.getHours() >= 21 ? '40_sleeping_moon' : '34_lying_dreaming'}
+                size={52}
+              />
               <span>День свободен — отличное время для совместного отдыха</span>
             </div>
           )}

@@ -254,7 +254,12 @@ export function OnboardingPage() {
         {/* ================================================================= */}
         <header className="onboarding-hero">
           <div className="onboarding-hero__mascot" aria-hidden="true">
-            <Mascot variant="love" size={110} animated interactive />
+            <Mascot
+              name={isWaitingPartner ? '06_waiting_partner' : '02_key_register'}
+              size={112}
+              eager
+              animated
+            />
           </div>
           <div className="onboarding-hero__badge">
             <span className="onboarding-hero__logo-icon" aria-hidden="true">
@@ -468,6 +473,10 @@ export function OnboardingPage() {
                     ? 'Ожидание подключения друга'
                     : 'Ожидание подключения партнёра'}
                 </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }} aria-hidden="true">
+                <Mascot name="04_sending_love_note" size={64} />
               </div>
 
               <h2 className="onboarding-code-heading">

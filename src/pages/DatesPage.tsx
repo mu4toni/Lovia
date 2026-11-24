@@ -159,7 +159,7 @@ export function DatesPage() {
           aria-label={isFriendship ? 'Нет сохранённых встреч' : 'Нет сохранённых свиданий'}
         >
           <div className="dates-empty-state__mascot" aria-hidden="true">
-            <Mascot mood="camera" size={120} interactive />
+            <Mascot name="08_camera_photo" size={120} />
           </div>
           <h2 className="dates-empty-state__title">
             {isFriendship

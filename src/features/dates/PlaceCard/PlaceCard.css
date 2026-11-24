@@ -143,6 +143,8 @@
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .place-card-selected__address {
@@ -150,11 +152,14 @@
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .place-card-selected__actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   border-top: 1px solid var(--border-subtle);
   padding-top: 8px;
@@ -172,6 +177,7 @@
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
   transition: all var(--motion-micro);
 }

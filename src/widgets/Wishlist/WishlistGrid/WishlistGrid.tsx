@@ -40,7 +40,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
       return (
         <div className="wishlist-empty-card" role="region" aria-label="Ваш вишлист пуст">
           <div className="wishlist-empty-icon" aria-hidden="true">
-            <Mascot mood="thinking" size={114} interactive />
+            <Mascot name="11_wishlist_gift" size={116} />
           </div>
           <h2 className="wishlist-empty-title">Ваш вишлист пока пуст</h2>
           <p className="wishlist-empty-desc">
@@ -59,7 +59,7 @@ export const WishlistGrid: React.FC<WishlistGridProps> = ({
         aria-label={isFriendship ? 'Вишлист друга пуст' : 'Вишлист партнёра пуст'}
       >
         <div className="wishlist-empty-icon" aria-hidden="true">
-          <Mascot variant="sleepy" size={120} animated interactive />
+          <Mascot name="17_empty_state_box" size={116} animated />
         </div>
         <h2 className="wishlist-empty-title">У {partnerName} пока нет желаний</h2>
         <p className="wishlist-empty-desc">

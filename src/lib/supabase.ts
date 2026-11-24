@@ -48,6 +48,11 @@ export interface Database {
           user2_id: string | null;
           status: 'waiting_partner' | 'connected' | 'dissolved';
           start_date: string | null;
+          couple_photo_url: string | null;
+          streak_count: number;
+          streak_last_date: string | null;
+          streak_ping_date: string | null;
+          streak_ping_users: string[];
           created_at: string;
           dissolved_at: string | null;
         };
@@ -60,6 +65,11 @@ export interface Database {
           user2_id?: string | null;
           status?: 'waiting_partner' | 'connected' | 'dissolved';
           start_date?: string | null;
+          couple_photo_url?: string | null;
+          streak_count?: number;
+          streak_last_date?: string | null;
+          streak_ping_date?: string | null;
+          streak_ping_users?: string[];
           created_at?: string;
           dissolved_at?: string | null;
         };
@@ -72,6 +82,11 @@ export interface Database {
           user2_id?: string | null;
           status?: 'waiting_partner' | 'connected' | 'dissolved';
           start_date?: string | null;
+          couple_photo_url?: string | null;
+          streak_count?: number;
+          streak_last_date?: string | null;
+          streak_ping_date?: string | null;
+          streak_ping_users?: string[];
           dissolved_at?: string | null;
         };
       };
