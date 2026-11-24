@@ -1,7 +1,68 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { trackEvent, trackEventsBatch } from './_lib/analytics';
+
+async function trackEvent(
+  distinctId: string,
+  event: string,
+  properties?: Record<string, any>
+): Promise<void> {
+  const apiKey = (process.env.POSTHOG_API_KEY || '').trim();
+  if (!apiKey || !distinctId || !event) return;
+  const host = (process.env.POSTHOG_HOST || 'https://eu.i.posthog.com').trim().replace(/\/+$/, '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1000);
+  try {
+    await fetch(`${host}/capture/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        event,
+        distinct_id: distinctId,
+        properties: { ...(properties || {}), env: 'production' },
+        timestamp: new Date().toISOString(),
+      }),
+      signal: controller.signal,
+    });
+  } catch {
+    // Ignore analytics errors/timeouts
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function trackEventsBatch(
+  events: Array<{ distinctId: string; event: string; properties?: Record<string, any> }>
+): Promise<void> {
+  const apiKey = (process.env.POSTHOG_API_KEY || '').trim();
+  if (!apiKey || events.length === 0) return;
+  const host = (process.env.POSTHOG_HOST || 'https://eu.i.posthog.com').trim().replace(/\/+$/, '');
+  const nowIso = new Date().toISOString();
+  const batch = events
+    .filter((item) => Boolean(item.distinctId && item.event))
+    .map((item) => ({
+      event: item.event,
+      distinct_id: item.distinctId,
+      properties: { ...(item.properties || {}), env: 'production' },
+      timestamp: nowIso,
+    }));
+  if (batch.length === 0) return;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1000);
+  try {
+    await fetch(`${host}/batch/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: apiKey, batch }),
+      signal: controller.signal,
+    });
+  } catch {
+    // Ignore analytics errors/timeouts
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // Переиспользуемый синглтон Supabase-клиента между вызовами в тёплом serverless-контейнере
 let cachedAdminClient: { url: string; key: string; client: SupabaseClient } | null = null;

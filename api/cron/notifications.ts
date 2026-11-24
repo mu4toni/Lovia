@@ -1,6 +1,45 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { trackEvent } from '../_lib/analytics';
+
+async function trackEvent(
+  distinctId: string,
+  event: string,
+  properties?: Record<string, any>
+): Promise<void> {
+  const apiKey = (process.env.POSTHOG_API_KEY || '').trim();
+  if (!apiKey || !distinctId || !event) return;
+  const host = (process.env.POSTHOG_HOST || 'https://eu.i.posthog.com').trim().replace(/\/+$/, '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1000);
+  try {
+    await fetch(`${host}/capture/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        event,
+        distinct_id: distinctId,
+        properties: { ...(properties || {}), env: 'production' },
+        timestamp: new Date().toISOString(),
+      }),
+      signal: controller.signal,
+    });
+  } catch {
+    // Ignore analytics errors/timeouts
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isPermanentTelegramError(description?: string): boolean {
+  if (!description) return false;
+  const lower = description.toLowerCase();
+  return (
+    lower.includes('chat not found') ||
+    lower.includes('bot was blocked by the user') ||
+    lower.includes('user is deactivated')
+  );
+}
 
 let cachedCronSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
 
@@ -394,6 +433,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 remind_before_minutes: remindBefore,
               },
             });
+          } else if (isPermanentTelegramError(sendResult.description)) {
+            sentLogIds.add(logId);
+            newLogsToInsert.push({
+              id: logId,
+              user_id: user.id,
+              couple_id: couple.id,
+              notification_type: `reminder_${remindBefore}m`,
+              sent_at: new Date().toISOString(),
+              payload: {
+                reminder_id: reminder.id,
+                skipped_reason: sendResult.description,
+              },
+            });
           } else {
             stats.errors.push(`Reminder error (${user.id}): ${sendResult.description}`);
           }
@@ -480,6 +532,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                       sent_at: new Date().toISOString(),
                       payload: { target_year: targetYear, years_together: yearsTogether },
                     });
+                  } else if (isPermanentTelegramError(res.description)) {
+                    sentLogIds.add(logId);
+                    newLogsToInsert.push({
+                      id: logId,
+                      user_id: user.id,
+                      couple_id: couple.id,
+                      notification_type: 'anniversary_7d',
+                      sent_at: new Date().toISOString(),
+                      payload: { target_year: targetYear, skipped_reason: res.description },
+                    });
                   } else {
                     stats.errors.push(`Anniv 7d error (${user.id}): ${res.description}`);
                   }
@@ -506,6 +568,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                       sent_at: new Date().toISOString(),
                       payload: { target_year: targetYear, years_together: yearsTogether },
                     });
+                  } else if (isPermanentTelegramError(res.description)) {
+                    sentLogIds.add(logId);
+                    newLogsToInsert.push({
+                      id: logId,
+                      user_id: user.id,
+                      couple_id: couple.id,
+                      notification_type: 'anniversary_1d',
+                      sent_at: new Date().toISOString(),
+                      payload: { target_year: targetYear, skipped_reason: res.description },
+                    });
                   } else {
                     stats.errors.push(`Anniv 1d error (${user.id}): ${res.description}`);
                   }
@@ -529,6 +601,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                       notification_type: 'anniversary_0d',
                       sent_at: new Date().toISOString(),
                       payload: { target_year: targetYear, years_together: yearsTogether },
+                    });
+                  } else if (isPermanentTelegramError(res.description)) {
+                    sentLogIds.add(logId);
+                    newLogsToInsert.push({
+                      id: logId,
+                      user_id: user.id,
+                      couple_id: couple.id,
+                      notification_type: 'anniversary_0d',
+                      sent_at: new Date().toISOString(),
+                      payload: { target_year: targetYear, skipped_reason: res.description },
                     });
                   } else {
                     stats.errors.push(`Anniv 0d error (${user.id}): ${res.description}`);
@@ -577,6 +659,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   sent_at: new Date().toISOString(),
                   payload: { date_id: mDate.id, title: mDate.title, target_year: targetYear },
                 });
+              } else if (isPermanentTelegramError(res.description)) {
+                sentLogIds.add(logId);
+                newLogsToInsert.push({
+                  id: logId,
+                  user_id: user.id,
+                  couple_id: couple.id,
+                  notification_type: 'memdate_7d',
+                  sent_at: new Date().toISOString(),
+                  payload: { date_id: mDate.id, target_year: targetYear, skipped_reason: res.description },
+                });
               } else {
                 stats.errors.push(`Memdate 7d error (${user.id}): ${res.description}`);
               }
@@ -600,6 +692,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   sent_at: new Date().toISOString(),
                   payload: { date_id: mDate.id, title: mDate.title, target_year: targetYear },
                 });
+              } else if (isPermanentTelegramError(res.description)) {
+                sentLogIds.add(logId);
+                newLogsToInsert.push({
+                  id: logId,
+                  user_id: user.id,
+                  couple_id: couple.id,
+                  notification_type: 'memdate_1d',
+                  sent_at: new Date().toISOString(),
+                  payload: { date_id: mDate.id, target_year: targetYear, skipped_reason: res.description },
+                });
               } else {
                 stats.errors.push(`Memdate 1d error (${user.id}): ${res.description}`);
               }
@@ -622,6 +724,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   notification_type: 'memdate_0d',
                   sent_at: new Date().toISOString(),
                   payload: { date_id: mDate.id, title: mDate.title, target_year: targetYear },
+                });
+              } else if (isPermanentTelegramError(res.description)) {
+                sentLogIds.add(logId);
+                newLogsToInsert.push({
+                  id: logId,
+                  user_id: user.id,
+                  couple_id: couple.id,
+                  notification_type: 'memdate_0d',
+                  sent_at: new Date().toISOString(),
+                  payload: { date_id: mDate.id, target_year: targetYear, skipped_reason: res.description },
                 });
               } else {
                 stats.errors.push(`Memdate 0d error (${user.id}): ${res.description}`);
@@ -702,6 +814,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               local_date: userLocalDate,
               streak_count: streakStillAlive ? rawStreakCount : 0,
               partner_pinged: partnerAlreadyPinged,
+            },
+          });
+        } else if (isPermanentTelegramError(sendResult.description)) {
+          sentLogIds.add(logId);
+          newLogsToInsert.push({
+            id: logId,
+            user_id: user.id,
+            couple_id: couple.id,
+            notification_type: 'streak_1h',
+            sent_at: new Date().toISOString(),
+            payload: {
+              local_date: userLocalDate,
+              skipped_reason: sendResult.description,
             },
           });
         } else {
