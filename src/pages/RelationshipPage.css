@@ -1,22 +1,27 @@
+/* ==========================================================================
+   LOVIA — Redesigned Relationship / Friendship Page
+   Header + Mode Pill, Compact Anniversary Banner, Scrapbook Timeline
+   ========================================================================== */
+
 .relationship-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   padding-top: 2px;
   padding-bottom: 24px;
   overflow-x: clip;
   animation: pageEntrance var(--duration-normal) var(--ease-telegram) backwards;
 }
 
-@media (max-width: 380px) {
-  .relationship-page {
-    gap: 16px;
-  }
-}
-
+/* 1. Header */
 .relationship-page__header {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+}
+
+.relationship-page__hero-row {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   position: relative;
@@ -25,7 +30,7 @@
 .relationship-page__header-left {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   flex: 1;
 }
@@ -33,39 +38,233 @@
 .relationship-page__title {
   margin: 0;
   font-family: var(--font-handwritten);
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 700;
   color: var(--text-cocoa);
   letter-spacing: -0.01em;
-  line-height: 1.2;
+  line-height: 1.18;
 }
 
 .relationship-page__title-mark {
   color: var(--accent-text, var(--accent-primary));
 }
 
-.relationship-page__title-underline {
-  opacity: 0.8;
+.relationship-page__subtitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 
 .relationship-page__peeking-mascot {
   flex-shrink: 0;
   pointer-events: none;
-  margin-bottom: -16px;
-  z-index: 2;
+  margin: -4px 0;
 }
 
+/* 2. Compact Anniversary Banner with Partner Avatars & Progress Bar */
+body .relationship-anniv-banner.sketch-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 13px;
+  background-color: var(--bg-card);
+  background-image: linear-gradient(135deg, var(--accent-soft-light) 0%, var(--bg-card) 75%);
+  border-color: var(--border-dashed);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-fast) var(--ease-tactile),
+              border-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease;
+}
+
+body .relationship-anniv-banner.sketch-card:active {
+  transform: translate(1px, 1.5px);
+}
+
+body .relationship-anniv-banner.sketch-card:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+body .relationship-anniv-banner--today.sketch-card {
+  background-image: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-card) 85%);
+}
+
+/* Top Couple Row: Symmetric Avatar — Center Names & Date — Avatar */
+.relationship-anniv-banner__couple-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__avatar.glass-avatar {
+  width: 46px !important;
+  height: 46px !important;
+  flex-shrink: 0;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 0 1.4px var(--border-dashed);
+}
+
+.relationship-anniv-banner__couple-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__names {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  font-family: var(--font-handwritten);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  line-height: 1.2;
+}
+
+.relationship-anniv-banner__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__name-mark {
+  color: var(--accent-text, var(--accent-primary));
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.relationship-anniv-banner__since {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relationship-anniv-banner__chevron {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.relationship-anniv-banner__divider {
+  width: 100%;
+  border-top: 1.4px dashed var(--border-sketch);
+}
+
+/* Bottom Anniversary Countdown + HomePage-style Thin Progress Bar */
+.relationship-anniv-banner__anniv-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__headline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__headline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__label {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.25;
+}
+
+.relationship-anniv-banner__value-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  min-width: 0;
+}
+
+.relationship-anniv-banner__days {
+  font-family: var(--font-handwritten);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.relationship-anniv-banner__meta {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--accent-text, var(--accent-primary));
+  line-height: 1.25;
+}
+
+.relationship-anniv-banner__progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.relationship-anniv-banner__milestones-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.relationship-anniv-banner__milestone-next {
+  color: var(--accent-text, var(--accent-primary));
+}
+
+/* 3. Memorable Dates Section */
 .relationship-page__dates-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 2px;
 }
 
 .relationship-page__dates-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .relationship-page__dates-title-wrap {
@@ -93,4 +292,19 @@
   border: 1px solid var(--border-sketch);
   border-radius: 999px;
   padding: 2px 9px;
+}
+
+@media (max-width: 365px) {
+  .relationship-page__title {
+    font-size: 24px;
+  }
+
+  .relationship-page__peeking-mascot .lovia-mascot {
+    width: 62px !important;
+    height: 62px !important;
+  }
+
+  .relationship-anniv-banner__days {
+    font-size: 21px;
+  }
 }

@@ -9,7 +9,7 @@ const BROWSER_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
 
 const MAX_HTML_BYTES = 1536 * 1024; // 1.5 MB
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export interface ScrapeProductServerResult {
   success: boolean;
@@ -294,11 +294,18 @@ export async function proxyProductImage(rawImageUrl: string): Promise<ProxyImage
     }
 
     const rawContentType = (upstream.headers.get('content-type') || '').toLowerCase().split(';')[0].trim();
-    if (rawContentType.includes('svg') || rawContentType.includes('html') || rawContentType.includes('javascript')) {
+    const isExplicitRasterImage =
+      rawContentType.startsWith('image/') && !rawContentType.includes('svg');
+    const isGenericBinary =
+      rawContentType === '' ||
+      rawContentType === 'application/octet-stream' ||
+      rawContentType === 'binary/octet-stream';
+
+    if (!isExplicitRasterImage && !isGenericBinary) {
       try {
         await upstream.body?.cancel();
       } catch {}
-      return { ok: false, status: 415, error: 'Недопустимый тип содержимого' };
+      return { ok: false, status: 415, error: 'Недопустимый тип содержимого (разрешены только изображения)' };
     }
 
     const reader = upstream.body?.getReader();
@@ -331,12 +338,19 @@ export async function proxyProductImage(rawImageUrl: string): Promise<ProxyImage
     }
 
     const sniffedMime = sniffImageMime(buffer);
-    const finalMime =
-      rawContentType.startsWith('image/') && !rawContentType.includes('svg')
-        ? rawContentType
-        : sniffedMime;
+    const headPreview = buffer.subarray(0, 64).toString('utf8').trimStart().toLowerCase();
+    const looksLikeMarkup =
+      headPreview.startsWith('<svg') ||
+      headPreview.startsWith('<?xml') ||
+      headPreview.startsWith('<!doctype') ||
+      headPreview.startsWith('<html') ||
+      headPreview.startsWith('<script');
 
-    if (!finalMime) {
+    const finalMime = looksLikeMarkup
+      ? null
+      : sniffedMime || (isExplicitRasterImage ? rawContentType : null);
+
+    if (!finalMime || !finalMime.startsWith('image/') || finalMime.includes('svg')) {
       return { ok: false, status: 415, error: 'Ответ не является изображением' };
     }
 

@@ -113,7 +113,7 @@ export const initialDateMemories: DateMemory[] = [
   },
 ];
 
-async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<string> {
+export async function uploadPhotoIfNeeded(coupleId: string, photo: string): Promise<string> {
   if (!photo || !photo.startsWith('data:')) {
     return photo;
   }
@@ -197,7 +197,7 @@ class DateMemoryService {
   }
 
   private subscribeToRealtime(): void {
-    if (!isSupabaseConfigured() || typeof window === 'undefined') return;
+    if (shouldUseServerDb() || !isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
     if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
@@ -308,7 +308,7 @@ class DateMemoryService {
         if (coupleService.isFresh()) {
           return;
         }
-        await coupleService.syncCoupleFromSupabase();
+        await coupleService.syncCoupleFromSupabase(undefined, false, { silent: true });
         return;
       }
 
@@ -387,11 +387,11 @@ class DateMemoryService {
           return this.getDateMemories();
         }
         try {
-          await coupleService.syncCoupleFromSupabase();
-          return this.getDateMemories();
+          await coupleService.syncCoupleFromSupabase(undefined, false, { silent: true });
         } catch (e) {
           console.warn('[dateMemoryService] get_bundle error via /api/db:', e);
         }
+        return this.getDateMemories();
       }
 
       const { data, error } = await supabase
@@ -523,7 +523,7 @@ class DateMemoryService {
       createdAt: new Date().toISOString(),
     };
 
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+    if (!shouldUseServerDb() && isSupabaseConfigured() && !isLocalDevHost() && couple) {
       const row = {
         id: newEntry.id,
         couple_id: couple.id,
@@ -618,7 +618,7 @@ class DateMemoryService {
       return updatedEntry;
     }
 
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
+    if (!shouldUseServerDb() && isSupabaseConfigured() && !isLocalDevHost() && couple && couple.id !== 'couple-1') {
       const updateData: any = {};
       if (input.title !== undefined) updateData.title = input.title.trim();
       if (input.date !== undefined) updateData.date = input.date;

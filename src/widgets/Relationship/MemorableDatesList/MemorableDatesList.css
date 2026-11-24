@@ -1,22 +1,22 @@
 /* ==========================================================================
-   LOVIA — Scrapbook Timeline for Memorable Dates
-   Dashed strawberry track, blush date sticker pills, warm paper notes
+   LOVIA — Redesigned Scrapbook Timeline for Memorable Dates
+   2-column cards, smart context icons, adaptive compact & Polaroid stack
    ========================================================================== */
 
 .memorable-timeline {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-left: 26px;
+  gap: 14px;
+  padding-left: 34px;
 }
 
 /* Vertical Dashed Scrapbook Track Line */
 .memorable-timeline__track {
   position: absolute;
-  top: 16px;
-  bottom: 44px;
-  left: 11px;
+  top: 22px;
+  bottom: 28px;
+  left: 13px;
   width: 0;
   border-left: 2px dashed var(--border-dashed);
   pointer-events: none;
@@ -26,33 +26,32 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  min-width: 0;
 }
 
 /* Milestone Marker on the Dashed Track */
 .timeline-node__marker-wrap {
   position: absolute;
-  left: -26px;
-  top: 14px;
+  left: -34px;
+  top: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
   z-index: 2;
   pointer-events: none;
 }
 
 .timeline-node__marker {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--bg-card);
-  border: 2px solid var(--accent-primary);
+  border: 1.8px solid var(--accent-primary);
   color: var(--accent-text, var(--accent-primary));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px var(--accent-shadow);
+  box-shadow: 0 2px 6px var(--accent-shadow);
 }
 
 .timeline-node__marker--today {
@@ -60,31 +59,43 @@
   color: #FFFFFF;
 }
 
-.timeline-node__arrow-dot {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--accent-text, var(--accent-primary));
-  opacity: 0.6;
-  line-height: 1;
+.timeline-node__connector {
+  display: none;
 }
 
-/* Scrapbook Paper Sticker Card */
-.timeline-node__card {
+/* Scrapbook Paper Card */
+.timeline-node__card.sketch-card {
   flex: 1;
   min-width: 0;
-  background: var(--bg-card);
-  border: 1.5px solid var(--border-sketch);
-  border-radius: 18px;
-  padding: 14px 16px;
-  box-shadow: var(--shadow-card);
+  background-color: var(--bg-card);
+  padding: 13px 14px 13px 15px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease,
+              transform var(--duration-fast) var(--ease-tactile);
 }
 
-.timeline-node__card:hover {
+.timeline-node__card.sketch-card:hover {
   border-color: var(--border-dashed);
+}
+
+.timeline-node__card.sketch-card:active:not(:has(.timeline-polaroid:active)):not(:has(.timeline-node__menu-btn:active)) {
+  transform: translate(1px, 1.5px);
+}
+
+.timeline-node__card.sketch-card:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Compact variant when there is no description */
+.timeline-node__card--compact.sketch-card {
+  padding: 10px 14px;
+  gap: 5px;
 }
 
 .timeline-node__top-row {
@@ -95,29 +106,25 @@
   min-width: 0;
 }
 
-/* Powder Blush Date Sticker Pill */
+/* Date Pill + Annual Badge */
 .timeline-node__date-sticker {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: var(--bg-blush-soft);
   color: var(--text-cocoa);
-  font-family: var(--font-handwritten);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.timeline-date-icon {
-  color: var(--accent-caramel);
-  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .timeline-node__annual-badge {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -127,31 +134,77 @@
   color: var(--accent-text, var(--accent-primary));
 }
 
+/* 2-Column Body */
+.timeline-node__body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.timeline-node__body--center-photo {
+  align-items: center;
+}
+
+.timeline-node__card--compact .timeline-node__body--with-photo {
+  align-items: center;
+}
+
+.timeline-node__text-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.timeline-node__card--compact .timeline-node__text-col {
+  gap: 3px;
+}
+
 .timeline-node__title {
   margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   font-family: var(--font-handwritten);
-  font-size: 18px;
+  font-size: 17.5px;
   font-weight: 700;
   color: var(--text-cocoa);
-  line-height: 1.25;
+  line-height: 1.22;
   overflow-wrap: anywhere;
+}
+
+.timeline-node__title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-text, var(--accent-primary));
+  margin-top: 3px;
+  flex-shrink: 0;
 }
 
 .timeline-node__desc {
   margin: 0;
-  font-size: 13.5px;
-  line-height: 1.5;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--text-secondary);
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.timeline-node__footer-pill {
-  padding-top: 6px;
-  border-top: 1.5px dashed var(--border-hairline);
-  font-size: 12px;
-  color: var(--text-muted);
+.timeline-node__meta-foot {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
   font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.25;
+  margin-top: 1px;
 }
 
 .timeline-countdown strong {
@@ -164,117 +217,207 @@
   align-items: center;
   gap: 4px;
   color: var(--accent-text, var(--accent-primary));
+  font-weight: 700;
+}
+
+/* Right Column: Polaroid & Polaroid Stack (NO gray tape) */
+.timeline-node__photo-col {
+  flex-shrink: 0;
+  padding: 2px 4px 4px 2px;
+}
+
+.timeline-polaroid {
+  position: relative;
+  width: 84px;
+  height: 92px;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.timeline-polaroid--compact {
+  width: 68px;
+  height: 74px;
+}
+
+.timeline-polaroid--stack {
+  cursor: pointer;
+}
+
+.timeline-polaroid__card {
+  position: absolute;
+  inset: 0;
+  background: var(--polaroid-bg, var(--bg-card));
+  padding: 4px 4px 12px;
+  border-radius: 5px;
+  border: 1.2px solid var(--border-sketch);
+  box-shadow: 0 4px 12px var(--polaroid-shadow, rgba(73, 55, 47, 0.14));
+  box-sizing: border-box;
+  transition: transform 200ms var(--ease-tactile);
+}
+
+.timeline-polaroid--compact .timeline-polaroid__card {
+  padding: 3px 3px 9px;
+}
+
+.timeline-polaroid--single .timeline-polaroid__card--front {
+  transform: rotate(-2deg);
+}
+
+.timeline-polaroid--stack .timeline-polaroid__card--back {
+  transform: translate(5px, 4px) rotate(5deg);
+  z-index: 1;
+  opacity: 0.94;
+}
+
+.timeline-polaroid--stack .timeline-polaroid__card--front {
+  transform: rotate(-3deg);
+  z-index: 2;
+}
+
+.timeline-polaroid--stack:active .timeline-polaroid__card--front {
+  transform: rotate(-1deg) scale(0.97);
+}
+
+.timeline-polaroid__img-wrap {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--bg-surface-subtle);
+}
+
+.timeline-polaroid__img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.timeline-polaroid__corner-mark {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  z-index: 4;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--accent-primary);
+  transform: rotate(12deg);
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(73, 55, 47, 0.22);
+}
+
+.timeline-polaroid__flip-btn {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  z-index: 4;
+  padding: 0 5px;
+  height: 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent-text, var(--accent-primary));
+  font-family: var(--font-sans);
+  font-size: 9px;
   font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.timeline-past-info {
-  color: var(--text-muted);
-}
-
-/* Actions Menu */
+/* Popover Actions Menu */
 .timeline-node__actions-wrap {
   position: relative;
   flex-shrink: 0;
 }
 
 .timeline-node__menu-btn {
-  min-width: 38px;
-  min-height: 38px;
-  padding: 0;
-  margin: -6px -8px -6px 0;
-  background: transparent;
-  border: none;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  border: none;
+  background: transparent;
   color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.timeline-node__menu-btn::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
 .timeline-node__menu-btn:hover {
+  background: var(--bg-surface-subtle);
   color: var(--text-cocoa);
 }
 
 .timeline-node__popover {
   position: absolute;
-  top: calc(100% + 2px);
+  top: calc(100% + 4px);
   right: 0;
+  min-width: 152px;
   background: var(--bg-card);
   border: 1.5px solid var(--border-sketch);
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 5px;
   display: flex;
   flex-direction: column;
-  min-width: 152px;
-  z-index: 25;
-  overflow: hidden;
-  padding: 4px;
+  gap: 2px;
+  z-index: 20;
 }
 
 .timeline-node__popover-item {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-cocoa);
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-cocoa);
-  border-radius: 12px;
+  cursor: pointer;
   text-align: left;
-  transition: background-color var(--duration-fast) ease;
 }
 
 .timeline-node__popover-item:hover {
-  background: var(--bg-surface-hover);
+  background: var(--bg-surface-subtle);
 }
 
 .timeline-node__popover-item--delete {
-  color: var(--accent-text, var(--accent-primary));
-}
-
-/* Timeline Closing Signature */
-.memorable-timeline__ending {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin-left: -26px;
-  padding: 12px 16px;
-  text-align: center;
-}
-
-.memorable-timeline__ending-icon {
-  color: var(--accent-text, var(--accent-primary));
-}
-
-.memorable-timeline__ending-text {
-  font-family: var(--font-handwritten);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-muted);
+  color: var(--color-danger, #C92D48);
 }
 
 /* Empty State */
 .memorable-timeline-empty {
+  padding: 24px 18px;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  padding: 24px 18px;
-  background: var(--bg-card);
-  border: 1.5px dashed var(--border-sketch);
-  border-radius: 20px;
-  box-shadow: var(--shadow-card);
+  gap: 8px;
 }
 
 .memorable-timeline-empty__mascot {
-  margin-bottom: 8px;
+  pointer-events: none;
 }
 
 .memorable-timeline-empty__title {
-  margin: 0 0 6px;
+  margin: 0;
   font-family: var(--font-handwritten);
   font-size: 19px;
   font-weight: 700;
@@ -283,8 +426,47 @@
 
 .memorable-timeline-empty__desc {
   margin: 0;
-  font-size: 13.5px;
-  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
   max-width: 280px;
-  line-height: 1.5;
+}
+
+/* Compact screens (<= 365px) */
+@media (max-width: 365px) {
+  .memorable-timeline {
+    padding-left: 30px;
+    gap: 12px;
+  }
+
+  .memorable-timeline__track {
+    left: 11px;
+  }
+
+  .timeline-node__marker-wrap {
+    left: -30px;
+  }
+
+  .timeline-node__marker {
+    width: 24px;
+    height: 24px;
+  }
+
+  .timeline-node__card.sketch-card {
+    padding: 11px 11px 11px 12px;
+  }
+
+  .timeline-node__title {
+    font-size: 16.5px;
+  }
+
+  .timeline-polaroid {
+    width: 76px;
+    height: 84px;
+  }
+
+  .timeline-polaroid--compact {
+    width: 64px;
+    height: 70px;
+  }
 }

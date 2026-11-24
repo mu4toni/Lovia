@@ -26,7 +26,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.date-memory-card:active {
+.date-memory-card:active:not(:has(.date-memory-card__polaroid-wrap:active)) {
   transform: scale(0.985);
 }
 

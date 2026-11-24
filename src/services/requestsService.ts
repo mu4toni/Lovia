@@ -54,7 +54,7 @@ class RemindersService {
   }
 
   private subscribeToRealtime(): void {
-    if (!isSupabaseConfigured() || typeof window === 'undefined') return;
+    if (shouldUseServerDb() || !isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
     if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
@@ -216,11 +216,11 @@ class RemindersService {
         return [...this.reminders];
       }
       try {
-        await coupleService.syncCoupleFromSupabase();
-        return [...this.reminders];
+        await coupleService.syncCoupleFromSupabase(undefined, false, { silent: true });
       } catch (e) {
         console.warn('[requestsService] get_bundle error via /api/db:', e);
       }
+      return [...this.reminders];
     }
 
     const couple = coupleService.getCurrentCouple();
@@ -411,7 +411,7 @@ class RemindersService {
       rewardNote: input.rewardNote?.trim(),
     };
 
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+    if (!shouldUseServerDb() && isSupabaseConfigured() && !isLocalDevHost() && couple) {
       const row = {
         id: newReminder.id,
         couple_id: couple.id,

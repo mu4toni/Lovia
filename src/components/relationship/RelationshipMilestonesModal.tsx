@@ -1,7 +1,11 @@
 import React, { useMemo } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Icon } from '../ui/Icon/Icon';
-import { calculateDaysTogether, getAnniversaryInfo, pluralizeRu } from '../../utils/dateCalculations';
+import {
+  calculateDaysTogether,
+  getRelationshipMilestones,
+  pluralizeRu,
+} from '../../utils/dateCalculations';
 import { telegramService } from '../../services/telegramService';
 import { useSpaceMode } from '../../hooks/useSpaceMode';
 import './RelationshipMilestonesModal.css';
@@ -12,8 +16,6 @@ export interface RelationshipMilestonesModalProps {
   startDate: string;
   onAddMemorableDate?: () => void;
 }
-
-const MILESTONES_DAYS = [100, 200, 300, 365, 500, 777, 1000, 1500, 2000, 3000];
 
 export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalProps> = ({
   isOpen,
@@ -29,43 +31,7 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
       const weeks = Math.floor(days / 7);
       const months = Math.floor(days / 30.4375);
       const hours = days * 24;
-
-      const anniv = getAnniversaryInfo(startDate);
-
-      // Assemble milestones list
-      const items = MILESTONES_DAYS.map((targetDays) => {
-        const isPassed = days >= targetDays;
-        const diff = targetDays - days;
-        let label = '';
-        if (targetDays === 365) {
-          label = isFriendship ? '1 год дружбы' : '1 год отношений';
-        } else {
-          label = `${targetDays} ${pluralizeRu(targetDays, 'день', 'дня', 'дней')}`;
-        }
-
-        return {
-          targetDays,
-          label,
-          isPassed,
-          diff,
-        };
-      });
-
-      // Insert next yearly anniversary if >= 1 year
-      if (anniv.yearsTogether >= 1) {
-        const nextYears = anniv.isToday ? anniv.yearsTogether : anniv.yearsTogether + 1;
-        items.push({
-          targetDays: days + anniv.daysUntil,
-          label: `${nextYears} ${pluralizeRu(nextYears, 'год', 'года', 'лет')} ${
-            isFriendship ? 'дружбы' : 'вместе'
-          }`,
-          isPassed: anniv.isToday,
-          diff: anniv.daysUntil,
-        });
-      }
-
-      // Sort items by targetDays
-      items.sort((a, b) => a.targetDays - b.targetDays);
+      const items = getRelationshipMilestones(startDate, isFriendship);
 
       return {
         daysTogether: days,
@@ -133,11 +99,11 @@ export const RelationshipMilestonesModal: React.FC<RelationshipMilestonesModalPr
 
           <div className="milestones-modal__list">
             {milestoneItems.map((m) => {
-              const isNext = nextMilestone && nextMilestone.targetDays === m.targetDays;
+              const isNext = nextMilestone && nextMilestone.id === m.id;
 
               return (
                 <div
-                  key={m.targetDays}
+                  key={m.id}
                   className={`milestones-modal__item ${
                     m.isPassed
                       ? 'milestones-modal__item--passed'

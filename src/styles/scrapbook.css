@@ -255,10 +255,6 @@ body .relationship-page__title,
 body .relationship-page__section-title,
 body .relationship-hero-card__name,
 body .relationship-hero-card__names-row,
-body .couple-info-card__names,
-body .couple-info-card__days-num,
-body .anniversary-showcase__title,
-body .anniversary-hero-num,
 body .dates-header__title,
 body .dates-empty-state__title,
 body .date-memory-card__title,
@@ -707,7 +703,7 @@ body .place-picker-window {
 /* --------------------------------------------------------------------------
    11. Global fields, rows and checkmarks
    -------------------------------------------------------------------------- */
-body input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.input-field__control):not(.wish-modal-field__input):not(.place-picker-search-input),
+body input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.input-field__control):not(.wish-modal-field__input):not(.place-picker-search-input):not(.quick-checklist__input),
 body textarea:not(.input-field__control),
 body select {
   border: 1.5px solid var(--sketch-border);
@@ -716,7 +712,7 @@ body select {
   font-family: var(--font-sans);
 }
 
-body input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.input-field__control):not(.wish-modal-field__input):not(.place-picker-search-input):focus,
+body input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.input-field__control):not(.wish-modal-field__input):not(.place-picker-search-input):not(.quick-checklist__input):focus,
 body textarea:not(.input-field__control):focus,
 body select:focus {
   border-color: var(--accent-primary);
@@ -805,365 +801,7 @@ body .danger-modal-confirm-checkbox input[type='radio']:checked {
 }
 
 /* --------------------------------------------------------------------------
-   12. "Next milestone" card (AnniversaryCard) — large hero widget
-   -------------------------------------------------------------------------- */
-body .anniversary-showcase.anniversary-showcase {
-  width: 100%;
-  min-height: 240px;
-  padding: 26px;
-  gap: 22px;
-  border-radius: 28px 24px 27px 25px / 25px 28px 24px 27px;
-  background-color: var(--bg-card);
-  background-image: linear-gradient(145deg, var(--bg-card) 0%, var(--accent-soft) 100%);
-  background-size: 100% 100%;
-  border: 2px dashed var(--border-dashed);
-  box-shadow:
-    inset 0 0 36px var(--accent-soft-light),
-    3px 5px 0 var(--sketch-shadow),
-    0 14px 28px rgba(0, 0, 0, 0.14);
-  overflow: hidden;
-}
-
-[data-theme='dark'] body .anniversary-showcase.anniversary-showcase,
-body[data-theme='dark'] .anniversary-showcase.anniversary-showcase,
-[data-theme='dark'] .anniversary-showcase.anniversary-showcase {
-  background-image: linear-gradient(145deg, #2a1f1b 0%, #4a3329 100%);
-}
-
-body .anniversary-showcase__header {
-  align-items: center;
-  gap: 18px;
-}
-
-body .anniversary-showcase__title-wrap {
-  gap: 8px;
-}
-
-body .anniversary-showcase__kicker {
-  font-size: 12.5px;
-  letter-spacing: 0.06em;
-  color: var(--accent-text, var(--accent-primary));
-}
-
-body .anniversary-showcase__title {
-  font-size: clamp(24px, 6.4vw, 31px);
-  line-height: 1.15;
-  color: var(--text-cocoa);
-  overflow-wrap: anywhere;
-}
-
-body .anniversary-showcase__header-side {
-  flex-direction: column;
-  gap: 12px;
-}
-
-body .anniversary-showcase__hero-badge {
-  min-width: 108px;
-  padding: 12px 18px 10px;
-  border-radius: 22px 18px 21px 19px / 19px 22px 18px 21px;
-  background: var(--accent-soft);
-  border: 2px dashed var(--accent-primary);
-  box-shadow: 2px 3px 0 var(--sketch-shadow);
-}
-
-body .anniversary-hero-num {
-  font-size: clamp(46px, 12vw, 60px);
-  line-height: 0.95;
-  color: var(--accent-text, var(--accent-primary));
-}
-
-body .anniversary-hero-unit {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--accent-text, var(--accent-primary));
-}
-
-/* progress: thicker, softly glowing fill */
-body .anniversary-showcase .anniversary-progress {
-  gap: 10px;
-}
-
-body .anniversary-showcase .anniversary-progress__track {
-  height: 8px;
-  overflow: visible;
-  background: var(--bg-surface-subtle);
-  border: 1px solid var(--sketch-border);
-  box-sizing: content-box;
-}
-
-body .anniversary-showcase .anniversary-progress__fill {
-  min-width: 8px;
-  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent-primary) 100%);
-  box-shadow: 0 0 10px var(--accent-shadow);
-}
-
-body .anniversary-showcase .anniversary-progress__marker {
-  width: 10px;
-  height: 10px;
-  right: -1px;
-  border: 2px solid var(--accent-primary);
-}
-
-body .anniversary-showcase .anniversary-progress__caption-row {
-  font-size: 13px;
-}
-
-body .anniversary-showcase .anniversary-progress__percent {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-/* footer */
-body .anniversary-showcase__footer {
-  padding-top: 18px;
-  gap: 12px;
-  border-top: 1.5px dashed var(--sketch-border);
-}
-
-body .anniversary-showcase__date-chip {
-  padding: 7px 16px;
-  font-size: 13px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  border: 1.5px solid var(--sketch-border);
-  box-shadow: 2px 2px 0 var(--tag-shadow);
-  transform: none;
-  color: var(--text-cocoa);
-}
-
-body .anniversary-showcase__footer-right {
-  gap: 8px;
-  padding: 6px 8px 6px 14px;
-  border-radius: 999px;
-  background: var(--bg-surface-subtle);
-  border: 1.5px dashed var(--sketch-border);
-}
-
-body .anniversary-showcase__hint {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-cocoa);
-  white-space: nowrap;
-}
-
-body .anniversary-showcase__chevron {
-  width: 22px;
-  height: 22px;
-  padding: 4px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  color: #ffffff;
-  opacity: 1;
-}
-
-body .anniversary-showcase:hover .anniversary-showcase__chevron {
-  color: #ffffff;
-}
-
-@media (max-width: 420px) {
-  body .anniversary-showcase.anniversary-showcase {
-    padding: 22px 18px;
-    gap: 18px;
-    min-height: 0;
-  }
-  body .anniversary-showcase__header {
-    gap: 12px;
-  }
-  body .anniversary-showcase__hero-badge {
-    min-width: 92px;
-    padding: 10px 12px 8px;
-  }
-  body .anniversary-showcase__footer {
-    justify-content: center;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   13. AnniversaryCard re-layout (solid sketch outline, tear-off sticker)
-   -------------------------------------------------------------------------- */
-body .anniversary-showcase.anniversary-showcase {
-  min-height: 0;
-  padding: 36px 22px 22px;
-  gap: 18px;
-  border: 1.8px solid var(--sketch-border);
-  border-radius: var(--radius-sketch);
-  box-shadow: 2.5px 3.5px 0 var(--sketch-shadow);
-}
-
-body .anniversary-showcase__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-body .anniversary-showcase__title-wrap {
-  flex: 1;
-  min-width: 0;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-body .anniversary-showcase__kicker.paper-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 11px;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--accent-text, var(--accent-primary));
-  transform: rotate(-1deg);
-}
-
-body .anniversary-showcase__title {
-  font-family: var(--font-handwritten);
-  font-size: clamp(22px, 6vw, 24px);
-  font-weight: 600;
-  line-height: 1.18;
-  overflow-wrap: break-word;
-  word-break: normal;
-}
-
-/* tear-off calendar sticker */
-body .anniversary-showcase__hero-badge {
-  position: relative;
-  width: 88px;
-  min-width: 88px;
-  flex-shrink: 0;
-  padding: 20px 6px 8px;
-  gap: 0;
-  background: var(--bg-card);
-  border: 1.8px solid var(--sketch-border);
-  border-radius: 16px 14px 18px 15px;
-  box-shadow: 2.5px 3px 0 var(--sketch-shadow);
-  transform: rotate(2deg);
-  overflow: visible;
-}
-
-body .anniversary-showcase__hero-cap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 14px;
-  background: var(--accent-primary);
-  border-radius: 13px 11px 0 0 / 12px 11px 0 0;
-}
-
-body .anniversary-showcase__hero-badge .anniversary-showcase__mascot {
-  position: absolute;
-  top: -28px;
-  right: -6px;
-  z-index: 2;
-  pointer-events: none;
-}
-
-body .anniversary-hero-num {
-  font-family: var(--font-handwritten);
-  font-size: 38px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--accent-text, var(--accent-primary));
-}
-
-body .anniversary-hero-unit {
-  margin-top: 2px;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-/* progress */
-body .anniversary-showcase .anniversary-progress__track {
-  height: 10px;
-  border: 1.5px solid var(--sketch-border);
-  border-radius: 999px;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-body .anniversary-showcase .anniversary-progress__fill {
-  box-shadow: none;
-}
-
-body .anniversary-showcase .anniversary-progress__marker {
-  display: none;
-}
-
-body .anniversary-showcase .anniversary-progress__caption-row {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-body .anniversary-showcase .anniversary-progress__percent {
-  color: var(--accent-text, var(--accent-primary));
-}
-
-/* footer */
-body .anniversary-showcase__footer {
-  justify-content: space-between;
-  border-top: 1.5px dashed var(--sketch-border);
-  padding-top: 16px;
-}
-
-body .anniversary-showcase__date-chip.paper-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-cocoa);
-  transform: rotate(-1deg);
-}
-
-body .anniversary-showcase__date-mark {
-  color: var(--accent-text, var(--accent-primary));
-  font-size: 12px;
-  line-height: 1;
-}
-
-body .anniversary-showcase__footer-right.sketch-pill {
-  gap: 8px;
-  padding: 6px 8px 6px 14px;
-  background: var(--bg-card);
-  border: 1.5px solid var(--sketch-border);
-  box-shadow: 2px 2px 0 var(--sketch-shadow);
-}
-
-body .anniversary-showcase__footer-right.sketch-pill:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
-}
-
-@media (max-width: 420px) {
-  body .anniversary-showcase.anniversary-showcase {
-    padding: 36px 16px 18px;
-  }
-  body .anniversary-showcase__hero-badge {
-    width: 88px;
-    min-width: 88px;
-    padding: 20px 6px 8px;
-  }
-  body .anniversary-showcase__footer {
-    justify-content: space-between;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   14. Shared couple photo (Home polaroid cover fit; placeholder in HomeHeader.css)
+   12. Shared couple photo (Home polaroid cover fit; placeholder in HomeHeader.css)
    -------------------------------------------------------------------------- */
 body .home-header__polaroid .polaroid-frame__img {
   object-fit: cover;
@@ -1207,49 +845,18 @@ body .couple-photo-row__desc {
 }
 
 /* --------------------------------------------------------------------------
-   15. Narrow mobile adaptation (360px–380px Telegram Mini App)
+   13. Narrow mobile adaptation (360px–380px Telegram Mini App)
    -------------------------------------------------------------------------- */
 @media (max-width: 380px) {
   body .paper-tag {
     font-size: 11.5px;
     padding: 3px 9px;
   }
-
-  body .anniversary-showcase.anniversary-showcase {
-    padding: 34px 14px 16px;
-    gap: 14px;
-  }
-
-  body .anniversary-showcase__footer {
-    gap: 8px;
-    flex-wrap: nowrap;
-  }
-
-  body .anniversary-showcase__date-chip.paper-tag {
-    padding: 5px 10px;
-    font-size: 12px;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  body .anniversary-showcase__footer-right.sketch-pill {
-    padding: 5px 7px 5px 11px;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  body .anniversary-showcase__hint {
-    font-size: 12px;
-  }
 }
 
 /* Dark theme high-contrast text overrides for accent labels & badges */
 [data-theme='dark'] body .home-calendar__events-count--has-items,
 [data-theme='dark'] .home-calendar__events-count--has-items,
-[data-theme='dark'] body .anniversary-showcase__kicker.paper-tag,
-[data-theme='dark'] body .anniversary-hero-num,
-[data-theme='dark'] body .anniversary-showcase .anniversary-progress__percent,
 [data-theme='dark'] body .wish-card__price,
 [data-theme='dark'] body .wish-detail-modal__price,
 [data-theme='dark'] body .timeline-countdown strong,

@@ -15,6 +15,7 @@ export interface SwrCoupleData {
   wishlist?: any[];
   dates?: any[];
   memories?: any[];
+  checklist?: any[];
   updatedAt?: string;
 }
 

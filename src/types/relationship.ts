@@ -4,6 +4,7 @@ export interface MemorableDate {
   date: string; // YYYY-MM-DD
   description?: string;
   isAnnual: boolean;
+  photos?: string[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -13,6 +14,7 @@ export interface CreateMemorableDateInput {
   date: string; // YYYY-MM-DD
   description?: string;
   isAnnual: boolean;
+  photos?: string[];
 }
 
 export interface UpdateMemorableDateInput {
@@ -20,6 +22,7 @@ export interface UpdateMemorableDateInput {
   date?: string;
   description?: string;
   isAnnual?: boolean;
+  photos?: string[];
 }
 
 import { AnniversaryInfo } from '../utils/dateCalculations';

@@ -1,4 +1,5 @@
 import { coupleService } from './coupleService';
+import { telegramService } from './telegramService';
 import { isLocalDevHost } from '../utils/env';
 
 export type PartnerEventType =
@@ -78,6 +79,11 @@ export async function sendPartnerNotification(
       return;
     }
 
+    const initData = telegramService.getInitData();
+    if (!initData) {
+      return;
+    }
+
     // Защита от дублей (повторный рендер / двойной клик) с окном 10 секунд
     if (isDuplicateEvent(eventType, payload?.title, coupleId)) {
       return;
@@ -87,13 +93,12 @@ export async function sendPartnerNotification(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-telegram-init-data': initData,
       },
       body: JSON.stringify({
         eventType,
         coupleId,
-        actorId,
         actorName,
-        partnerId,
         payload: payload || {},
       }),
     }).catch((networkErr) => {

@@ -65,6 +65,7 @@ export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  hideHeader?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
@@ -75,6 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
+  hideHeader = false,
   children,
   footer,
   className = '',
@@ -314,33 +316,35 @@ export const Modal: React.FC<ModalProps> = ({
         aria-labelledby={title ? titleId : undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="modal-sheet__drag-zone"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-        >
-          <div className="modal-sheet__handle" aria-hidden="true" />
-          <div className="modal-sheet__header">
-            {title && (
-              <h2 id={titleId} className="modal-sheet__title">
-                <span>{title}</span>
-                <span className="modal-sheet__title-mark" aria-hidden="true">
-                  {isFriendship ? '✦' : '♥'}
-                </span>
-              </h2>
-            )}
-            <IconButton
-              size="sm"
-              variant="ghost"
-              aria-label="Закрыть окно"
-              icon={<Icon name="close" size={17} strokeWidth={2.2} />}
-              onClick={startCloseSequence}
-              className="modal-sheet__close"
-            />
+        {!hideHeader && (
+          <div
+            className="modal-sheet__drag-zone"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+          >
+            <div className="modal-sheet__handle" aria-hidden="true" />
+            <div className="modal-sheet__header">
+              {title && (
+                <h2 id={titleId} className="modal-sheet__title">
+                  <span>{title}</span>
+                  <span className="modal-sheet__title-mark" aria-hidden="true">
+                    {isFriendship ? '✦' : '♥'}
+                  </span>
+                </h2>
+              )}
+              <IconButton
+                size="sm"
+                variant="ghost"
+                aria-label="Закрыть окно"
+                icon={<Icon name="close" size={17} strokeWidth={2.2} />}
+                onClick={startCloseSequence}
+                className="modal-sheet__close"
+              />
+            </div>
           </div>
-        </div>
+        )}
         <div className="modal-sheet__body">{children}</div>
         {footer && <div className="modal-sheet__footer">{footer}</div>}
       </div>

@@ -8,6 +8,7 @@ import { PageSkeleton } from './components/ui/PageSkeleton/PageSkeleton';
 import { SubscriptionGate } from './components/ui/SubscriptionGate/SubscriptionGate';
 import { coupleService } from './services/coupleService';
 import { telegramService } from './services/telegramService';
+import { shouldUseServerDb } from './services/api';
 
 // Code Splitting: при входе грузится только Главная, остальные экраны подгружаются по требованию
 const OnboardingPage = lazy(() =>
@@ -114,7 +115,40 @@ export function App() {
     window.addEventListener('lovia_subscription_required', handleSubRequired);
     window.addEventListener('lovia_subscription_resolved', handleSubResolved);
 
+    // Мягкое фоновое автообновление get_bundle каждые 20 сек (для синхронизации без открытого RLS/Realtime).
+    // Не срабатывает, если вкладка скрыта, открыта модалка или пользователь сейчас вводит текст.
+    const BACKGROUND_SYNC_INTERVAL_MS = 20_000;
+    const isInteractionBusy = (): boolean => {
+      if (document.hidden) return true;
+      if (
+        document.querySelector(
+          '.modal-backdrop, .modal-sheet, .photo-lightbox, [role="dialog"][aria-modal="true"]'
+        )
+      ) {
+        return true;
+      }
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (activeEl) {
+        const tag = activeEl.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || activeEl.isContentEditable) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    const syncIntervalId = window.setInterval(() => {
+      if (!shouldUseServerDb()) return;
+      if (!coupleService.isConnected()) return;
+      if (coupleService.isSubscriptionRequired()) return;
+      if (isInteractionBusy()) return;
+      coupleService.syncCoupleFromSupabase(undefined, true, { silent: true }).catch(() => {
+        // Silent background refresh — ignore transient network errors
+      });
+    }, BACKGROUND_SYNC_INTERVAL_MS);
+
     return () => {
+      window.clearInterval(syncIntervalId);
       window.removeEventListener('lovia_subscription_required', handleSubRequired);
       window.removeEventListener('lovia_subscription_resolved', handleSubResolved);
     };

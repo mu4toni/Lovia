@@ -265,7 +265,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (rawText.startsWith('/start')) {
     if (isAdmin) {
       const targetDisplay = target.username
-        ? `@${target.username} (ID: ${target.chatId})`
+        ? `@${escapeHtml(target.username)} (ID: ${escapeHtml(String(target.chatId))})`
         : `Администратор (по умолчанию, ID: ${adminTelegramId || 'не задан'})`;
 
       const adminWelcome =
@@ -294,7 +294,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Команда /target: просмотр текущей цели
     if (rawText.startsWith('/target')) {
       const targetDisplay = target.username
-        ? `@${target.username} (ID: ${target.chatId})`
+        ? `@${escapeHtml(target.username)} (ID: ${escapeHtml(String(target.chatId))})`
         : `Администратор (по умолчанию, ID: ${adminTelegramId || 'не задан'})`;
 
       await sendTelegramMessage(
@@ -343,7 +343,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await sendTelegramMessage(
           botToken,
           chat.id,
-          `Пользователь @${targetArg} ещё не запускал этого бота. Попросите его нажать /start в боте и повторите команду.`
+          `Пользователь @${escapeHtml(targetArg)} ещё не запускал этого бота. Попросите его нажать /start в боте и повторите команду.`
         );
         return res.status(200).json({ ok: true });
       }
@@ -368,7 +368,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await sendTelegramMessage(
         botToken,
         chat.id,
-        `✅ Все сообщения теперь пересылаются @${targetArg}`
+        `✅ Все сообщения теперь пересылаются @${escapeHtml(targetArg)}`
       );
       return res.status(200).json({ ok: true });
     }
@@ -451,7 +451,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     from.first_name ||
     'Пользователь'
   );
-  const senderTag = from.username ? `@${from.username}` : '';
+  const senderTag = from.username ? `@${escapeHtml(from.username)}` : '';
   const headerText =
     `📩 <b>Новое обращение в поддержку</b>\n` +
     `От: <b>${senderName}</b> ${senderTag}\n` +

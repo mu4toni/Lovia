@@ -1,0 +1,392 @@
+/* ==========================================================================
+   LOVIA — Memorable Date Detail Modal (Scrapbook Light & Dark + 5 Accents)
+   ========================================================================== */
+
+.memorable-detail-modal .modal-sheet__body {
+  padding: 0;
+}
+
+.memorable-detail {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Full-Bleed Cover Photo Header */
+.memorable-detail__cover {
+  position: relative;
+  width: 100%;
+  height: 236px;
+  background: var(--bg-surface-subtle);
+  overflow: hidden;
+  overflow: clip;
+  flex-shrink: 0;
+}
+
+.memorable-detail__cover-scrim {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 92px;
+  background: linear-gradient(to bottom, rgba(24, 18, 15, 0.54) 0%, rgba(24, 18, 15, 0) 100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.memorable-detail__cover-handle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 252, 248, 0.72);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Clean Header when no photo is attached */
+.memorable-detail__plain-header {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 18px 12px;
+  border-bottom: 1.5px dashed var(--border-sketch);
+  background: var(--bg-card);
+}
+
+.memorable-detail__plain-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-blush);
+  margin: 0 auto 10px;
+}
+
+.memorable-detail__plain-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.memorable-detail__plain-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent-text, var(--accent-primary));
+  background: var(--accent-soft-light);
+  border-radius: 999px;
+}
+
+/* Floating Header Controls (••• and ×) */
+.memorable-detail__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memorable-detail__controls--photo {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
+}
+
+.memorable-detail__ctrl-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 50%;
+  border: 1.2px solid var(--border-sketch);
+  background: var(--bg-surface-subtle);
+  color: var(--text-cocoa);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--duration-fast) ease, transform var(--duration-fast) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.memorable-detail__ctrl-btn::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+
+.memorable-detail__ctrl-btn--photo {
+  background: rgba(34, 26, 23, 0.62);
+  border-color: rgba(255, 252, 248, 0.34);
+  color: #ffffff;
+}
+
+.memorable-detail__ctrl-btn:active {
+  transform: scale(0.92);
+}
+
+.memorable-detail__menu-wrap {
+  position: relative;
+}
+
+.memorable-detail__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 158px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-sketch);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 20;
+}
+
+.memorable-detail__popover-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-cocoa);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.memorable-detail__popover-item:hover {
+  background: var(--bg-surface-subtle);
+}
+
+.memorable-detail__popover-item--delete {
+  color: var(--color-danger, #C92D48);
+}
+
+/* Body Content */
+.memorable-detail__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.memorable-detail__meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.memorable-detail__context-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1.5px solid var(--border-dashed);
+  color: var(--accent-text, var(--accent-primary));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.memorable-detail__date-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--bg-blush-soft);
+  color: var(--text-cocoa);
+  font-family: var(--font-handwritten);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.memorable-detail__annual-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--bg-surface-subtle);
+  border: 1.2px solid var(--border-sketch);
+  color: var(--accent-text, var(--accent-primary));
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.memorable-detail__title {
+  margin: 0;
+  font-family: var(--font-handwritten);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.memorable-detail__status-line {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.memorable-detail__status-line strong {
+  color: var(--accent-text, var(--accent-primary));
+  font-weight: 800;
+}
+
+.memorable-detail__status--today {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent-text, var(--accent-primary));
+  font-weight: 700;
+}
+
+.memorable-detail__divider {
+  width: 100%;
+  border-top: 1.5px dashed var(--border-dashed-cocoa);
+  margin: 2px 0;
+}
+
+.memorable-detail__desc {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.58;
+  color: var(--text-cocoa);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.memorable-detail__desc--empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 13.5px;
+}
+
+/* Horizontal Photo Cards Strip */
+.memorable-detail__gallery-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.memorable-detail__gallery-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.memorable-detail__photos-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.memorable-detail__photos-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.memorable-detail__photo-thumb {
+  flex: 0 0 132px;
+  height: 92px;
+  padding: 4px 4px 9px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-sketch);
+  background: var(--polaroid-bg, var(--bg-card));
+  box-shadow: 0 3px 10px var(--polaroid-shadow, rgba(73, 55, 47, 0.12));
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--duration-fast) var(--ease-tactile), border-color var(--duration-fast) ease;
+}
+
+.memorable-detail__photo-thumb--active {
+  border-color: var(--accent-primary);
+}
+
+.memorable-detail__photo-thumb:active {
+  transform: scale(0.96);
+}
+
+.memorable-detail__photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+
+/* Bottom Action Buttons */
+.memorable-detail__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+body .memorable-detail__btn.sketch-pill {
+  min-height: 44px;
+  padding: 9px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+body .memorable-detail__btn--secondary {
+  background: var(--bg-surface-subtle) !important;
+  color: var(--text-cocoa) !important;
+  border-color: var(--sketch-border) !important;
+}
+
+body .memorable-detail__btn--primary {
+  background: var(--accent-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--sketch-border-strong) !important;
+}
+
+@media (max-width: 365px) {
+  .memorable-detail__cover {
+    height: 204px;
+  }
+
+  .memorable-detail__body {
+    padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .memorable-detail__title {
+    font-size: 21px;
+  }
+
+  body .memorable-detail__btn.sketch-pill {
+    font-size: 12px;
+    padding: 8px 8px;
+  }
+}

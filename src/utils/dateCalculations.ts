@@ -316,4 +316,62 @@ export function getMemorableDateStatus(
   };
 }
 
+export interface RelationshipMilestoneItem {
+  id: string;
+  targetDays: number;
+  label: string;
+  isPassed: boolean;
+  diff: number;
+  isAnniversary?: boolean;
+  years?: number;
+}
+
+const ROUND_DAY_MILESTONES = [100, 200, 300, 500, 777, 1000, 1500, 2000, 3000];
+
+/**
+ * Рассчитывает список круглых вех (в днях) и календарных годовщин от startDate
+ */
+export function getRelationshipMilestones(
+  startDateStr: string,
+  isFriendship: boolean,
+  asOfDate?: Date
+): RelationshipMilestoneItem[] {
+  const days = calculateDaysTogether(startDateStr, asOfDate);
+  const anniv = getAnniversaryInfo(startDateStr, asOfDate);
+  const { year: startYear, month: startMonth, day: startDay } = parseDateComponents(startDateStr);
+  const startUtc = getUtcMidnight(startYear, startMonth, startDay);
+  const today = getTodayUtcMidnight(asOfDate);
+  const msPerDay = 1000 * 60 * 60 * 24;
+
+  const items: RelationshipMilestoneItem[] = ROUND_DAY_MILESTONES.map((targetDays) => ({
+    id: `days_${targetDays}`,
+    targetDays,
+    label: `${targetDays} ${pluralizeRu(targetDays, 'день', 'дня', 'дней')}`,
+    isPassed: days >= targetDays,
+    diff: targetDays - days,
+  }));
+
+  const maxYear = Math.max(3, anniv.isToday ? anniv.yearsTogether + 1 : anniv.yearsTogether);
+  for (let y = 1; y <= maxYear; y++) {
+    const annivUtc = getUtcMidnight(startYear + y, startMonth, startDay);
+    const targetDays = Math.round((annivUtc - startUtc) / msPerDay);
+    const diff = Math.round((annivUtc - today.timestamp) / msPerDay);
+    const isPassed = today.timestamp >= annivUtc;
+    const yearsWord = pluralizeRu(y, 'год', 'года', 'лет');
+
+    items.push({
+      id: `year_${y}`,
+      targetDays,
+      label: `${y} ${yearsWord} ${isFriendship ? 'крепкой дружбы' : 'вместе'}`,
+      isPassed,
+      diff,
+      isAnniversary: true,
+      years: y,
+    });
+  }
+
+  items.sort((a, b) => a.targetDays - b.targetDays);
+  return items;
+}
+
 export { MONTH_NAMES_RU_GENITIVE, MONTH_NAMES_RU_NOMINATIVE };

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
-import { CoupleReminder, RequestFilterTab } from '../../../types';
+import { CoupleReminder } from '../../../types';
 import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
 import { EmptyState } from '../../ui/EmptyState/EmptyState';
 import { Icon } from '../../ui/Icon/Icon';
@@ -8,6 +8,7 @@ import { SketchDoodle } from '../../ui/SketchDecor/SketchDecor';
 import { getCardColorStyles } from '../../../utils/colorContrast';
 import { getContrastColor } from '../../../utils/categories';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
+import { QuickChecklistCard } from './QuickChecklistCard';
 import './RequestsList.css';
 
 function getUrgencyLabel(urg: CoupleReminder['urgency']) {
@@ -222,10 +223,12 @@ export interface RequestsListProps {
   className?: string;
 }
 
+type TodaySectionTab = 'reminders' | 'lists';
+
 export const RequestsList: React.FC<RequestsListProps> = ({
   requests,
   categories = [],
-  currentUserId,
+  currentUserId: _currentUserId,
   onToggleStatus,
   onDeleteRequest,
   onEditRequest,
@@ -233,7 +236,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
   className = '',
 }) => {
   const { isFriendship } = useSpaceMode();
-  const [activeTab, setActiveTab] = useState<RequestFilterTab>('all');
+  const [activeTab, setActiveTab] = useState<TodaySectionTab>('reminders');
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
   // Extract / collect unique category colors for filtering
@@ -254,18 +257,16 @@ export const RequestsList: React.FC<RequestsListProps> = ({
     return result;
   }, [requests, categories]);
 
-  // Filter by tab + selected color
+  // Active reminders filtered by selected color
   const filteredRequests = useMemo(() => {
     return requests.filter((req) => {
       if (req.status === 'completed') return false;
       if (selectedColor && req.categoryColor?.toLowerCase() !== selectedColor.toLowerCase()) {
         return false;
       }
-      if (activeTab === 'for_me') return req.targetId === currentUserId;
-      if (activeTab === 'from_me') return req.authorId === currentUserId;
       return true;
     });
-  }, [requests, selectedColor, activeTab, currentUserId]);
+  }, [requests, selectedColor]);
 
   const overdueRequests = useMemo(
     () => requests.filter((r) => r.status === 'overdue'),
@@ -273,7 +274,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
   );
 
   return (
-    <section className={`requests-section ${className}`} aria-label="Наши совместные напоминания">
+    <section className={`requests-section ${className}`} aria-label="Наши совместные напоминания и списки">
       {/* Section Header */}
       <div className="requests-section__header">
         <div className="requests-section__title-wrap">
@@ -287,167 +288,139 @@ export const RequestsList: React.FC<RequestsListProps> = ({
             />
           </div>
         </div>
+      </div>
+
+      {/* 2 Tabs: «Напоминания» and «Списки» */}
+      <div className="requests-tabs" role="tablist" aria-label="Разделы блока Сегодня">
         <button
           type="button"
-          className="requests-section__all-btn"
-          onClick={() => {
-            setActiveTab('all');
-            setSelectedColor(null);
-          }}
+          role="tab"
+          aria-selected={activeTab === 'reminders'}
+          className={`requests-tab ${activeTab === 'reminders' ? 'requests-tab--active' : ''}`}
+          onClick={() => setActiveTab('reminders')}
         >
-          <span>Все</span>
-          <Icon name="chevron-right" size={14} />
+          Напоминания
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'lists'}
+          className={`requests-tab ${activeTab === 'lists' ? 'requests-tab--active' : ''}`}
+          onClick={() => setActiveTab('lists')}
+        >
+          Списки
         </button>
       </div>
 
-      {/* Overdue Alert Banner if any */}
-      {overdueRequests.length > 0 && (
-        <div className="requests-overdue-banner" role="alert">
-          <Icon name="alert" size={18} className="requests-overdue-banner__icon" />
-          <div className="requests-overdue-banner__text">
-            <strong>
-              {overdueRequests.length === 1
-                ? '1 напоминание требует внимания'
-                : `${overdueRequests.length} напоминания просрочены`}
-            </strong>
-            <p>Не переживайте, любовь важнее дедлайнов — обновите срок или отметьте выполненным.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Filter Tabs */}
-      <div className="requests-tabs" role="tablist" aria-label="Фильтр напоминаний">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'all'}
-          className={`requests-tab ${activeTab === 'all' ? 'requests-tab--active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          Активные
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'for_me'}
-          className={`requests-tab ${activeTab === 'for_me' ? 'requests-tab--active' : ''}`}
-          onClick={() => setActiveTab('for_me')}
-        >
-          Для меня
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'from_me'}
-          className={`requests-tab ${activeTab === 'from_me' ? 'requests-tab--active' : ''}`}
-          onClick={() => setActiveTab('from_me')}
-        >
-          От меня
-        </button>
-      </div>
-
-      {/* Compact Color Filter Bar (Right below the tabs) */}
-      {filterColors.length > 0 && (
-        <div
-          className="requests-color-filter-bar"
-          role="toolbar"
-          aria-label="Фильтрация напоминаний по цвету"
-        >
-          <button
-            type="button"
-            className={`requests-color-pill requests-color-all-btn ${
-              selectedColor === null ? 'requests-color-pill--active requests-color-all-btn--active' : ''
-            }`}
-            onClick={() => setSelectedColor(null)}
-            aria-pressed={selectedColor === null}
-          >
-            Все
-          </button>
-          {filterColors.map((colorHex) => {
-            const isSelected = selectedColor?.toLowerCase() === colorHex.toLowerCase();
-            const checkColor = getContrastColor(colorHex);
-            const matchedCat =
-              categories.find((c: UserCategory) => c.color.toLowerCase() === colorHex.toLowerCase()) ||
-              DEFAULT_BASE_CATEGORIES.find((c: UserCategory) => c.color.toLowerCase() === colorHex.toLowerCase());
-            const catName = matchedCat?.name || `Цвет ${colorHex}`;
-
-            return (
-              <button
-                key={colorHex}
-                type="button"
-                className={`requests-color-circle requests-color-swatch-btn ${
-                  isSelected ? 'requests-color-circle--active requests-color-swatch-btn--active' : ''
-                }`}
-                style={{ backgroundColor: colorHex }}
-                onClick={() => setSelectedColor(isSelected ? null : colorHex)}
-                aria-pressed={isSelected}
-                aria-label={`Фильтр по цвету: ${catName}`}
-                title={catName}
-              >
-                {isSelected && (
-                  <Icon
-                    name="check"
-                    size={11}
-                    strokeWidth={3}
-                    className="requests-color-swatch__check"
-                    style={{ color: checkColor }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Reminders List with Full Card Background Tinting */}
-      {filteredRequests.length > 0 ? (
-        <div className="requests-cards-list">
-          {filteredRequests.map((req) => (
-            <RequestCardItem
-              key={req.id}
-              req={req}
-              onToggleStatus={onToggleStatus}
-              onDeleteRequest={onDeleteRequest}
-              onEditRequest={onEditRequest}
-            />
-          ))}
-        </div>
+      {activeTab === 'lists' ? (
+        <QuickChecklistCard />
       ) : (
-        <EmptyState
-          mascotName={
-            selectedColor
-              ? '17_empty_state_box'
-              : activeTab === 'for_me' || activeTab === 'from_me'
-              ? '14_reminder_bell'
-              : new Date().getHours() >= 21
-              ? '40_sleeping_moon'
-              : '19_loading_tea'
-          }
-          title={
-            selectedColor
-              ? 'Напоминаний этого цвета пока нет'
-              : activeTab === 'for_me'
-              ? 'Нет напоминаний для вас'
-              : activeTab === 'from_me'
-              ? 'Вы ещё не создали напоминаний'
-              : 'Всё сделано, можно отдыхать'
-          }
-          description={
-            selectedColor
-              ? 'Создайте напоминание с этим цветом или сбросьте фильтр.'
-              : activeTab === 'for_me'
-              ? isFriendship
-                ? 'Здесь появятся напоминания и знаки заботы от друга.'
-                : 'Здесь появятся напоминания и знаки заботы от партнёра.'
-              : activeTab === 'from_me'
-              ? isFriendship
-                ? 'Создайте приятное напоминание или просьбу для друга!'
-                : 'Создайте приятное напоминание или просьбу для партнёра!'
-              : isFriendship
-              ? 'У вас пока нет активных напоминаний. Создайте приятное напоминание для друга!'
-              : 'У вас пока нет активных напоминаний. Создайте приятное напоминание для партнёра!'
-          }
-        />
+        <>
+          {/* Overdue Alert Banner if any */}
+          {overdueRequests.length > 0 && (
+            <div className="requests-overdue-banner" role="alert">
+              <Icon name="alert" size={18} className="requests-overdue-banner__icon" />
+              <div className="requests-overdue-banner__text">
+                <strong>
+                  {overdueRequests.length === 1
+                    ? '1 напоминание требует внимания'
+                    : `${overdueRequests.length} напоминания просрочены`}
+                </strong>
+                <p>Не переживайте, любовь важнее дедлайнов — обновите срок или отметьте выполненным.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Compact Color Filter Bar (Right below the tabs) */}
+          {filterColors.length > 0 && (
+            <div
+              className="requests-color-filter-bar"
+              role="toolbar"
+              aria-label="Фильтрация напоминаний по цвету"
+            >
+              <button
+                type="button"
+                className={`requests-color-pill requests-color-all-btn ${
+                  selectedColor === null ? 'requests-color-pill--active requests-color-all-btn--active' : ''
+                }`}
+                onClick={() => setSelectedColor(null)}
+                aria-pressed={selectedColor === null}
+              >
+                Все
+              </button>
+              {filterColors.map((colorHex) => {
+                const isSelected = selectedColor?.toLowerCase() === colorHex.toLowerCase();
+                const checkColor = getContrastColor(colorHex);
+                const matchedCat =
+                  categories.find((c: UserCategory) => c.color.toLowerCase() === colorHex.toLowerCase()) ||
+                  DEFAULT_BASE_CATEGORIES.find((c: UserCategory) => c.color.toLowerCase() === colorHex.toLowerCase());
+                const catName = matchedCat?.name || `Цвет ${colorHex}`;
+
+                return (
+                  <button
+                    key={colorHex}
+                    type="button"
+                    className={`requests-color-circle requests-color-swatch-btn ${
+                      isSelected ? 'requests-color-circle--active requests-color-swatch-btn--active' : ''
+                    }`}
+                    style={{ backgroundColor: colorHex }}
+                    onClick={() => setSelectedColor(isSelected ? null : colorHex)}
+                    aria-pressed={isSelected}
+                    aria-label={`Фильтр по цвету: ${catName}`}
+                    title={catName}
+                  >
+                    {isSelected && (
+                      <Icon
+                        name="check"
+                        size={11}
+                        strokeWidth={3}
+                        className="requests-color-swatch__check"
+                        style={{ color: checkColor }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Reminders List with Full Card Background Tinting */}
+          {filteredRequests.length > 0 ? (
+            <div className="requests-cards-list">
+              {filteredRequests.map((req) => (
+                <RequestCardItem
+                  key={req.id}
+                  req={req}
+                  onToggleStatus={onToggleStatus}
+                  onDeleteRequest={onDeleteRequest}
+                  onEditRequest={onEditRequest}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              mascotName={
+                selectedColor
+                  ? '17_empty_state_box'
+                  : new Date().getHours() >= 21
+                  ? '40_sleeping_moon'
+                  : '19_loading_tea'
+              }
+              title={
+                selectedColor
+                  ? 'Напоминаний этого цвета пока нет'
+                  : 'Всё сделано, можно отдыхать'
+              }
+              description={
+                selectedColor
+                  ? 'Создайте напоминание с этим цветом или сбросьте фильтр.'
+                  : isFriendship
+                  ? 'У вас пока нет активных напоминаний. Создайте приятное напоминание для друга!'
+                  : 'У вас пока нет активных напоминаний. Создайте приятное напоминание для партнёра!'
+              }
+            />
+          )}
+        </>
       )}
     </section>
   );

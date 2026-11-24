@@ -39,7 +39,9 @@
 
 .polaroid-frame__photo-box {
   width: 100%;
+  min-width: 0;
   overflow: hidden;
+  overflow: clip;
   border-radius: 3px;
   background: var(--bg-surface-subtle, #F2E8DE);
   display: flex;

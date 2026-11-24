@@ -31,6 +31,13 @@ async function trackEvent(
   }
 }
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function isPermanentTelegramError(description?: string): boolean {
   if (!description) return false;
   const lower = description.toLowerCase();
@@ -413,7 +420,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           else if (remindBefore === 180) whenText = 'Через 3 часа';
           else if (remindBefore === 1440) whenText = 'Завтра';
 
-          const messageText = `⏰ ${whenText}: «<b>${reminder.title}</b>» (${timeStr})`;
+          const messageText = `⏰ ${whenText}: «<b>${escapeHtml(reminder.title)}</b>» (${escapeHtml(timeStr)})`;
           const sendResult = await sendTelegramMessage(user.telegram_id, messageText, appUrl, botToken);
 
           if (sendResult.ok) {
@@ -646,7 +653,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (daysUntil === 7) {
             const logId = `memdate_7d_${mDate.id}_${user.id}_${targetYear}`;
             if (!sentLogIds.has(logId)) {
-              const text = `💐 Через неделю памятная дата: «<b>${mDate.title}</b>»!`;
+              const text = `💐 Через неделю памятная дата: «<b>${escapeHtml(mDate.title)}</b>»!`;
               const res = await sendTelegramMessage(user.telegram_id, text, appUrl, botToken);
               if (res.ok) {
                 sentLogIds.add(logId);
@@ -679,7 +686,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (daysUntil === 1) {
             const logId = `memdate_1d_${mDate.id}_${user.id}_${targetYear}`;
             if (!sentLogIds.has(logId)) {
-              const text = `⏳ Уже завтра памятная дата: «<b>${mDate.title}</b>»!`;
+              const text = `⏳ Уже завтра памятная дата: «<b>${escapeHtml(mDate.title)}</b>»!`;
               const res = await sendTelegramMessage(user.telegram_id, text, appUrl, botToken);
               if (res.ok) {
                 sentLogIds.add(logId);
@@ -712,7 +719,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (daysUntil === 0) {
             const logId = `memdate_0d_${mDate.id}_${user.id}_${targetYear}`;
             if (!sentLogIds.has(logId)) {
-              const text = `🎉 Сегодня памятная дата: «<b>${mDate.title}</b>»!`;
+              const text = `🎉 Сегодня памятная дата: «<b>${escapeHtml(mDate.title)}</b>»!`;
               const res = await sendTelegramMessage(user.telegram_id, text, appUrl, botToken);
               if (res.ok) {
                 sentLogIds.add(logId);

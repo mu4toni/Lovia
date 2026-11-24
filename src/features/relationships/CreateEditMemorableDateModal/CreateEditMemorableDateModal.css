@@ -42,3 +42,95 @@
   background: rgba(229, 62, 62, 0.18);
   border-color: rgba(229, 62, 62, 0.3);
 }
+
+/* Compact photo picker (max 2 photos) */
+.memorable-date-form__photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memorable-date-form__photos-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-cocoa);
+}
+
+.memorable-date-form__photos-limit {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.memorable-date-form__photos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.memorable-date-form__photo-item {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-sketch);
+  background: var(--bg-surface-subtle);
+  flex-shrink: 0;
+}
+
+.memorable-date-form__photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.memorable-date-form__photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(45, 34, 29, 0.78);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.memorable-date-form__photo-add {
+  height: 82px;
+  min-width: 128px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--border-dashed-cocoa);
+  background: var(--bg-surface-subtle);
+  color: var(--text-secondary);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.memorable-date-form__photo-add:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--accent-text, var(--accent-primary));
+}
+
+.memorable-date-form__file-input {
+  display: none;
+}

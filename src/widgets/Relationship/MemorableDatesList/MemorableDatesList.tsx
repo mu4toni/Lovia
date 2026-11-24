@@ -1,31 +1,135 @@
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { MemorableDate } from '../../../types/relationship';
-import { Icon, IconName } from '../../../components/ui/Icon/Icon';
+import { Icon } from '../../../components/ui/Icon/Icon';
 import { Mascot } from '../../../components/ui/Mascot/Mascot';
 import {
   formatRussianDate,
   getMemorableDateStatus,
   pluralizeRu,
 } from '../../../utils/dateCalculations';
+import { getDateContextIcon } from '../../../utils/dateContextIcon';
+import { normalizeMediaUrl } from '../../../utils/media';
+import { telegramService } from '../../../services/telegramService';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import './MemorableDatesList.css';
 
 export interface MemorableDatesListProps {
   dates: MemorableDate[];
+  onSelect: (date: MemorableDate) => void;
   onEdit: (date: MemorableDate) => void;
   onDelete: (date: MemorableDate) => void;
 }
 
-function getMilestoneIcon(title: string, isFriendship: boolean): IconName {
-  const t = title.toLowerCase();
-  if (t.includes('поцелуй') || t.includes('отношен') || t.includes('любовь')) {
-    return isFriendship ? 'sparkles' : 'heart-filled';
-  }
-  if (t.includes('знакомств') || t.includes('встреч')) return 'sparkles';
-  if (t.includes('рождени') || t.includes('подарок')) return 'gift';
-  if (t.includes('поездк') || t.includes('путешеств') || t.includes('маяк')) return 'pin';
-  return isFriendship ? 'star' : 'heart-filled';
+interface PolaroidStackProps {
+  photos: string[];
+  title: string;
+  compact: boolean;
+  isFriendship: boolean;
 }
+
+const PolaroidStack: React.FC<PolaroidStackProps> = memo(
+  ({ photos, title, compact, isFriendship }) => {
+    const [topIdx, setTopIdx] = useState(0);
+    const touchStartXRef = useRef<number | null>(null);
+    const isMulti = photos.length >= 2;
+
+    useEffect(() => {
+      setTopIdx(0);
+    }, [photos.length, photos[0]]);
+
+    const flipNext = (e?: React.SyntheticEvent) => {
+      if (e) e.stopPropagation();
+      if (!isMulti) return;
+      telegramService.hapticImpact('light');
+      setTopIdx((prev) => (prev + 1) % photos.length);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+      if (!isMulti) return;
+      touchStartXRef.current = e.touches[0]?.clientX ?? null;
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+      if (!isMulti || touchStartXRef.current === null) return;
+      const endX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
+      const dx = endX - touchStartXRef.current;
+      touchStartXRef.current = null;
+      if (Math.abs(dx) >= 24) {
+        e.stopPropagation();
+        telegramService.hapticImpact('light');
+        setTopIdx((prev) => (dx < 0 ? (prev + 1) % photos.length : (prev - 1 + photos.length) % photos.length));
+      }
+    };
+
+    const frontPhoto = photos[topIdx % photos.length];
+    const backPhoto = isMulti ? photos[(topIdx + 1) % photos.length] : null;
+
+    return (
+      <div
+        className={`timeline-polaroid ${compact ? 'timeline-polaroid--compact' : ''} ${
+          isMulti ? 'timeline-polaroid--stack' : 'timeline-polaroid--single'
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isMulti) {
+            flipNext();
+          }
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        role={isMulti ? 'button' : undefined}
+        tabIndex={isMulti ? 0 : undefined}
+        aria-label={isMulti ? `Перелистнуть фото (${topIdx + 1} из ${photos.length})` : undefined}
+        onKeyDown={
+          isMulti
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  flipNext(e);
+                }
+              }
+            : undefined
+        }
+      >
+        {/* Back Polaroid peeking out underneath (only when 2+ photos) */}
+        {isMulti && backPhoto && (
+          <div className="timeline-polaroid__card timeline-polaroid__card--back" aria-hidden="true">
+            <div className="timeline-polaroid__img-wrap">
+              <img
+                src={normalizeMediaUrl(backPhoto)}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Front Polaroid */}
+        <div className="timeline-polaroid__card timeline-polaroid__card--front">
+          <span className="timeline-polaroid__corner-mark" aria-hidden="true">
+            {isFriendship ? '✦' : '♥'}
+          </span>
+          <div className="timeline-polaroid__img-wrap">
+            <img
+              src={normalizeMediaUrl(frontPhoto)}
+              alt={`${title} — фото ${topIdx + 1}`}
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+            />
+          </div>
+          {isMulti && (
+            <span className="timeline-polaroid__flip-btn" aria-hidden="true">
+              {topIdx + 1} / {photos.length}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+);
 
 interface TimelineNodeItemProps {
   item: MemorableDate;
@@ -33,17 +137,32 @@ interface TimelineNodeItemProps {
   isLast: boolean;
   isMenuOpen: boolean;
   onToggleMenu: (id: string) => void;
+  onSelect: (date: MemorableDate) => void;
   onEdit: (date: MemorableDate) => void;
   onDelete: (date: MemorableDate) => void;
 }
 
 const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
-  ({ item, isFriendship, isLast, isMenuOpen, onToggleMenu, onEdit, onDelete }) => {
+  ({ item, isFriendship, isLast, isMenuOpen, onToggleMenu, onSelect, onEdit, onDelete }) => {
     const status = getMemorableDateStatus(item.date, item.isAnnual);
     const daysLabel = pluralizeRu(status.daysUntil, 'день', 'дня', 'дней');
     const daysAgoLabel =
       status.daysAgo !== undefined ? pluralizeRu(status.daysAgo, 'день', 'дня', 'дней') : '';
-    const iconName = getMilestoneIcon(item.title, isFriendship);
+    const contextIcon = getDateContextIcon(item.title, item.description);
+
+    const photos = (item.photos || []).slice(0, 2);
+    const hasPhotos = photos.length > 0;
+    const cleanDesc = item.description?.trim() || '';
+    const hasDescription = cleanDesc.length > 0;
+    const isLongDescription = cleanDesc.length > 85;
+
+    const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.target !== e.currentTarget) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onSelect(item);
+      }
+    };
 
     return (
       <article className="timeline-node">
@@ -53,36 +172,50 @@ const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
               status.isToday ? 'timeline-node__marker--today' : ''
             }`}
           >
-            <Icon name={iconName} size={13} />
+            <Icon name={contextIcon} size={13} />
           </div>
-          {!isLast && (
-            <span className="timeline-node__arrow-dot" aria-hidden="true">
-              ↓
-            </span>
-          )}
+          {!isLast && <span className="timeline-node__connector" />}
         </div>
 
-        <div className="timeline-node__card">
+        <div
+          className={`timeline-node__card sketch-card ${
+            !hasDescription ? 'timeline-node__card--compact' : ''
+          }`}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            telegramService.hapticImpact('light');
+            onSelect(item);
+          }}
+          onKeyDown={handleCardKeyDown}
+          aria-label={`Открыть памятную дату: ${item.title}`}
+        >
+          {/* Top Row: Date Pill + Annual Badge + Actions Menu */}
           <div className="timeline-node__top-row">
             <div className="timeline-node__date-sticker">
-              <Icon name="calendar" size={12} className="timeline-date-icon" />
               <span>{formatRussianDate(item.date)}</span>
               {item.isAnnual && (
                 <span className="timeline-node__annual-badge">Ежегодно</span>
               )}
             </div>
 
-            <div className="timeline-node__actions-wrap">
+            <div
+              className="timeline-node__actions-wrap"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 type="button"
                 className="timeline-node__menu-btn"
-                onClick={() => onToggleMenu(item.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMenu(item.id);
+                }}
                 title="Действия с датой"
                 aria-label={`Действия для «${item.title}»`}
                 aria-haspopup="true"
                 aria-expanded={isMenuOpen}
               >
-                <Icon name="more-vertical" size={16} />
+                <Icon name="more-vertical" size={15} />
               </button>
 
               {isMenuOpen && (
@@ -90,7 +223,10 @@ const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
                   <button
                     type="button"
                     className="timeline-node__popover-item"
-                    onClick={() => onEdit(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(item);
+                    }}
                   >
                     <Icon name="edit" size={14} />
                     <span>Редактировать</span>
@@ -98,7 +234,10 @@ const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
                   <button
                     type="button"
                     className="timeline-node__popover-item timeline-node__popover-item--delete"
-                    onClick={() => onDelete(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item);
+                    }}
                   >
                     <Icon name="trash" size={14} />
                     <span>Удалить</span>
@@ -108,31 +247,54 @@ const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
             </div>
           </div>
 
-          <h4 className="timeline-node__title">{item.title}</h4>
+          {/* 2-Column Body: Text on left, Polaroid / Stack on right */}
+          <div
+            className={`timeline-node__body ${
+              hasPhotos ? 'timeline-node__body--with-photo' : ''
+            } ${isLongDescription ? 'timeline-node__body--center-photo' : ''}`}
+          >
+            <div className="timeline-node__text-col">
+              <h4 className="timeline-node__title">
+                <span className="timeline-node__title-icon" aria-hidden="true">
+                  <Icon name={contextIcon} size={14} />
+                </span>
+                <span>{item.title}</span>
+              </h4>
 
-          {item.description && (
-            <p className="timeline-node__desc">{item.description}</p>
-          )}
+              {hasDescription && <p className="timeline-node__desc">{cleanDesc}</p>}
 
-          <div className="timeline-node__footer-pill">
-            {item.isAnnual ? (
-              status.isToday ? (
-                <span className="timeline-countdown--today">
-                  <Icon name="sparkles" size={12} />
-                  Сегодня годовщина!
-                </span>
-              ) : (
-                <span className="timeline-countdown">
-                  До следующей годовщины — <strong>{status.daysUntil}</strong> {daysLabel}
-                </span>
-              )
-            ) : (
-              status.daysAgo !== undefined &&
-              status.daysAgo > 0 && (
-                <span className="timeline-past-info">
-                  Состоялось {status.daysAgo} {daysAgoLabel} назад
-                </span>
-              )
+              <div className="timeline-node__meta-foot">
+                {item.isAnnual ? (
+                  status.isToday ? (
+                    <span className="timeline-countdown--today">
+                      <Icon name="sparkles" size={12} />
+                      Сегодня годовщина!
+                    </span>
+                  ) : (
+                    <span className="timeline-countdown">
+                      Через <strong>{status.daysUntil}</strong> {daysLabel}
+                    </span>
+                  )
+                ) : (
+                  status.daysAgo !== undefined &&
+                  status.daysAgo > 0 && (
+                    <span className="timeline-past-info">
+                      {status.daysAgo} {daysAgoLabel} назад
+                    </span>
+                  )
+                )}
+              </div>
+            </div>
+
+            {hasPhotos && (
+              <div className="timeline-node__photo-col">
+                <PolaroidStack
+                  photos={photos}
+                  title={item.title}
+                  compact={!hasDescription}
+                  isFriendship={isFriendship}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -143,6 +305,7 @@ const TimelineNodeItem: React.FC<TimelineNodeItemProps> = memo(
 
 export const MemorableDatesList: React.FC<MemorableDatesListProps> = memo(({
   dates,
+  onSelect,
   onEdit,
   onDelete,
 }) => {
@@ -168,74 +331,48 @@ export const MemorableDatesList: React.FC<MemorableDatesListProps> = memo(({
     };
   }, [activeMenuId]);
 
-  const timelineDates = useMemo(
-    () =>
-      [...dates].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      ),
-    [dates]
-  );
+  const sortedDates = useMemo(() => {
+    return [...dates].sort((a, b) => a.date.localeCompare(b.date));
+  }, [dates]);
 
-  const handleToggleMenu = React.useCallback((id: string) => {
-    setActiveMenuId((prev) => (prev === id ? null : id));
-  }, []);
-
-  const handleEditItem = React.useCallback(
-    (item: MemorableDate) => {
-      setActiveMenuId(null);
-      onEdit(item);
-    },
-    [onEdit]
-  );
-
-  const handleDeleteItem = React.useCallback(
-    (item: MemorableDate) => {
-      setActiveMenuId(null);
-      onDelete(item);
-    },
-    [onDelete]
-  );
-
-  if (dates.length === 0) {
+  if (sortedDates.length === 0) {
     return (
-      <div className="memorable-timeline-empty">
+      <div className="memorable-timeline-empty sketch-card sketch-card--dashed">
         <div className="memorable-timeline-empty__mascot" aria-hidden="true">
-          <Mascot name="38_writing_diary" size={108} />
+          <Mascot name="09_calendar_anniversary" size={76} />
         </div>
-        <p className="memorable-timeline-empty__title">Пока нет сохранённых дат</p>
+        <h3 className="memorable-timeline-empty__title">Добавьте ваши особенные даты</h3>
         <p className="memorable-timeline-empty__desc">
           {isFriendship
-            ? 'Добавьте день знакомства, первую поездку или любой важный момент вашей дружбы ✦'
-            : 'Добавьте первый поцелуй, знакомство или любое важное событие вашей пары ♡'}
+            ? 'Сохраните день знакомства, первую поездку и другие важные моменты дружбы.'
+            : 'Сохраните день знакомства, первый поцелуй, поездки и другие важные моменты.'}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="memorable-timeline" aria-label="Хронология памятных дат">
+    <div className="memorable-timeline">
       <div className="memorable-timeline__track" aria-hidden="true" />
-
-      {timelineDates.map((item, index) => (
+      {sortedDates.map((item, idx) => (
         <TimelineNodeItem
           key={item.id}
           item={item}
           isFriendship={isFriendship}
-          isLast={index === timelineDates.length - 1}
+          isLast={idx === sortedDates.length - 1}
           isMenuOpen={activeMenuId === item.id}
-          onToggleMenu={handleToggleMenu}
-          onEdit={handleEditItem}
-          onDelete={handleDeleteItem}
+          onToggleMenu={(id) => setActiveMenuId((prev) => (prev === id ? null : id))}
+          onSelect={onSelect}
+          onEdit={(d) => {
+            setActiveMenuId(null);
+            onEdit(d);
+          }}
+          onDelete={(d) => {
+            setActiveMenuId(null);
+            onDelete(d);
+          }}
         />
       ))}
-
-      {/* Scrapbook Timeline Closing Note */}
-      <div className="memorable-timeline__ending">
-        <Mascot name="38_writing_diary" size={32} />
-        <span className="memorable-timeline__ending-text">
-          {isFriendship ? 'Дальше — ещё больше приключений ✦' : 'Дальше — только вместе ♡'}
-        </span>
-      </div>
     </div>
   );
 });

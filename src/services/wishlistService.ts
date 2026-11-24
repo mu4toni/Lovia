@@ -93,7 +93,7 @@ class WishlistService {
   }
 
   private subscribeToRealtime(): void {
-    if (!isSupabaseConfigured() || typeof window === 'undefined') return;
+    if (shouldUseServerDb() || !isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
     if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
@@ -260,11 +260,11 @@ class WishlistService {
         return this.loadFromStorage();
       }
       try {
-        await coupleService.syncCoupleFromSupabase();
-        return this.loadFromStorage();
+        await coupleService.syncCoupleFromSupabase(undefined, false, { silent: true });
       } catch (e) {
         console.warn('[wishlistService] get_bundle error via /api/db:', e);
       }
+      return this.loadFromStorage();
     }
 
     const { data, error } = await supabase
@@ -418,7 +418,7 @@ class WishlistService {
       updatedAt: now,
     };
 
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+    if (!shouldUseServerDb() && isSupabaseConfigured() && !isLocalDevHost() && couple) {
       const row = {
         id: newItem.id,
         couple_id: couple.id,

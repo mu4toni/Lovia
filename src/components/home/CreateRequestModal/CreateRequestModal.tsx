@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CoupleReminder, CreateReminderInput } from '../../../types';
 import { UserCategory, DEFAULT_BASE_CATEGORIES } from '../../../types/category';
 import { UrgencyLevel } from '../../ui/Badge/Badge';
@@ -48,6 +48,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
 
   // Collapsed accordion «Дополнительные параметры»
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const advancedRef = useRef<HTMLDivElement>(null);
   const [urgency, setUrgency] = useState<UrgencyLevel>('medium');
   const [remindBeforeMinutes, setRemindBeforeMinutes] = useState<number>(60);
   const [description, setDescription] = useState('');
@@ -246,6 +247,26 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     }
   };
 
+  const handleToggleAdvanced = () => {
+    const nextOpen = !isAdvancedOpen;
+    setIsAdvancedOpen(nextOpen);
+    if (nextOpen) {
+      window.setTimeout(() => {
+        const el = advancedRef.current;
+        if (!el) return;
+        const scrollBody = el.closest('.modal-sheet__body') as HTMLElement | null;
+        if (scrollBody) {
+          const elRect = el.getBoundingClientRect();
+          const bodyRect = scrollBody.getBoundingClientRect();
+          const targetTop = scrollBody.scrollTop + (elRect.top - bodyRect.top) - 8;
+          scrollBody.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+        } else {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 60);
+    }
+  };
+
   const urgencies: { key: UrgencyLevel; label: string; dotClass: string }[] = [
     { key: 'low', label: 'Спокойно', dotClass: 'create-urgency-dot--low' },
     { key: 'medium', label: 'Важно', dotClass: 'create-urgency-dot--medium' },
@@ -412,11 +433,11 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
         </div>
 
         {/* Accordion: «Дополнительные параметры» (по умолчанию свёрнут) */}
-        <div className="create-advanced-section">
+        <div className="create-advanced-section" ref={advancedRef}>
           <button
             type="button"
             className="create-advanced-toggle"
-            onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+            onClick={handleToggleAdvanced}
             aria-expanded={isAdvancedOpen}
           >
             <span className="create-advanced-toggle__label">

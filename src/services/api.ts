@@ -122,6 +122,9 @@ export interface UserRecord {
  * и статус разрешения уведомлений.
  */
 export async function ensureUserInSupabase(user: UserRecord): Promise<void> {
+  if (shouldUseServerDb()) {
+    return;
+  }
   if (!isSupabaseConfigured()) {
     if (!isLocalDevHost()) {
       throw new Error('Не настроены ключи Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
@@ -180,7 +183,7 @@ export async function ensureUserInSupabase(user: UserRecord): Promise<void> {
  * Прямой поиск пары по коду приглашения в базе Supabase без учёта регистра (ilike).
  */
 export async function findCoupleByInviteCode(cleanCode: string) {
-  if (!isSupabaseConfigured()) return null;
+  if (shouldUseServerDb() || !isSupabaseConfigured()) return null;
 
   const { data, error } = await supabase
     .from('couples')
@@ -200,7 +203,7 @@ export async function findCoupleByInviteCode(cleanCode: string) {
  * Получить данные пары по ID вместе с информацией об обоих участниках.
  */
 export async function fetchCoupleById(coupleId: string) {
-  if (!isSupabaseConfigured()) return null;
+  if (shouldUseServerDb() || !isSupabaseConfigured()) return null;
 
   const { data, error } = await supabase
     .from('couples')
@@ -220,7 +223,7 @@ export async function fetchCoupleById(coupleId: string) {
  * Получить данные пользователя по ID.
  */
 export async function fetchUserById(userId: string) {
-  if (!isSupabaseConfigured()) return null;
+  if (shouldUseServerDb() || !isSupabaseConfigured()) return null;
 
   const { data, error } = await supabase
     .from('users')
@@ -240,7 +243,7 @@ export async function fetchUserById(userId: string) {
  * Обновление привязки couple_id у пользователя в public.users.
  */
 export async function updateUserCoupleId(userId: string, coupleId: string | null): Promise<void> {
-  if (!isSupabaseConfigured()) return;
+  if (shouldUseServerDb() || !isSupabaseConfigured()) return;
 
   const { error } = await supabase
     .from('users')

@@ -5,3 +5,4 @@ export * from './category';
 export * from './wishlist';
 export * from './relationship';
 export * from './dates';
+export * from './checklist';

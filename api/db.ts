@@ -85,9 +85,10 @@ const COUPLE_COLUMNS =
   'id, invite_code, code_expires_at, code_status, space_type, user1_id, user2_id, status, start_date, couple_photo_url, streak_count, streak_last_date, streak_ping_date, streak_ping_users, created_at, dissolved_at';
 const WISHLIST_COLUMNS =
   'id, couple_id, user_id, title, description, image_url, link_url, price, category_id, is_booked, booked_by_user_id, created_at';
-const MEMORABLE_DATE_COLUMNS = 'id, couple_id, title, date, description, is_annual, created_at';
+const MEMORABLE_DATE_COLUMNS = 'id, couple_id, title, date, description, is_annual, photos, created_at';
 const DATE_MEMORY_COLUMNS =
   'id, couple_id, title, date, place, location_data, story, photos, created_at';
+const CHECKLIST_COLUMNS = 'id, couple_id, text, created_by_id, created_at';
 
 interface TelegramAuthUser {
   id: number;
@@ -174,6 +175,13 @@ export function verifyTelegramInitData(
   } catch (err: any) {
     return { isValid: false, error: err.message || 'Ошибка валидации initData' };
   }
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function generateInviteCode(): string {
@@ -498,9 +506,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ДЕЙСТВИЕ 1: get_bundle
     // -------------------------------------------------------------
     if (action === 'get_bundle') {
-      // Параллельный запуск проверки подписки и основных запросов к БД (только нужные колонки)
+      const isSilentPoll = Boolean(payload?.silent);
+      // Параллельный запуск проверки подписки и основных запросов к БД (только нужные колонки).
+      // Для фоновых silent-опросов (каждые 20 сек) не дергаем Telegram getChatMember и не шлём повторный app_opened.
       const [subResult, coupleRes, userRes] = await Promise.all([
-        checkChannelSubscription(tgUser.id),
+        isSilentPoll ? Promise.resolve({ subscribed: true as boolean, error: undefined as string | undefined }) : checkChannelSubscription(tgUser.id),
         supabase
           .from('couples')
           .select(COUPLE_COLUMNS)
@@ -534,16 +544,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!coupleRow) {
         // Если в public.users ещё нет строки (первый вход) — создаём через ensureServerUser
         const userRow = existingUserRow || (await ensureServerUser(supabase, actorId, tgUser));
-        await trackEvent(actorId, 'app_opened', {
-          space_type: null,
-          couple_status: 'none',
-          has_couple: false,
-          $set: {
+        if (!isSilentPoll) {
+          await trackEvent(actorId, 'app_opened', {
             space_type: null,
             couple_status: 'none',
             has_couple: false,
-          },
-        });
+            $set: {
+              space_type: null,
+              couple_status: 'none',
+              has_couple: false,
+            },
+          });
+        }
         return res.status(200).json({
           ok: true,
           data: {
@@ -554,6 +566,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             wishlist: [],
             memorableDates: [],
             dateMemories: [],
+            checklistItems: [],
           },
         });
       }
@@ -569,6 +582,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         wishlistRes,
         memorableDatesRes,
         dateMemoriesRes,
+        checklistRes,
       ] = await Promise.all([
         existingUserRow
           ? Promise.resolve(existingUserRow)
@@ -596,6 +610,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .select(DATE_MEMORY_COLUMNS)
           .eq('couple_id', coupleRow.id)
           .order('date', { ascending: false }),
+        supabase
+          .from('checklist_items')
+          .select(CHECKLIST_COLUMNS)
+          .eq('couple_id', coupleRow.id)
+          .order('created_at', { ascending: true }),
       ]);
 
       // Серверная секретность вишлиста: скрываем бронь для собственных желаний!
@@ -654,16 +673,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const spaceType = normalizedCouple.space_type || 'relationship';
       const coupleStatus = normalizedCouple.status || 'connected';
-      await trackEvent(actorId, 'app_opened', {
-        space_type: spaceType,
-        couple_status: coupleStatus,
-        has_couple: true,
-        $set: {
+      if (!isSilentPoll) {
+        await trackEvent(actorId, 'app_opened', {
           space_type: spaceType,
           couple_status: coupleStatus,
           has_couple: true,
-        },
-      });
+          $set: {
+            space_type: spaceType,
+            couple_status: coupleStatus,
+            has_couple: true,
+          },
+        });
+      }
 
       return res.status(200).json({
         ok: true,
@@ -675,6 +696,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           wishlist: sanitizedWishlist,
           memorableDates: memorableDatesRes.data || [],
           dateMemories: dateMemoriesRes.data || [],
+          checklistItems: checklistRes.data || [],
         },
       });
     }
@@ -703,7 +725,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('users')
         .update(patch)
         .eq('id', actorId)
-        .select()
+        .select(USER_PUBLIC_COLUMNS)
         .maybeSingle();
 
       if (error) {
@@ -787,8 +809,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ ok: false, error: 'К этой паре уже подключился партнёр' });
       }
 
+      if (couple.code_expires_at && new Date(couple.code_expires_at).getTime() < Date.now()) {
+        return res.status(400).json({ ok: false, error: 'Срок действия кода истёк' });
+      }
+
       if (couple.user1_id === actorId) {
         return res.status(400).json({ ok: false, error: 'Нельзя подключиться к собственной паре' });
+      }
+
+      if (couple.user2_id && couple.user2_id !== actorId) {
+        return res.status(400).json({ ok: false, error: 'К этой паре уже подключены два участника' });
       }
 
       await ensureServerUser(supabase, actorId, tgUser, {
@@ -874,6 +904,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
         supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
         supabase.from('date_memories').delete().eq('couple_id', coupleId),
+        supabase.from('checklist_items').delete().eq('couple_id', coupleId),
         supabase.from('notification_logs').delete().eq('couple_id', coupleId),
       ]);
 
@@ -908,11 +939,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('id', partnerId)
           .maybeSingle();
 
-        const partnerTgId = partnerUser?.telegram_id || (partnerId.startsWith('tg-') ? partnerId.replace('tg-', '') : null);
+        const partnerTgId =
+          partnerUser?.telegram_id ||
+          (partnerId.startsWith('tg_')
+            ? partnerId.replace('tg_', '')
+            : partnerId.startsWith('tg-')
+            ? partnerId.replace('tg-', '')
+            : null);
         if (partnerTgId) {
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
           if (botToken) {
-            const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'LoviaStory_bot';
+            const botUsername = escapeHtml(process.env.TELEGRAM_BOT_USERNAME || 'LoviaStory_bot');
             const partnerNotice =
               `💔 <b>Ваша пара в Lovia была расформирована партнёром.</b>\n\n` +
               `Вы можете создать новую пару или присоединиться по коду приглашения в @${botUsername}.`;
@@ -1132,7 +1169,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 'Партнёр';
               const host = req.headers.host || '';
               const appUrl = process.env.APP_URL || (host ? `https://${host}` : 'https://lovia.app');
-              const text = `🔥 <b>${actorName}</b> подначил(а) вас! Нажмите в ответ, чтобы зажечь огонёк дня`;
+              const text = `🔥 <b>${escapeHtml(actorName)}</b> подначил(а) вас! Нажмите в ответ, чтобы зажечь огонёк дня`;
 
               try {
                 const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -1251,6 +1288,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action === 'reminders_toggle') {
       const { id, status } = payload || {};
+      if (status !== 'pending' && status !== 'completed') {
+        return res.status(400).json({ ok: false, error: 'Некорректный статус напоминания' });
+      }
       const { data: existing } = await supabase
         .from('reminders')
         .select('couple_id')
@@ -1280,6 +1320,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action === 'reminders_update') {
       const { id, patch } = payload || {};
+      if (!patch || typeof patch !== 'object') {
+        return res.status(400).json({ ok: false, error: 'patch обязателен' });
+      }
       const { data: existing } = await supabase
         .from('reminders')
         .select('couple_id')
@@ -1378,6 +1421,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action === 'wishlist_update') {
       const { id, patch } = payload || {};
+      if (!patch || typeof patch !== 'object') {
+        return res.status(400).json({ ok: false, error: 'patch обязателен' });
+      }
       const { data: item } = await supabase
         .from('wishlist_items')
         .select('*')
@@ -1407,11 +1453,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('wishlist_items')
         .update(updateData)
         .eq('id', id)
-        .select()
+        .select(WISHLIST_COLUMNS)
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
-      return res.status(200).json({ ok: true, data });
+      // Секретность вишлиста: не возвращаем владельцу статус бронирования его собственного желания
+      const sanitizedData =
+        data && data.user_id === actorId
+          ? {
+              ...data,
+              is_booked: false,
+              booked_by_user_id: null,
+            }
+          : data;
+      return res.status(200).json({ ok: true, data: sanitizedData });
     }
 
     if (action === 'wishlist_delete') {
@@ -1496,6 +1551,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         date: payload.date,
         description: payload.description || null,
         is_annual: Boolean(payload.isAnnual ?? payload.is_annual),
+        photos: Array.isArray(payload.photos)
+          ? payload.photos.filter((p: any) => typeof p === 'string' && p.trim()).slice(0, 2)
+          : [],
         created_at: new Date().toISOString(),
       };
 
@@ -1514,6 +1572,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action === 'memorable_dates_update') {
       const { id, patch } = payload || {};
+      if (!patch || typeof patch !== 'object') {
+        return res.status(400).json({ ok: false, error: 'patch обязателен' });
+      }
       const { data: item } = await supabase
         .from('memorable_dates')
         .select('couple_id')
@@ -1530,6 +1591,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (patch.description !== undefined) updateData.description = patch.description || null;
       if (patch.isAnnual !== undefined || patch.is_annual !== undefined) {
         updateData.is_annual = Boolean(patch.isAnnual ?? patch.is_annual);
+      }
+      if (patch.photos !== undefined) {
+        updateData.photos = Array.isArray(patch.photos)
+          ? patch.photos.filter((p: any) => typeof p === 'string' && p.trim()).slice(0, 2)
+          : [];
       }
 
       const { data, error } = await supabase
@@ -1602,6 +1668,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action === 'date_memories_update') {
       const { id, patch } = payload || {};
+      if (!patch || typeof patch !== 'object') {
+        return res.status(400).json({ ok: false, error: 'patch обязателен' });
+      }
       const { data: item } = await supabase
         .from('date_memories')
         .select('couple_id')
@@ -1651,6 +1720,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // -------------------------------------------------------------
+    // ДЕЙСТВИЕ 10.5: checklist_create, checklist_delete (быстрые списки)
+    // -------------------------------------------------------------
+    if (action === 'checklist_create') {
+      const isAllowed = await verifyUserCouple(payload?.couple_id);
+      if (!isAllowed) {
+        return res.status(403).json({ ok: false, error: 'Нет доступа к паре' });
+      }
+
+      const cleanText = typeof payload?.text === 'string' ? payload.text.trim() : '';
+      if (!cleanText) {
+        return res.status(400).json({ ok: false, error: 'Текст пункта обязателен' });
+      }
+
+      const { count } = await supabase
+        .from('checklist_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('couple_id', payload.couple_id);
+
+      if ((count ?? 0) >= 50) {
+        return res.status(400).json({ ok: false, error: 'Максимум 50 пунктов' });
+      }
+
+      const itemId =
+        payload?.id && typeof payload.id === 'string' && payload.id.trim()
+          ? payload.id.trim()
+          : `chk-${Date.now()}-${crypto.randomUUID().slice(0, 6)}`;
+
+      const row = {
+        id: itemId,
+        couple_id: payload.couple_id,
+        text: cleanText,
+        created_by_id: actorId,
+        created_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from('checklist_items')
+        .insert(row as any)
+        .select(CHECKLIST_COLUMNS)
+        .single();
+
+      if (error) return res.status(500).json({ ok: false, error: error.message });
+      return res.status(200).json({ ok: true, data });
+    }
+
+    if (action === 'checklist_delete') {
+      const { id } = payload || {};
+      if (!id) {
+        return res.status(400).json({ ok: false, error: 'id обязателен' });
+      }
+
+      const { data: item } = await supabase
+        .from('checklist_items')
+        .select('couple_id')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (!item) {
+        return res.status(200).json({ ok: true });
+      }
+
+      if (!(await verifyUserCouple(item.couple_id))) {
+        return res.status(403).json({ ok: false, error: 'Нет доступа к пункту списка' });
+      }
+
+      const { error } = await supabase.from('checklist_items').delete().eq('id', id);
+      if (error) return res.status(500).json({ ok: false, error: error.message });
+      return res.status(200).json({ ok: true });
+    }
+
+    // -------------------------------------------------------------
     // ДЕЙСТВИЕ 11: upload_media
     // -------------------------------------------------------------
     if (action === 'upload_media') {
@@ -1664,7 +1804,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ ok: false, error: 'Invalid base64 data URL format' });
       }
 
-      const mime = match[1];
+      const mime = match[1].toLowerCase();
+      const ALLOWED_IMAGE_MIMES: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'image/avif': 'avif',
+      };
+      const ext = ALLOWED_IMAGE_MIMES[mime];
+      if (!ext) {
+        return res.status(415).json({ ok: false, error: 'Unsupported image format' });
+      }
+
       const buffer = Buffer.from(match[2], 'base64');
 
       // Лимит 4 МБ
@@ -1672,8 +1825,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ ok: false, error: 'File size exceeds 4MB limit' });
       }
 
-      const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-      const fileType = type === 'avatar' ? 'avatar' : type === 'couple' ? 'couple' : 'date';
+      const fileType =
+        type === 'avatar'
+          ? 'avatar'
+          : type === 'couple'
+          ? 'couple'
+          : type === 'wish'
+          ? 'wish'
+          : 'date';
       const filePath = `${actorId}/${fileType}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
 
       // Пробуем бакет lovia-media, затем lovia_media
@@ -1713,7 +1872,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ДЕЙСТВИЕ 12: request_account_deletion
     // -------------------------------------------------------------
     if (action === 'request_account_deletion') {
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const code = String(crypto.randomInt(100000, 1000000));
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
       // Сохраняем в in-memory fallback
@@ -1834,52 +1993,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('id', coupleId)
           .maybeSingle();
 
-        const partnerId =
-          couple?.user1_id === actorId ? couple?.user2_id : couple?.user1_id;
+        if (couple && (couple.user1_id === actorId || couple.user2_id === actorId)) {
+          const partnerId =
+            couple.user1_id === actorId ? couple.user2_id : couple.user1_id;
 
-        // Удаляем данные пары и растворяем пару
-        await Promise.all([
-          supabase.from('reminders').delete().eq('couple_id', coupleId),
-          supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
-          supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
-          supabase.from('date_memories').delete().eq('couple_id', coupleId),
-          supabase
-            .from('couples')
-            .update({ status: 'dissolved', dissolved_at: new Date().toISOString() })
-            .eq('id', coupleId),
-        ]);
+          // Удаляем данные пары и растворяем пару
+          await Promise.all([
+            supabase.from('reminders').delete().eq('couple_id', coupleId),
+            supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
+            supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
+            supabase.from('date_memories').delete().eq('couple_id', coupleId),
+            supabase.from('checklist_items').delete().eq('couple_id', coupleId),
+            supabase.from('notification_logs').delete().eq('couple_id', coupleId),
+            supabase
+              .from('couples')
+              .update({ status: 'dissolved', dissolved_at: new Date().toISOString() })
+              .eq('id', coupleId),
+          ]);
 
-        // Обнуляем couple_id у второго участника (партнёра)
-        if (partnerId) {
-          await supabase.from('users').update({ couple_id: null }).eq('id', partnerId);
+          // Обнуляем couple_id у второго участника (партнёра)
+          if (partnerId) {
+            await supabase.from('users').update({ couple_id: null }).eq('id', partnerId);
 
-          // Отправляем второму участнику уведомление в Telegram
-          const { data: partnerUser } = await supabase
-            .from('users')
-            .select('telegram_id')
-            .eq('id', partnerId)
-            .maybeSingle();
+            // Отправляем второму участнику уведомление в Telegram
+            const { data: partnerUser } = await supabase
+              .from('users')
+              .select('telegram_id')
+              .eq('id', partnerId)
+              .maybeSingle();
 
-          if (partnerUser?.telegram_id) {
-            const botToken = process.env.TELEGRAM_BOT_TOKEN;
-            if (botToken) {
-              const partnerNotice =
-                `💔 <b>Совместное пространство Lovia закрыто</b>\n\n` +
-                `Ваш партнёр удалил свой аккаунт. Совместные напоминания, вишлисты и воспоминания были удалены.\n\n` +
-                `Вы можете создать новую пару или подключиться к новому пространству в любой момент.`;
+            if (partnerUser?.telegram_id) {
+              const botToken = process.env.TELEGRAM_BOT_TOKEN;
+              if (botToken) {
+                const partnerNotice =
+                  `💔 <b>Совместное пространство Lovia закрыто</b>\n\n` +
+                  `Ваш партнёр удалил свой аккаунт. Совместные напоминания, вишлисты и воспоминания были удалены.\n\n` +
+                  `Вы можете создать новую пару или подключиться к новому пространству в любой момент.`;
 
-              try {
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    chat_id: partnerUser.telegram_id,
-                    text: partnerNotice,
-                    parse_mode: 'HTML',
-                  }),
-                });
-              } catch (e) {
-                console.warn('[confirm_account_deletion] Failed to notify partner:', e);
+                try {
+                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      chat_id: partnerUser.telegram_id,
+                      text: partnerNotice,
+                      parse_mode: 'HTML',
+                    }),
+                  });
+                } catch (e) {
+                  console.warn('[confirm_account_deletion] Failed to notify partner:', e);
+                }
               }
             }
           }

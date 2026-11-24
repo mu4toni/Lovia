@@ -3,6 +3,7 @@ import { categoriesService } from './categoriesService';
 import { wishlistService } from './wishlistService';
 import { relationshipService } from './relationshipService';
 import { dateMemoryService } from './dateMemoryService';
+import { checklistService } from './checklistService';
 import { telegramService } from './telegramService';
 import { clearCelebrationHistory } from './celebrationService';
 import { isLocalDevHost } from '../utils/env';
@@ -339,8 +340,9 @@ class CoupleService {
         this.activeUserId = tgId;
         localStorage.setItem(STORAGE_ACTIVE_USER_ID_KEY, this.activeUserId);
 
-        // Гарантируем сохранение/обновление пользователя в public.users с telegram_id при запуске в Telegram
-        if (isSupabaseConfigured()) {
+        // Гарантируем сохранение/обновление пользователя в public.users при запуске вне /api/db
+        // В Telegram-режиме (shouldUseServerDb) регистрация пользователя выполняется сервером в get_bundle.
+        if (!shouldUseServerDb() && isSupabaseConfigured()) {
           setTimeout(() => {
             this.ensureUserInSupabase(this.users[tgId]).catch((err) => {
               console.warn('[coupleService] Initial Telegram user upsert skipped/failed:', err?.message || err);
@@ -542,6 +544,7 @@ class CoupleService {
     await wishlistService.clearSharedData();
     relationshipService.clearSharedData();
     dateMemoryService.clearSharedData();
+    checklistService.clearSharedData();
     clearCelebrationHistory();
   }
 
@@ -593,7 +596,7 @@ class CoupleService {
    * Подписка на Realtime-изменения статуса пары в Supabase
    */
   private subscribeToCoupleUpdates(coupleId: string): void {
-    if (!isSupabaseConfigured() || coupleId === 'couple-1') return;
+    if (shouldUseServerDb() || !isSupabaseConfigured() || coupleId === 'couple-1') return;
     if (this.subscribedCoupleId === coupleId) return;
     this.subscribedCoupleId = coupleId;
 
@@ -627,6 +630,7 @@ class CoupleService {
     wishlist: any[];
     memorableDates: any[];
     dateMemories: any[];
+    checklistItems?: any[];
   }): CoupleSpace | null {
     const active = this.getActiveUser();
 
@@ -734,6 +738,9 @@ class CoupleService {
     if (Array.isArray(bundle.dateMemories)) {
       dateMemoryService.hydrateFromBundle(bundle.dateMemories, syncedCouple.id);
     }
+    if (Array.isArray(bundle.checklistItems)) {
+      checklistService.hydrateFromBundle(bundle.checklistItems, syncedCouple.id);
+    }
 
     this.saveToStorage();
 
@@ -749,7 +756,11 @@ class CoupleService {
   /**
    * Синхронизация данных пары из Supabase с локальным состоянием
    */
-  async syncCoupleFromSupabase(coupleIdToSync?: string, force = false): Promise<CoupleSpace | null> {
+  async syncCoupleFromSupabase(
+    coupleIdToSync?: string,
+    force = false,
+    options?: { silent?: boolean }
+  ): Promise<CoupleSpace | null> {
     if (shouldUseServerDb()) {
       if (!force && this.isFresh() && this.getCurrentCouple()) {
         return this.getCurrentCouple();
@@ -763,6 +774,7 @@ class CoupleService {
         try {
           const bundle = await callServerDb<any>('get_bundle', {
             localDate: getLocalTodayString(),
+            ...(options?.silent ? { silent: true } : {}),
           });
           if (bundle) {
             if (bundle.subscriptionRequired) {
@@ -911,9 +923,12 @@ class CoupleService {
   /**
    * Подтягивает актуальную пару из Supabase при старте приложения и возвращении в Telegram
    */
-  async syncCurrentCoupleFromSupabase(force = false): Promise<CoupleSpace | null> {
+  async syncCurrentCoupleFromSupabase(
+    force = false,
+    options?: { silent?: boolean }
+  ): Promise<CoupleSpace | null> {
     if (shouldUseServerDb()) {
-      return this.syncCoupleFromSupabase(undefined, force);
+      return this.syncCoupleFromSupabase(undefined, force, options);
     }
     if (!isSupabaseConfigured()) return null;
     this.init();

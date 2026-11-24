@@ -8,54 +8,24 @@ import { isLocalDevHost } from '../utils/env';
 import { sendPartnerNotification } from './notificationService';
 import { getSwrCacheSection, updateSwrCache } from './swrCache';
 import { supabase, isSupabaseConfigured, callServerDb, shouldUseServerDb } from './api';
+import { uploadPhotoIfNeeded } from './dateMemoryService';
+import { normalizeMediaUrl } from '../utils/media';
+import { initialDemoMemorableDates } from './mockData';
+
+function mapMemorablePhotos(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+    .slice(0, 2)
+    .map((p) => normalizeMediaUrl(p));
+}
 
 const STORAGE_START_DATE_KEY = 'lovia_relationship_start_date_v1';
 const STORAGE_MEMORABLE_DATES_KEY = 'lovia_memorable_dates_v1';
 
-export const initialStartDate = '2025-12-08';
+export const initialStartDate = '2025-07-25';
 
-export const initialMemorableDates: MemorableDate[] = [
-  {
-    id: 'mdate-1',
-    title: 'Первое знакомство',
-    date: '2025-10-14',
-    description: 'Случайная встреча за кофе в книжном на Покровке',
-    isAnnual: true,
-    createdAt: '2025-10-14T15:30:00.000Z',
-  },
-  {
-    id: 'mdate-2',
-    title: 'Первый поцелуй',
-    date: '2025-11-20',
-    description: 'Под тихим ночным снегопадом у Патриарших прудов',
-    isAnnual: true,
-    createdAt: '2025-11-20T21:45:00.000Z',
-  },
-  {
-    id: 'mdate-3',
-    title: 'Начало отношений',
-    date: '2025-12-08',
-    description: 'Тот самый вечер, когда мы поняли, что это навсегда',
-    isAnnual: true,
-    createdAt: '2025-12-08T19:00:00.000Z',
-  },
-  {
-    id: 'mdate-4',
-    title: 'Поездка на маяк',
-    date: '2026-06-15',
-    description: 'Встретили рассвет на скалистом берегу залива',
-    isAnnual: false,
-    createdAt: '2026-06-15T05:00:00.000Z',
-  },
-  {
-    id: 'mdate-5',
-    title: 'День рождения Алисы',
-    date: '2026-08-22',
-    description: 'Самый счастливый праздник лета',
-    isAnnual: true,
-    createdAt: '2026-08-22T00:00:00.000Z',
-  },
-];
+export const initialMemorableDates: MemorableDate[] = initialDemoMemorableDates;
 
 class RelationshipService {
   private currentChannel: any = null;
@@ -85,7 +55,7 @@ class RelationshipService {
   }
 
   private subscribeToRealtime(): void {
-    if (!isSupabaseConfigured() || typeof window === 'undefined') return;
+    if (shouldUseServerDb() || !isSupabaseConfigured() || typeof window === 'undefined') return;
     const couple = coupleService.getCurrentCouple();
     if (!couple || couple.id === 'couple-1') return;
     if (this.currentChannel && this.subscribedCoupleId === couple.id) return;
@@ -202,6 +172,7 @@ class RelationshipService {
       date: row.date,
       description: row.description || undefined,
       isAnnual: Boolean(row.is_annual),
+      photos: mapMemorablePhotos(row.photos),
       createdAt: row.created_at,
     }));
     this.saveMemorableDatesToStorage(mapped, coupleId);
@@ -244,7 +215,7 @@ class RelationshipService {
         if (coupleService.isFresh()) {
           return;
         }
-        await coupleService.syncCoupleFromSupabase();
+        await coupleService.syncCoupleFromSupabase(undefined, false, { silent: true });
         return;
       }
 
@@ -261,6 +232,7 @@ class RelationshipService {
           date: row.date,
           description: row.description || undefined,
           isAnnual: Boolean(row.is_annual),
+          photos: mapMemorablePhotos(row.photos),
           createdAt: row.created_at,
         }));
         this.saveMemorableDatesToStorage(mapped, coupleId);
@@ -309,11 +281,11 @@ class RelationshipService {
           return this.getMemorableDates();
         }
         try {
-          await coupleService.syncCoupleFromSupabase();
-          return this.getMemorableDates();
+          await coupleService.syncCoupleFromSupabase(undefined, false, { silent: true });
         } catch (e) {
           console.warn('[relationshipService] get_bundle error via /api/db:', e);
         }
+        return this.getMemorableDates();
       }
 
       const { data, error } = await supabase
@@ -333,6 +305,7 @@ class RelationshipService {
         date: row.date,
         description: row.description || undefined,
         isAnnual: Boolean(row.is_annual),
+        photos: mapMemorablePhotos(row.photos),
         createdAt: row.created_at,
       }));
 
@@ -357,6 +330,12 @@ class RelationshipService {
       }
     }
 
+    const rawPhotos = Array.isArray(input.photos) ? input.photos.slice(0, 2) : [];
+    const uploadedPhotos =
+      rawPhotos.length > 0 && couple && couple.id !== 'couple-1'
+        ? await Promise.all(rawPhotos.map((p) => uploadPhotoIfNeeded(couple.id, p)))
+        : rawPhotos;
+
     if (shouldUseServerDb() && couple && couple.id !== 'couple-1') {
       const serverRow = await callServerDb<any>('memorable_dates_create', {
         couple_id: couple.id,
@@ -364,6 +343,7 @@ class RelationshipService {
         date: input.date,
         description: input.description?.trim() || null,
         isAnnual: !!input.isAnnual,
+        photos: uploadedPhotos.slice(0, 2),
       });
 
       const newEntry: MemorableDate = {
@@ -372,6 +352,7 @@ class RelationshipService {
         date: serverRow.date,
         description: serverRow.description || undefined,
         isAnnual: Boolean(serverRow.is_annual),
+        photos: mapMemorablePhotos(serverRow.photos),
         createdAt: serverRow.created_at,
       };
 
@@ -395,10 +376,11 @@ class RelationshipService {
       date: input.date,
       description: input.description?.trim() || undefined,
       isAnnual: !!input.isAnnual,
+      photos: uploadedPhotos.slice(0, 2),
       createdAt: new Date().toISOString(),
     };
 
-    if (isSupabaseConfigured() && !isLocalDevHost() && couple) {
+    if (!shouldUseServerDb() && isSupabaseConfigured() && !isLocalDevHost() && couple) {
       const row = {
         id: newEntry.id,
         couple_id: couple.id,
@@ -406,6 +388,7 @@ class RelationshipService {
         date: newEntry.date,
         description: newEntry.description || null,
         is_annual: newEntry.isAnnual,
+        photos: newEntry.photos || [],
         created_at: newEntry.createdAt,
       };
 
@@ -431,12 +414,20 @@ class RelationshipService {
   async updateMemorableDate(id: string, input: UpdateMemorableDateInput): Promise<MemorableDate | null> {
     const couple = coupleService.getCurrentCouple();
 
+    const uploadedPhotos =
+      input.photos !== undefined
+        ? couple && couple.id !== 'couple-1'
+          ? await Promise.all(input.photos.slice(0, 2).map((p) => uploadPhotoIfNeeded(couple.id, p)))
+          : input.photos.slice(0, 2)
+        : undefined;
+
     if (shouldUseServerDb()) {
       const patch: any = {};
       if (input.title !== undefined) patch.title = input.title.trim();
       if (input.date !== undefined) patch.date = input.date;
       if (input.description !== undefined) patch.description = input.description?.trim() || null;
       if (input.isAnnual !== undefined) patch.is_annual = input.isAnnual;
+      if (uploadedPhotos !== undefined) patch.photos = uploadedPhotos.slice(0, 2);
 
       const serverRow = await callServerDb<any>('memorable_dates_update', { id, patch });
       const updatedEntry: MemorableDate = {
@@ -445,6 +436,7 @@ class RelationshipService {
         date: serverRow.date,
         description: serverRow.description || undefined,
         isAnnual: Boolean(serverRow.is_annual),
+        photos: mapMemorablePhotos(serverRow.photos),
         createdAt: serverRow.created_at,
         updatedAt: serverRow.created_at,
       };
@@ -465,6 +457,7 @@ class RelationshipService {
       if (input.date !== undefined) updateData.date = input.date;
       if (input.description !== undefined) updateData.description = input.description?.trim() || null;
       if (input.isAnnual !== undefined) updateData.is_annual = input.isAnnual;
+      if (uploadedPhotos !== undefined) updateData.photos = uploadedPhotos.slice(0, 2);
 
       const { error } = await supabase
         .from('memorable_dates')
@@ -489,6 +482,7 @@ class RelationshipService {
       ...(input.date !== undefined ? { date: input.date } : {}),
       ...(input.description !== undefined ? { description: input.description.trim() || undefined } : {}),
       ...(input.isAnnual !== undefined ? { isAnnual: input.isAnnual } : {}),
+      ...(uploadedPhotos !== undefined ? { photos: uploadedPhotos.slice(0, 2) } : {}),
       updatedAt: new Date().toISOString(),
     };
 
