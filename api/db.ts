@@ -486,6 +486,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return Boolean(data);
     }
 
+    const STORAGE_BUCKETS = new Set(['lovia-media', 'lovia_media']);
+
+    function extractStorageObject(url: unknown): { bucket: string; path: string } | null {
+      if (typeof url !== 'string') return null;
+      const trimmed = url.trim();
+      if (!trimmed || trimmed.startsWith('data:')) return null;
+      const match = trimmed.match(/\/storage\/v1\/object\/public\/(lovia[-_]media)\/([^?#]+)/i);
+      if (!match) return null;
+      const bucket = match[1];
+      if (!STORAGE_BUCKETS.has(bucket)) return null;
+      let objectPath: string;
+      try {
+        objectPath = decodeURIComponent(match[2]);
+      } catch {
+        objectPath = match[2];
+      }
+      if (!objectPath || objectPath.includes('..') || objectPath.startsWith('/')) {
+        return null;
+      }
+      return { bucket, path: objectPath };
+    }
+
+    async function removeStorageFilesByUrls(
+      urls: Array<string | null | undefined>,
+      requiredPrefix?: string
+    ): Promise<void> {
+      const byBucket = new Map<string, Set<string>>();
+      for (const url of urls) {
+        const parsed = extractStorageObject(url);
+        if (!parsed) continue;
+        if (requiredPrefix && !parsed.path.startsWith(requiredPrefix)) continue;
+        let set = byBucket.get(parsed.bucket);
+        if (!set) {
+          set = new Set<string>();
+          byBucket.set(parsed.bucket, set);
+        }
+        set.add(parsed.path);
+      }
+      if (byBucket.size === 0) return;
+
+      await Promise.all(
+        Array.from(byBucket.entries()).map(async ([bucket, pathsSet]) => {
+          const paths = Array.from(pathsSet);
+          if (paths.length === 0) return;
+          try {
+            const { error } = await supabase.storage.from(bucket).remove(paths);
+            if (error) {
+              console.warn(`[storage-cleanup] Failed to remove from ${bucket}:`, error.message);
+            }
+          } catch (err: any) {
+            console.warn(`[storage-cleanup] Exception removing from ${bucket}:`, err?.message || err);
+          }
+        })
+      );
+    }
+
     // -------------------------------------------------------------
     // ДЕЙСТВИЕ 0: check_subscription
     // -------------------------------------------------------------
@@ -706,7 +762,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // -------------------------------------------------------------
     if (action === 'update_profile') {
       // Гарантируем существование строки, не перезатирая данные существующего пользователя
-      await ensureServerUser(supabase, actorId, tgUser);
+      const existingProfile = await ensureServerUser(supabase, actorId, tgUser);
+      const previousAvatarUrl: string | null = existingProfile?.avatar_url || null;
 
       const patch: any = { updated_at: new Date().toISOString() };
       if (payload?.name !== undefined && String(payload.name).trim()) {
@@ -730,6 +787,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (error) {
         return res.status(500).json({ ok: false, error: error.message });
+      }
+
+      if (
+        payload?.avatarUrl !== undefined &&
+        previousAvatarUrl &&
+        previousAvatarUrl !== (payload.avatarUrl || null)
+      ) {
+        await removeStorageFilesByUrls([previousAvatarUrl], `${actorId}/`);
       }
 
       return res.status(200).json({ ok: true, data: updatedUser });
@@ -892,14 +957,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: couple } = await supabase
         .from('couples')
-        .select('id, user1_id, user2_id')
+        .select('id, user1_id, user2_id, couple_photo_url')
         .eq('id', coupleId)
         .maybeSingle();
 
       const userIds = [couple?.user1_id, couple?.user2_id].filter(Boolean) as string[];
 
-      // 1) Удаляем связанные записи
+      // Собираем медиа-ссылки пары перед удалением записей, чтобы почистить Storage
+      const [wishesMediaRes, memDatesMediaRes, dateMemoriesMediaRes] = await Promise.all([
+        supabase.from('wishlist_items').select('image_url').eq('couple_id', coupleId),
+        supabase.from('memorable_dates').select('photos').eq('couple_id', coupleId),
+        supabase.from('date_memories').select('photos').eq('couple_id', coupleId),
+      ]);
+      const coupleStorageUrls: Array<string | null | undefined> = [
+        couple?.couple_photo_url,
+        ...(wishesMediaRes.data || []).map((w: any) => w.image_url),
+        ...(memDatesMediaRes.data || []).flatMap((d: any) => (Array.isArray(d.photos) ? d.photos : [])),
+        ...(dateMemoriesMediaRes.data || []).flatMap((m: any) => (Array.isArray(m.photos) ? m.photos : [])),
+      ];
+
+      // 1) Удаляем связанные записи и медиафайлы пары
       await Promise.all([
+        removeStorageFilesByUrls(coupleStorageUrls),
         supabase.from('reminders').delete().eq('couple_id', coupleId),
         supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
         supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
@@ -1013,6 +1092,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ ok: false, error: 'photoUrl должен быть строкой или null' });
       }
 
+      const { data: existingCouple } = await supabase
+        .from('couples')
+        .select('couple_photo_url')
+        .eq('id', coupleId)
+        .maybeSingle();
+      const previousCouplePhotoUrl: string | null = existingCouple?.couple_photo_url || null;
+
       const { data: updated, error } = await supabase
         .from('couples')
         .update({ couple_photo_url: photoUrl || null })
@@ -1022,6 +1108,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (error) {
         return res.status(500).json({ ok: false, error: error.message });
+      }
+
+      if (previousCouplePhotoUrl && previousCouplePhotoUrl !== (photoUrl || null)) {
+        await removeStorageFilesByUrls([previousCouplePhotoUrl]);
       }
 
       return res.status(200).json({ ok: true, data: updated });
@@ -1457,6 +1547,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (
+        patch.imageUrl !== undefined &&
+        item.image_url &&
+        item.image_url !== (patch.imageUrl || null)
+      ) {
+        await removeStorageFilesByUrls([item.image_url]);
+      }
       // Секретность вишлиста: не возвращаем владельцу статус бронирования его собственного желания
       const sanitizedData =
         data && data.user_id === actorId
@@ -1488,6 +1585,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { error } = await supabase.from('wishlist_items').delete().eq('id', id);
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (item.image_url) {
+        await removeStorageFilesByUrls([item.image_url]);
+      }
       return res.status(200).json({ ok: true });
     }
 
@@ -1577,7 +1677,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const { data: item } = await supabase
         .from('memorable_dates')
-        .select('couple_id')
+        .select('couple_id, photos')
         .eq('id', id)
         .maybeSingle();
 
@@ -1606,6 +1706,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (patch.photos !== undefined && Array.isArray(item.photos) && item.photos.length > 0) {
+        const nextSet = new Set<string>(updateData.photos || []);
+        const removedPhotos = item.photos.filter((url: string) => !nextSet.has(url));
+        if (removedPhotos.length > 0) {
+          await removeStorageFilesByUrls(removedPhotos);
+        }
+      }
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1613,7 +1720,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { id } = payload || {};
       const { data: item } = await supabase
         .from('memorable_dates')
-        .select('couple_id')
+        .select('couple_id, photos')
         .eq('id', id)
         .maybeSingle();
 
@@ -1623,6 +1730,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { error } = await supabase.from('memorable_dates').delete().eq('id', id);
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (Array.isArray(item.photos) && item.photos.length > 0) {
+        await removeStorageFilesByUrls(item.photos);
+      }
       return res.status(200).json({ ok: true });
     }
 
@@ -1673,7 +1783,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const { data: item } = await supabase
         .from('date_memories')
-        .select('couple_id')
+        .select('couple_id, photos')
         .eq('id', id)
         .maybeSingle();
 
@@ -1699,6 +1809,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (patch.photos !== undefined && Array.isArray(item.photos) && item.photos.length > 0) {
+        const nextSet = new Set<string>(Array.isArray(updateData.photos) ? updateData.photos : []);
+        const removedPhotos = item.photos.filter((url: string) => !nextSet.has(url));
+        if (removedPhotos.length > 0) {
+          await removeStorageFilesByUrls(removedPhotos);
+        }
+      }
       return res.status(200).json({ ok: true, data });
     }
 
@@ -1706,7 +1823,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { id } = payload || {};
       const { data: item } = await supabase
         .from('date_memories')
-        .select('couple_id')
+        .select('couple_id, photos')
         .eq('id', id)
         .maybeSingle();
 
@@ -1716,6 +1833,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { error } = await supabase.from('date_memories').delete().eq('id', id);
       if (error) return res.status(500).json({ ok: false, error: error.message });
+      if (Array.isArray(item.photos) && item.photos.length > 0) {
+        await removeStorageFilesByUrls(item.photos);
+      }
       return res.status(200).json({ ok: true });
     }
 
@@ -1804,25 +1924,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ ok: false, error: 'Invalid base64 data URL format' });
       }
 
-      const mime = match[1].toLowerCase();
-      const ALLOWED_IMAGE_MIMES: Record<string, string> = {
-        'image/jpeg': 'jpg',
-        'image/jpg': 'jpg',
-        'image/png': 'png',
-        'image/webp': 'webp',
-        'image/gif': 'gif',
-        'image/avif': 'avif',
+      const rawMime = match[1].toLowerCase();
+      const ALLOWED_IMAGE_MIMES: Record<string, { ext: string; contentType: string }> = {
+        'image/webp': { ext: 'webp', contentType: 'image/webp' },
+        'image/jpeg': { ext: 'jpg', contentType: 'image/jpeg' },
+        'image/jpg': { ext: 'jpg', contentType: 'image/jpeg' },
+        'image/png': { ext: 'png', contentType: 'image/png' },
+        'image/gif': { ext: 'gif', contentType: 'image/gif' },
+        'image/avif': { ext: 'avif', contentType: 'image/avif' },
       };
-      const ext = ALLOWED_IMAGE_MIMES[mime];
-      if (!ext) {
+      const mediaSpec = ALLOWED_IMAGE_MIMES[rawMime];
+      if (!mediaSpec) {
         return res.status(415).json({ ok: false, error: 'Unsupported image format' });
       }
+      const { ext, contentType } = mediaSpec;
 
       const buffer = Buffer.from(match[2], 'base64');
 
-      // Лимит 4 МБ
-      if (buffer.length > 4 * 1024 * 1024) {
-        return res.status(400).json({ ok: false, error: 'File size exceeds 4MB limit' });
+      // Жёсткий лимит 2 МБ после клиентского сжатия
+      if (buffer.length > 2 * 1024 * 1024) {
+        return res.status(413).json({ ok: false, error: 'File size exceeds 2MB limit' });
       }
 
       const fileType =
@@ -1840,14 +1961,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let uploadErr: any = null;
 
       const { error: err1 } = await supabase.storage.from('lovia-media').upload(filePath, buffer, {
-        contentType: mime,
+        contentType,
         upsert: true,
       });
 
       if (err1) {
         targetBucket = 'lovia_media';
         const { error: err2 } = await supabase.storage.from('lovia_media').upload(filePath, buffer, {
-          contentType: mime,
+          contentType,
           upsert: true,
         });
         uploadErr = err2;
@@ -1989,7 +2110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (coupleId) {
         const { data: couple } = await supabase
           .from('couples')
-          .select('user1_id, user2_id')
+          .select('user1_id, user2_id, couple_photo_url')
           .eq('id', coupleId)
           .maybeSingle();
 
@@ -1997,8 +2118,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const partnerId =
             couple.user1_id === actorId ? couple.user2_id : couple.user1_id;
 
-          // Удаляем данные пары и растворяем пару
+          const [wishesMediaRes, memDatesMediaRes, dateMemoriesMediaRes] = await Promise.all([
+            supabase.from('wishlist_items').select('image_url').eq('couple_id', coupleId),
+            supabase.from('memorable_dates').select('photos').eq('couple_id', coupleId),
+            supabase.from('date_memories').select('photos').eq('couple_id', coupleId),
+          ]);
+          const coupleStorageUrls: Array<string | null | undefined> = [
+            couple.couple_photo_url,
+            ...(wishesMediaRes.data || []).map((w: any) => w.image_url),
+            ...(memDatesMediaRes.data || []).flatMap((d: any) => (Array.isArray(d.photos) ? d.photos : [])),
+            ...(dateMemoriesMediaRes.data || []).flatMap((m: any) => (Array.isArray(m.photos) ? m.photos : [])),
+          ];
+
+          // Удаляем данные пары, медиафайлы и растворяем пару
           await Promise.all([
+            removeStorageFilesByUrls(coupleStorageUrls),
             supabase.from('reminders').delete().eq('couple_id', coupleId),
             supabase.from('wishlist_items').delete().eq('couple_id', coupleId),
             supabase.from('memorable_dates').delete().eq('couple_id', coupleId),
@@ -2049,7 +2183,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // 2) Удаляем строку пользователя из public.users
+      // 2) Удаляем аватарку пользователя из Storage и строку из public.users
+      if (userRow?.avatar_url) {
+        await removeStorageFilesByUrls([userRow.avatar_url], `${actorId}/`);
+      }
       const { error: deleteUserError } = await supabase
         .from('users')
         .delete()

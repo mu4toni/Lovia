@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 2px 0;
+  padding: 8px 2px 0;
 }
 
 .home-header__greeting-text {
@@ -95,8 +95,9 @@
 .home-header__peeking-mascot {
   flex-shrink: 0;
   pointer-events: none;
-  width: 70px;
-  height: 70px;
+  width: 68px;
+  height: 68px;
+  margin-top: 4px;
   display: flex;
   align-items: center;
   justify-content: center;

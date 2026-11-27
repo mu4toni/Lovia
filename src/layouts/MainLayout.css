@@ -10,7 +10,7 @@
 
 .main-content {
   flex: 1;
-  padding: calc(var(--space-md, 16px) + var(--tg-total-top-inset, env(safe-area-inset-top, 0px))) var(--space-md, 16px);
+  padding: calc(20px + max(var(--tg-total-top-inset, 0px), env(safe-area-inset-top, 0px))) var(--space-md, 16px);
   padding-bottom: calc(120px + max(var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
   max-width: 440px;
   width: 100%;

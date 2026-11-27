@@ -1,8 +1,14 @@
 .home-calendar {
   margin-bottom: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .home-calendar__card.glass-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   padding: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -10,31 +16,34 @@
   box-shadow: var(--shadow-soft);
 }
 
-/* 1. Header with Month navigation and view switch */
+/* 1. Header with 2 clean rows: Month navigation on Row 1, full-width View Switcher on Row 2 */
 .home-calendar__header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  gap: var(--space-xs);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
   margin-bottom: 14px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
-  min-height: 40px;
 }
 
 .home-calendar__month-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  box-sizing: border-box;
 }
 
 .home-calendar__arrow-btn {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  flex-shrink: 0;
   border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
@@ -55,10 +64,10 @@
 .home-calendar__arrow-btn::before {
   content: '';
   position: absolute;
-  top: -6px;
-  bottom: -6px;
-  left: -6px;
-  right: -6px;
+  top: -5px;
+  bottom: -5px;
+  left: -5px;
+  right: -5px;
   min-width: 44px;
   min-height: 44px;
 }
@@ -75,14 +84,17 @@
 }
 
 .home-calendar__month-name {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-handwritten);
   font-size: 18px;
   font-weight: 600;
   color: var(--text-cocoa);
   padding: 0 4px;
-  min-width: 116px;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   letter-spacing: -0.01em;
 }
 
@@ -158,28 +170,38 @@
   transform: scale(0.97);
 }
 
-/* View Mode Switcher (День / Неделя / Месяц) */
+/* View Mode Switcher (День / Неделя / Месяц) — full width 3-column grid */
 .home-calendar__view-switch {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  box-sizing: border-box;
   background: var(--bg-paper);
   border: 1px solid var(--border);
   padding: 3px;
   border-radius: var(--radius-pill);
-  gap: 2px;
-  flex-shrink: 0;
+  gap: 4px;
 }
 
 .home-calendar__view-btn {
-  padding: 6px 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 7px 6px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
   transition: background-color var(--motion-micro) ease,
               color var(--motion-micro) ease,
               transform var(--motion-micro) var(--ease-tactile);
-  min-height: 32px;
+  min-height: 34px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -259,6 +281,8 @@
 .home-calendar__week-badges {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  box-sizing: border-box;
   gap: 5px;
 }
 
@@ -269,6 +293,8 @@
   justify-content: center;
   min-width: 0;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 9px 2px;
   border-radius: 14px;
   background: transparent;
@@ -358,17 +384,22 @@
 .home-calendar__month-view {
   animation: calendarMonthFade var(--motion-component) var(--motion-ease-smooth);
   padding: 2px 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .home-calendar__month-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  box-sizing: border-box;
   gap: 4px;
   margin-bottom: 6px;
   text-align: center;
 }
 
 .home-calendar__month-th {
+  min-width: 0;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
@@ -380,13 +411,20 @@
 
 .home-calendar__month-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  box-sizing: border-box;
   gap: 4px;
 }
 
 /* Month Cell */
 .home-calendar__month-cell {
   aspect-ratio: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -400,7 +438,7 @@
   color: var(--text-cocoa);
   cursor: pointer;
   position: relative;
-  min-height: 38px;
+  min-height: 36px;
   outline: none;
   font-variant-numeric: tabular-nums;
   transition: background-color var(--motion-micro) ease,
@@ -632,50 +670,25 @@
    ========================================================================== */
 @media (max-width: 430px) {
   .home-calendar__card.glass-card {
-    padding: 16px;
+    padding: 15px 14px;
   }
 
   .home-calendar__header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
     margin-bottom: 12px;
     padding-bottom: 12px;
-    min-height: auto;
-  }
-
-  .home-calendar__month-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
   }
 
   .home-calendar__month-name {
-    flex: 1;
-    min-width: 0;
-    text-align: center;
     font-size: 17px;
   }
 
-  .home-calendar__view-switch {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    padding: 3px;
-  }
-
   .home-calendar__view-btn {
-    text-align: center;
-    justify-content: center;
     padding: 7px 4px;
     font-size: 12px;
     min-height: 32px;
   }
 
   .home-calendar__week-badges {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -700,8 +713,15 @@
     padding: 14px 12px;
   }
 
-  .home-calendar__week-badges {
+  .home-calendar__week-badges,
+  .home-calendar__month-weekdays,
+  .home-calendar__month-grid {
     gap: 3px;
+  }
+
+  .home-calendar__month-cell {
+    font-size: 13px;
+    min-height: 34px;
   }
 
   .calendar-day {

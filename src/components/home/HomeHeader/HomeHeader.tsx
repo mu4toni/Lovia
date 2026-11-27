@@ -233,7 +233,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
           {/* Bean gently peeking / reflecting selected mood — strictly pointer-events: none */}
           <div className="home-header__peeking-mascot" aria-hidden="true">
-            <Mascot name={greetingMascotName} size={74} eager />
+            <Mascot name={greetingMascotName} size={68} eager />
           </div>
         </div>
 

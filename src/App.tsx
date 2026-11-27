@@ -115,9 +115,9 @@ export function App() {
     window.addEventListener('lovia_subscription_required', handleSubRequired);
     window.addEventListener('lovia_subscription_resolved', handleSubResolved);
 
-    // Мягкое фоновое автообновление get_bundle каждые 20 сек (для синхронизации без открытого RLS/Realtime).
+    // Мягкое фоновое автообновление get_bundle раз в 60 сек (для синхронизации без открытого RLS/Realtime и экономии лимитов Supabase).
     // Не срабатывает, если вкладка скрыта, открыта модалка или пользователь сейчас вводит текст.
-    const BACKGROUND_SYNC_INTERVAL_MS = 20_000;
+    const BACKGROUND_SYNC_INTERVAL_MS = 60_000;
     const isInteractionBusy = (): boolean => {
       if (document.hidden) return true;
       if (

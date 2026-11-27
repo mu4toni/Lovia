@@ -76,7 +76,7 @@ export const CreateEditMemorableDateModal: React.FC<CreateEditMemorableDateModal
       const compressed = await Promise.all(
         fileList.map(async (file) => {
           try {
-            return await compressImageFile(file, 1280, 1280, 0.82);
+            return await compressImageFile(file, 'photo');
           } catch {
             return null;
           }

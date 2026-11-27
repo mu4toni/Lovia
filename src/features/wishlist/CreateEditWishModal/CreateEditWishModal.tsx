@@ -270,7 +270,7 @@ export const CreateEditWishModal: React.FC<CreateEditWishModalProps> = ({
     }
 
     try {
-      const compressedDataUrl = await compressImageFile(file, 1080, 1080, 0.82);
+      const compressedDataUrl = await compressImageFile(file, 'photo');
       setImageUrl(compressedDataUrl);
       setPhotoState('success');
       setIsAutoFetched(false);

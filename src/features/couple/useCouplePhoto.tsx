@@ -45,7 +45,7 @@ export function useCouplePhotoPicker(): { openPicker: () => void; picker: React.
     e.target.value = '';
     if (!file) return;
     try {
-      const compressed = await compressImageFile(file, 1280, 1280, 0.85);
+      const compressed = await compressImageFile(file, 'photo');
       setRawImage(compressed);
       setIsCropOpen(true);
     } catch {
@@ -88,7 +88,8 @@ export function useCouplePhotoPicker(): { openPicker: () => void; picker: React.
           isOpen={isCropOpen}
           imageSrc={rawImage}
           shape="square"
-          outputSize={640}
+          outputSize={1080}
+          compressionPreset="photo"
           title="Совместное фото"
           hint="Перемещайте и масштабируйте фото. На главной отобразится квадратная область."
           onClose={() => {

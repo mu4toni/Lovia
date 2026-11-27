@@ -8,6 +8,7 @@ import { formatMonthYearGenitive } from '../../../utils/dateCalculations';
 import { telegramService } from '../../../services/telegramService';
 import { useSpaceMode } from '../../../hooks/useSpaceMode';
 import { AvatarCropModal } from '../AvatarCropModal/AvatarCropModal';
+import { compressImageFile } from '../../../utils/imageCompressor';
 import './ProfileHeader.css';
 
 export interface ProfileHeaderProps {
@@ -49,19 +50,26 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     setIsEditingInline(false);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setRawImageForCrop(reader.result);
-        setIsCropModalOpen(true);
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    try {
+      // Предварительно уменьшаем тяжёлые фото с камеры перед кропом, а финальный кроп кодируется в 400×400 WebP (0.75)
+      const prepared = await compressImageFile(file, 1080, 1080, 0.82);
+      setRawImageForCrop(prepared);
+      setIsCropModalOpen(true);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setRawImageForCrop(reader.result);
+          setIsCropModalOpen(true);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Formatted registration date (e.g., "В Lovia с октября 2025 г.")
@@ -236,6 +244,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <AvatarCropModal
           isOpen={isCropModalOpen}
           imageSrc={rawImageForCrop}
+          outputSize={400}
+          compressionPreset="avatar"
           onClose={() => {
             setIsCropModalOpen(false);
             setRawImageForCrop(null);

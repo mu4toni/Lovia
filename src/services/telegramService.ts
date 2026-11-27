@@ -181,9 +181,19 @@ class TelegramService {
         tg.onEvent('contentSafeAreaChanged', () => {
           this.updateViewportAndSafeAreas();
         });
+        tg.onEvent('fullscreenChanged', () => {
+          this.updateViewportAndSafeAreas();
+        });
+        tg.onEvent('activated', () => {
+          this.updateViewportAndSafeAreas();
+        });
       } catch (e) {
         console.warn('[TelegramService] Error attaching WebApp event listeners:', e);
       }
+
+      // Telegram iOS/Android часто обновляет safeAreaInset / contentSafeAreaInset с небольшой задержкой после expand()
+      window.setTimeout(() => this.updateViewportAndSafeAreas(), 180);
+      window.setTimeout(() => this.updateViewportAndSafeAreas(), 500);
 
       // Observe DOM data-theme changes to sync Telegram header/bg color
       if (typeof MutationObserver !== 'undefined' && document.documentElement) {
@@ -246,13 +256,26 @@ class TelegramService {
       root.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
     }
 
-    const safeTop = tg?.safeAreaInset?.top ?? 0;
-    const contentTop = tg?.contentSafeAreaInset?.top ?? 0;
+    const hasSafeTop = typeof tg?.safeAreaInset?.top === 'number';
+    const hasContentTop = typeof tg?.contentSafeAreaInset?.top === 'number';
+    const safeTop = hasSafeTop ? tg!.safeAreaInset!.top : 0;
+    const contentTop = hasContentTop ? tg!.contentSafeAreaInset!.top : 0;
     const totalTop = safeTop + contentTop;
 
-    root.style.setProperty('--tg-safe-area-inset-top', `${safeTop}px`);
-    root.style.setProperty('--tg-content-safe-area-inset-top', `${contentTop}px`);
-    root.style.setProperty('--tg-total-top-inset', `${totalTop}px`);
+    if (hasSafeTop) {
+      root.style.setProperty('--tg-safe-area-inset-top', `${safeTop}px`);
+    }
+    if (hasContentTop) {
+      root.style.setProperty('--tg-content-safe-area-inset-top', `${contentTop}px`);
+    }
+    if (totalTop > 0) {
+      root.style.setProperty('--tg-total-top-inset', `${totalTop}px`);
+    } else {
+      root.style.setProperty(
+        '--tg-total-top-inset',
+        'calc(max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 0px))'
+      );
+    }
 
     if (tg?.safeAreaInset) {
       root.style.setProperty('--tg-safe-area-inset-bottom', `${tg.safeAreaInset.bottom}px`);

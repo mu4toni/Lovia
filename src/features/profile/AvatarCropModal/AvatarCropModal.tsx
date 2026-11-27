@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/Modal/Modal';
 import { Button } from '../../../components/ui/Button/Button';
 import { Icon } from '../../../components/ui/Icon/Icon';
+import {
+  AVATAR_MAX_DIMENSION,
+  DEFAULT_IMAGE_QUALITY,
+  DOWNGRADE_IMAGE_QUALITY,
+  PHOTO_DOWNGRADE_THRESHOLD_BYTES,
+  encodeCanvasOptimized,
+  type ImageCompressionPreset,
+} from '../../../utils/imageCompressor';
 import './AvatarCropModal.css';
 
 export interface AvatarCropModalProps {
@@ -9,10 +17,12 @@ export interface AvatarCropModalProps {
   imageSrc: string;
   onClose: () => void;
   onCropComplete: (croppedDataUrl: string) => void;
-  /** Stencil shape shown while cropping. Output is always a square JPEG. */
+  /** Stencil shape shown while cropping. Output is always a square WebP/JPEG. */
   shape?: 'circle' | 'square';
   /** Output size in px (square). */
   outputSize?: number;
+  /** Compression preset: 'avatar' (400px, q=0.75) or 'photo' (<=1080px, q=0.75 -> 0.62 if >250KB). */
+  compressionPreset?: ImageCompressionPreset;
   title?: string;
   hint?: string;
 }
@@ -26,7 +36,8 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   onClose,
   onCropComplete,
   shape = 'circle',
-  outputSize = 400,
+  outputSize = AVATAR_MAX_DIMENSION,
+  compressionPreset = 'avatar',
   title = 'Редактирование фото',
   hint,
 }) => {
@@ -182,8 +193,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     const img = imgRef.current;
     if (!img) return;
 
-    // Render cropped image to 400x400 output canvas
-    const OUTPUT_SIZE = outputSize;
+    // Render cropped image to capped square canvas (<= 400px for avatars, <= 1080px for photos)
+    const maxCap = compressionPreset === 'avatar' ? AVATAR_MAX_DIMENSION : 1080;
+    const OUTPUT_SIZE = Math.min(outputSize, maxCap);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = OUTPUT_SIZE;
     outCanvas.height = OUTPUT_SIZE;
@@ -192,8 +204,10 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
 
     const baseScale = Math.max((2 * CROP_RADIUS) / img.width, (2 * CROP_RADIUS) / img.height);
     const totalScale = baseScale * zoom;
-    const exportRatio = OUTPUT_SIZE / (2 * CROP_RADIUS); // 400 / 240
+    const exportRatio = OUTPUT_SIZE / (2 * CROP_RADIUS);
 
+    outCtx.imageSmoothingEnabled = true;
+    outCtx.imageSmoothingQuality = 'high';
     outCtx.fillStyle = '#171717';
     outCtx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
@@ -207,7 +221,12 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     outCtx.drawImage(img, -img.width / 2, -img.height / 2);
     outCtx.restore();
 
-    const dataUrl = outCanvas.toDataURL('image/jpeg', 0.88);
+    const dataUrl = encodeCanvasOptimized(outCanvas, {
+      quality: DEFAULT_IMAGE_QUALITY,
+      fallbackQuality: DOWNGRADE_IMAGE_QUALITY,
+      maxBytesBeforeDowngrade:
+        compressionPreset === 'avatar' ? 0 : PHOTO_DOWNGRADE_THRESHOLD_BYTES,
+    });
     onCropComplete(dataUrl);
     onClose();
   };

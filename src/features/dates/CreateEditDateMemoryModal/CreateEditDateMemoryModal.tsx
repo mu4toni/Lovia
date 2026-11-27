@@ -86,8 +86,8 @@ export const CreateEditDateMemoryModal: React.FC<CreateEditDateMemoryModalProps>
       const compressedDataUrls = await Promise.all(
         fileList.map(async (file) => {
           try {
-            // Сжатие через <canvas> до 1280px (image/jpeg, качество 0.82)
-            return await compressImageFile(file, 1280, 1280, 0.82);
+            // Сжатие через <canvas> до 1080px (WebP/JPEG, качество 0.75 -> 0.62 если > 250 КБ)
+            return await compressImageFile(file, 'photo');
           } catch {
             return null;
           }
